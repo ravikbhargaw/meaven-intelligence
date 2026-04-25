@@ -12,7 +12,7 @@ import TechnicalCalculator from './components/TechnicalCalculator'
 import AdminPanel from './components/AdminPanel'
 
 function App() {
-  const { user, login, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser } = useAuth()
+  const { user, login, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey } = useAuth()
   
   // Dashboard States
   const [clientView, setClientView] = useState(true)

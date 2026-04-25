@@ -7,8 +7,16 @@ const useAuth = () => {
   
   // Multi-User Registry
   const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('mi_users')
-    return saved ? JSON.parse(saved) : [
+    try {
+      const saved = localStorage.getItem('mi_users')
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch (e) {
+      console.error('Auth sync failed, resetting to defaults')
+    }
+    return [
       {
         email: 'ravi.bhargaw@meaven.in',
         name: 'Ravi Bhargaw',
