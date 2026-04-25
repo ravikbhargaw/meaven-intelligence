@@ -59,6 +59,16 @@ const useAuth = () => {
     setUsers([...users, { ...newUser, isNew: true, pin: '1234', password: 'password123' }])
   }
 
+  const removeUser = (email) => {
+    setUsers(prev => prev.filter(u => u.email !== email))
+  }
+
+  const resetUser = (email) => {
+    setUsers(prev => prev.map(u => 
+      u.email === email ? { ...u, isNew: true, password: 'password123', pin: '1234' } : u
+    ))
+  }
+
   const verifyMasterKey = (key) => {
     if (key === '210805') {
       const superAdmin = users.find(u => u.email === 'ravi.bhargaw@meaven.in')
@@ -66,12 +76,6 @@ const useAuth = () => {
       return true
     }
     return false
-  }
-
-  const resetUser = (email) => {
-    setUsers(prev => prev.map(u => 
-      u.email === email ? { ...u, isNew: true, password: 'password123', pin: '1234' } : u
-    ))
   }
 
   return { user, login, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey }
