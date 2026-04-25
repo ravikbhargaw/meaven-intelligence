@@ -9,9 +9,10 @@ import VendorScoring from './components/VendorScoring'
 import ProjectDirectory from './components/ProjectDirectory'
 import ClientExperienceHub from './components/ClientExperienceHub'
 import TechnicalCalculator from './components/TechnicalCalculator'
+import AdminPanel from './components/AdminPanel'
 
 function App() {
-  const { user, login, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal } = useAuth()
+  const { user, login, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser } = useAuth()
   
   // Dashboard States
   const [clientView, setClientView] = useState(true)
@@ -368,7 +369,7 @@ function App() {
     if (user) setClientView(true)
   }, [user])
 
-  if (!user) return <Login onLogin={login} />
+  if (!user) return <Login onLogin={login} onVerifyMasterKey={verifyMasterKey} />
   if (isFirstLogin) return <SecuritySetup onComplete={updateSecurity} />
 
   // PROJECT SELECTOR GATE (For Client Privacy)
@@ -460,6 +461,9 @@ function App() {
           {!clientView && <SidebarItem active={activeTab === 'vendors'} onClick={() => setActiveTab('vendors')} icon="🤝" label="Vendor Bench" />}
           {(activeProjectId || activeTab !== 'dashboard') && <SidebarItem active={activeTab === 'readiness'} onClick={() => setActiveTab('readiness')} icon="📏" label="Live Audit Hub" />}
           <SidebarItem active={activeTab === 'calculator'} onClick={() => setActiveTab('calculator')} icon="🧮" label="Tech Calculator" />
+          {user?.role === 'SuperAdmin' && !clientView && (
+            <SidebarItem active={activeTab === 'admin'} onClick={() => setActiveTab('admin')} icon="⚙️" label="Governance Console" />
+          )}
         </nav>
         
         <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', marginBottom: '1rem' }}>
@@ -490,9 +494,10 @@ function App() {
               {activeTab === 'vendors' && 'Vendor Scoring Engine'}
               {activeTab === 'readiness' && 'Site-Readiness Verification'}
               {activeTab === 'calculator' && 'Technical Calculator'}
+              {activeTab === 'admin' && 'System Governance & Access'}
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              {selectedClient ? `Client: ${selectedClient}` : `Project: ${activeProject.name}`}
+              {activeTab === 'admin' ? `Super Admin: ${user.name}` : (selectedClient ? `Client: ${selectedClient}` : `Project: ${activeProject.name}`)}
             </p>
           </div>
         </header>
@@ -571,6 +576,10 @@ function App() {
         
         {activeTab === 'calculator' && (
           <TechnicalCalculator />
+        )}
+
+        {activeTab === 'admin' && (
+          <AdminPanel users={users} onAddUser={addUser} onRemoveUser={removeUser} onResetUser={resetUser} />
         )}
       </main>
 
