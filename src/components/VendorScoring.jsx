@@ -1,0 +1,506 @@
+import { useState } from 'react'
+
+const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, onAddPayment, onAddNote, onAddContract, onAddProject, isReadOnly }) => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false)
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [selectedVendorId, setSelectedVendorId] = useState(null)
+  const [activeContractId, setActiveContractId] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterCategory, setFilterCategory] = useState('All')
+  const [filterStatus, setFilterStatus] = useState('All')
+  const [noteText, setNoteText] = useState('')
+  
+  // New Contract Modal State
+  const [linkMode, setLinkMode] = useState('existing') // 'existing' or 'new'
+
+  const categories = ['All', 'Glass', 'Aluminum', 'Hardware', 'Lighting', 'Logistics']
+  const statuses = ['All', 'Certified', 'Vetting']
+
+  const filteredVendors = vendors.filter(v => {
+    const matchesSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (v.gst || '').toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = filterCategory === 'All' || v.category === filterCategory
+    const matchesStatus = filterStatus === 'All' || v.status === filterStatus
+    return matchesSearch && matchesCategory && matchesStatus
+  })
+
+  const calculateScore = (m) => {
+    if (!m) return 0
+    const price = m.price || 0
+    const speed = m.speed || 0
+    const precision = m.precision || 0
+    const communication = m.communication || 0
+    return Math.round((price * 0.3) + (speed * 0.3) + (precision * 0.25) + (communication * 0.15))
+  }
+
+  const maskData = (str, visibleCount = 4) => {
+    if (!str || !isReadOnly) return str
+    const s = String(str)
+    const visible = s.slice(-visibleCount)
+    const masked = 'X'.repeat(Math.max(0, s.length - visibleCount))
+    return masked + visible
+  }
+
+  const selectedVendor = vendors.find(v => v.id === selectedVendorId)
+  const selectedContract = selectedVendor?.contracts?.find(c => c.id === activeContractId)
+
+  const getGlobalFinancials = (v) => {
+    const contracts = v.contracts || []
+    const totalOrder = contracts.reduce((sum, c) => sum + (parseInt(c.orderValue) || 0), 0)
+    const totalPaid = contracts.reduce((sum, c) => {
+        return sum + (c.payments || []).reduce((pSum, p) => pSum + (parseInt(p.amount) || 0), 0)
+    }, 0)
+    return { totalOrder, totalPaid, due: totalOrder - totalPaid }
+  }
+
+  const getContractFinancials = (c) => {
+    if (!c) return { order: 0, paid: 0, due: 0 }
+    const paid = (c.payments || []).reduce((sum, p) => sum + (parseInt(p.amount) || 0), 0)
+    const order = parseInt(c.orderValue) || 0
+    return { order, paid, due: order - paid }
+  }
+
+  if (selectedVendor) {
+    const score = calculateScore(selectedVendor.metrics)
+    const globalFin = getGlobalFinancials(selectedVendor)
+    const contractFin = getContractFinancials(selectedContract)
+
+    return (
+      <div className="vendor-detail-view animate-fade-in" style={{ paddingBottom: '5rem' }}>
+        <button 
+          onClick={() => { setSelectedVendorId(null); setActiveContractId(null); }} 
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '2rem', fontSize: '0.9rem', fontWeight: '600' }}
+        >
+          ← Back to Partner Directory
+        </button>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
+            <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <h1 style={{ margin: 0, filter: isReadOnly ? 'blur(8px)' : 'none' }}>{selectedVendor.name}</h1>
+                    <span style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', borderRadius: '20px', background: selectedVendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)', color: selectedVendor.status === 'Certified' ? 'var(--success)' : '#FF9500', fontWeight: '600' }}>
+                        {selectedVendor.status}
+                    </span>
+                </div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: '0.5rem' }}>{selectedVendor.category} Division | {selectedVendor.contact}</p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: '800', color: score > 80 ? 'var(--success)' : 'var(--accent-color)' }}>
+                    {score}
+                </div>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Intelligence Score</span>
+            </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+            <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)' }}>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Portfolio Order</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalOrder / 100000).toFixed(2)}L</p>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Across {selectedVendor.contracts?.length || 0} Projects</p>
+            </div>
+            <div className="card" style={{ background: 'rgba(50, 215, 75, 0.05)' }}>
+                <p style={{ fontSize: '0.65rem', color: 'var(--success)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Paid till Date</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalPaid / 100000).toFixed(2)}L</p>
+            </div>
+            <div className="card" style={{ background: 'rgba(255, 69, 58, 0.05)' }}>
+                <p style={{ fontSize: '0.65rem', color: 'var(--danger)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Outstanding</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.due / 100000).toFixed(2)}L</p>
+            </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div className="card" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Active Contracts</h4>
+                        {!isReadOnly && (
+                            <button onClick={() => { setLinkMode('existing'); setIsContractModalOpen(true); }} style={{ color: 'var(--accent-color)', fontSize: '0.75rem', fontWeight: '600' }}>+ Link Project</button>
+                        )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                        {(selectedVendor.contracts || []).map(c => (
+                            <div 
+                                key={c.id} 
+                                onClick={() => setActiveContractId(c.id)}
+                                style={{ 
+                                    padding: '1rem', 
+                                    borderRadius: '10px', 
+                                    background: activeContractId === c.id ? 'var(--accent-color)' : 'rgba(255,255,255,0.03)',
+                                    color: activeContractId === c.id ? '#000' : '#fff',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    border: '1px solid ' + (activeContractId === c.id ? 'var(--accent-color)' : 'transparent')
+                                }}
+                            >
+                                <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem' }}>{c.projectName}</p>
+                                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', opacity: 0.7 }}>Order: ₹{(c.orderValue / 100000).toFixed(2)}L</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="card" style={{ background: 'var(--bg-accent)' }}>
+                    <h4 style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>Compliance Verification</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>GST Verified</span>
+                            <span>{selectedVendor.isGstVerified ? '✅' : '❌'}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>Quality Audit</span>
+                            <span>{selectedVendor.isCertVerified ? '✅' : '❌'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                {activeContractId ? (
+                    <div className="card animate-fade-in" style={{ border: '1px solid var(--accent-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <div>
+                                <h3 style={{ margin: 0 }}>{selectedContract.projectName} Ledger</h3>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.4rem' }}>Tracking independent financial cycles for this site.</p>
+                            </div>
+                            {!isReadOnly && (
+                                <button className="btn btn-primary" onClick={() => setIsPaymentModalOpen(true)} style={{ fontSize: '0.8rem' }}>+ Log Payment</button>
+                            )}
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Contract Order</p>
+                                <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0.3rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.order / 100000).toFixed(2)}L</p>
+                            </div>
+                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                <p style={{ fontSize: '0.6rem', color: 'var(--success)', textTransform: 'uppercase' }}>Paid to Date</p>
+                                <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0.3rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.paid / 100000).toFixed(2)}L</p>
+                            </div>
+                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                <p style={{ fontSize: '0.6rem', color: 'var(--danger)', textTransform: 'uppercase' }}>Current Due</p>
+                                <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0.3rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.due / 100000).toFixed(2)}L</p>
+                            </div>
+                        </div>
+
+                        <h4 style={{ fontSize: '0.9rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Recent Project Transactions</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                            {(selectedContract.payments || []).length > 0 ? selectedContract.payments.map(p => (
+                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                                    <div>
+                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '1.1rem', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(p.amount / 100000).toFixed(2)}L</p>
+                                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.date} | Ref: {p.ref}</p>
+                                    </div>
+                                    {p.screenshot && (
+                                        <button onClick={() => window.open(p.screenshot)} style={{ fontSize: '0.7rem', color: 'var(--accent-color)' }}>View Evidence 📎</button>
+                                    )}
+                                </div>
+                            )) : <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '2rem' }}>No payments logged for this contract yet.</p>}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="card" style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--border-color)', background: 'none' }}>
+                        <p style={{ color: 'var(--text-secondary)' }}>Select a project from the sidebar to view detailed financial tracking.</p>
+                    </div>
+                )}
+
+                <div className="card">
+                    <h4 style={{ marginBottom: '1.5rem' }}>🔍 Partner Intelligence Timeline</h4>
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+                        <textarea 
+                            readOnly={isReadOnly}
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            placeholder="Add a global behavior note, warning, or execution tip..."
+                            style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1rem', color: '#fff', fontSize: '0.9rem' }}
+                        />
+                        <button 
+                            disabled={!noteText.trim() || isReadOnly}
+                            onClick={() => { onAddNote(selectedVendor.id, noteText); setNoteText(''); }}
+                            className="btn btn-primary" style={{ height: 'fit-content', padding: '0.8rem 1.5rem' }}
+                        >Post</button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.8rem' }}>
+                        {(selectedVendor.history || []).slice().reverse().map((h, i) => (
+                            <div key={h.id} style={{ display: 'flex', gap: '1.5rem', position: 'relative' }}>
+                                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: h.type === 'contract' ? 'var(--accent-color)' : (h.type === 'payment' ? 'var(--success)' : '#444'), marginTop: '6px', zIndex: 2 }} />
+                                {i < selectedVendor.history.length - 1 && <div style={{ position: 'absolute', left: '5px', top: '20px', bottom: '-25px', width: '2px', background: 'var(--border-color)' }} />}
+                                <div style={{ flex: 1 }}>
+                                    <p style={{ margin: 0, fontWeight: '700', fontSize: '0.95rem' }}>{h.title}</p>
+                                    <p style={{ margin: '0.3rem 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{h.detail}</p>
+                                    <p style={{ margin: 0, fontSize: '0.7rem', color: '#444' }}>{h.date}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {/* INTEGRATED PROJECT LINK/CREATE MODAL */}
+        {isContractModalOpen && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000 }}>
+                <div className="card animate-fade-in" style={{ width: '450px', padding: '2.5rem' }}>
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+                        <button onClick={() => setLinkMode('existing')} style={{ flex: 1, padding: '0.5rem', background: linkMode === 'existing' ? 'var(--accent-color)' : 'none', color: linkMode === 'existing' ? '#000' : 'var(--text-secondary)', border: 'none', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>Choose Existing</button>
+                        <button onClick={() => setLinkMode('new')} style={{ flex: 1, padding: '0.5rem', background: linkMode === 'new' ? 'var(--accent-color)' : 'none', color: linkMode === 'new' ? '#000' : 'var(--text-secondary)', border: 'none', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>+ Create New Site</button>
+                    </div>
+
+                    <form onSubmit={(e) => {
+                        e.preventDefault()
+                        const formData = new FormData(e.target)
+                        let pName = formData.get('projectName')
+                        
+                        if (linkMode === 'existing') {
+                            // CHECK FOR DUPLICATE LINKING
+                            const existingVendor = vendors.find(v => v.contracts?.some(c => c.projectName === pName))
+                            if (existingVendor) {
+                                alert(`CRITICAL CONFLICT: This project is already linked to ${existingVendor.name}. Each project site is limited to one primary partner to ensure accountability.`)
+                                return
+                            }
+                        }
+
+                        if (linkMode === 'new') {
+                            const newPName = formData.get('newProjectName')
+                            onAddProject({
+                                name: newPName,
+                                client: formData.get('client'),
+                                pmEmail: formData.get('pmEmail') || 'support@meaven.co'
+                            })
+                            pName = newPName
+                        }
+
+                        onAddContract(selectedVendor.id, pName, formData.get('orderValue'))
+                        setIsContractModalOpen(false)
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                        
+                        {linkMode === 'existing' ? (
+                            <div>
+                                <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>SELECT ACTIVE PROJECT</label>
+                                <select name="projectName" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}>
+                                    {projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                                </select>
+                            </div>
+                        ) : (
+                            <>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>NEW PROJECT NAME</label>
+                                    <input name="newProjectName" required placeholder="e.g. Nexus Innovation Hub" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>CLIENT NAME</label>
+                                    <input name="client" required placeholder="Company Name" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>PROJECT MANAGER EMAIL</label>
+                                    <input name="pmEmail" type="email" placeholder="pm@client.com" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                </div>
+                            </>
+                        )}
+
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>TOTAL CONTRACT ORDER (INR)</label>
+                            <input name="orderValue" type="number" required placeholder="Project-specific order value" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                            <button type="button" onClick={() => setIsContractModalOpen(false)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>{linkMode === 'new' ? 'Create & Link' : 'Link Contract'}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+
+        {/* PAYMENT MODAL (Existing logic) */}
+        {isPaymentModalOpen && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000 }}>
+                <div className="card animate-fade-in" style={{ width: '400px', padding: '2.5rem' }}>
+                    <h3 style={{ marginBottom: '1.5rem' }}>Log Payment for {selectedContract.projectName}</h3>
+                    <form onSubmit={(e) => {
+                        e.preventDefault()
+                        const formData = new FormData(e.target)
+                        const reader = new FileReader()
+                        const file = e.target.screenshot.files[0]
+                        
+                        const savePayment = (screenshotData = null) => {
+                            onAddPayment(selectedVendor.id, selectedContract.id, {
+                                amount: parseInt(formData.get('amount')),
+                                date: formData.get('date'),
+                                ref: formData.get('ref'),
+                                status: 'Paid',
+                                screenshot: screenshotData
+                            })
+                            setIsPaymentModalOpen(false)
+                        }
+
+                        if (file) {
+                            reader.onloadend = () => savePayment(reader.result)
+                            reader.readAsDataURL(file)
+                        } else {
+                            savePayment()
+                        }
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>AMOUNT (INR)</label>
+                            <input name="amount" type="number" required placeholder="Amount for this specific project" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>DATE OF PAYMENT</label>
+                            <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>TRANSACTION REF</label>
+                            <input name="ref" required placeholder="UTR / Ref Number" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>PAYMENT SCREENSHOT</label>
+                            <input name="screenshot" type="file" accept="image/*" style={{ fontSize: '0.8rem' }} />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                            <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Save Entry</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+      </div>
+    )
+  }
+
+  // LIST VIEW
+  return (
+    <div className="vendor-scoring-module animate-fade-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Vendor Intelligence Hub</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>Centralized partner lifecycle and performance management.</p>
+        </div>
+        {!isReadOnly && (
+          <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
+            <span>+</span> Register New Vendor
+          </button>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+        <input 
+          type="text" 
+          placeholder="Search partners..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ flex: 2, background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff' }}
+        />
+        <select 
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          style={{ flex: 1, background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff' }}
+        >
+          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select 
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          style={{ flex: 1, background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff' }}
+        >
+          {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
+        {filteredVendors.map(vendor => {
+          const score = calculateScore(vendor.metrics)
+          const globalFin = getGlobalFinancials(vendor)
+
+          return (
+            <div key={vendor.id} className="card vendor-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => setSelectedVendorId(vendor.id)}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(102, 178, 194, 0.1)', color: 'var(--accent-color)', textTransform: 'uppercase', fontWeight: '700' }}>{vendor.category}</span>
+                  <h3 style={{ 
+                      marginTop: '0.5rem', 
+                      fontSize: '1.1rem',
+                      filter: isReadOnly ? 'blur(4px)' : 'none',
+                      opacity: isReadOnly ? 0.4 : 1,
+                      transition: 'all 0.3s ease'
+                  }}>
+                    {vendor.name}
+                  </h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', borderRadius: '20px', background: vendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)', color: vendor.status === 'Certified' ? 'var(--success)' : '#FF9500', fontWeight: '600' }}>
+                        {vendor.status}
+                    </span>
+                    <div style={{ fontSize: '1.2rem', fontWeight: '800', color: score > 80 ? 'var(--success)' : 'var(--accent-color)' }}>
+                        {score}
+                    </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.85rem' }}>
+                <div>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '0.2rem', fontSize: '0.7rem' }}>CONTACT</p>
+                  <p>{vendor.contact}</p>
+                </div>
+                <div>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '0.2rem', fontSize: '0.7rem' }}>PORTFOLIO DUE</p>
+                  <p style={{ fontWeight: '700', color: 'var(--danger)', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(globalFin.due / 100000).toFixed(2)}L</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--accent-color)' }}>Manage Contracts →</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{vendor.contracts?.length || 0} Active Projects</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {isAddModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000 }}>
+          <div className="card animate-fade-in" style={{ width: '450px', padding: '2.5rem' }}>
+            <h3 style={{ marginBottom: '1.5rem' }}>Register New Partner</h3>
+            <form onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.target)
+                onAdd({
+                    name: formData.get('name'),
+                    category: formData.get('category'),
+                    contact: formData.get('contact'),
+                    phone: formData.get('phone'),
+                    gst: formData.get('gst'),
+                    status: 'Vetting',
+                    isGstVerified: false,
+                    isCertVerified: false,
+                    metrics: { price: 50, speed: 50, precision: 50, communication: 50 },
+                    history: [{ id: 1, type: 'registration', title: 'Partner Onboarded', detail: 'Added to Meaven database via CRM', date: new Date().toISOString().split('T')[0] }],
+                    contracts: [],
+                    notes: ''
+                })
+                setIsAddModalOpen(false)
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+              <input name="name" required placeholder="Company Name" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+              <select name="category" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}>
+                {categories.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <input name="contact" required placeholder="Primary Contact Person" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+              <input name="phone" required placeholder="Phone Number" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+              <input name="gst" required placeholder="GST Number" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+              
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" onClick={() => setIsAddModalOpen(false)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Add to Pipeline</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default VendorScoring
