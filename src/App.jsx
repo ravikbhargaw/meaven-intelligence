@@ -497,7 +497,7 @@ function App() {
               {activeTab === 'admin' && 'System Governance & Access'}
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              {activeTab === 'admin' ? `Super Admin: ${user.name}` : (selectedClient ? `Client: ${selectedClient}` : `Project: ${activeProject.name}`)}
+              {activeTab === 'admin' ? `Super Admin: ${user?.name || 'Authorized User'}` : (selectedClient ? `Client: ${selectedClient}` : `Project: ${activeProject?.name || 'Global View'}`)}
             </p>
           </div>
         </header>
@@ -579,7 +579,7 @@ function App() {
         )}
 
         {activeTab === 'admin' && (
-          <AdminPanel users={users} onAddUser={addUser} onRemoveUser={removeUser} onResetUser={resetUser} />
+          <AdminPanel users={users || []} onAddUser={addUser} onRemoveUser={removeUser} onResetUser={resetUser} />
         )}
       </main>
 

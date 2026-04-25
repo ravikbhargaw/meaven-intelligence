@@ -25,10 +25,10 @@ const AdminPanel = ({ users = [], onAddUser, onRemoveUser, onResetUser }) => {
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800' }}>
-                                        {u.name.charAt(0)}
+                                        {u.name?.charAt(0) || '?'}
                                     </div>
                                     <div>
-                                        <p style={{ margin: 0, fontWeight: '700' }}>{u.name}</p>
+                                        <p style={{ margin: 0, fontWeight: '700' }}>{u.name || 'User Setup Pending'}</p>
                                         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{u.email} • <span style={{ color: 'var(--accent-color)' }}>{u.role}</span></p>
                                     </div>
                                 </div>
