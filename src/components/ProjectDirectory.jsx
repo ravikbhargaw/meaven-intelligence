@@ -443,27 +443,72 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
         {isReassignModalOpen && (
             <ModalOverlay>
                 <div className="card animate-fade-in" style={{ width: '450px', padding: '2.5rem', border: '1px solid var(--danger)' }}>
-                    <h3 style={{ marginBottom: '1rem', color: 'var(--danger)' }}>Partner Reassignment</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>Warning: This will terminate the active contract for <strong>{linkedVendor?.name}</strong> and re-open the project for assignment.</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h3 style={{ margin: 0, color: 'var(--danger)' }}>Replace Partner</h3>
+                        <button 
+                            onClick={() => setIsRegisteringNew(!isRegisteringNew)}
+                            style={{ background: 'rgba(102, 178, 194, 0.1)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', padding: '0.3rem 0.6rem', borderRadius: '4px' }}
+                        >
+                            {isRegisteringNew ? '← Select Existing' : '+ Register New'}
+                        </button>
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1.5rem' }}>Terminating contract with <strong>{linkedVendor?.name}</strong>.</p>
+                    
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onReassignPartner(selectedProject.id, linkedVendor?.id, formData.get('vendorId'), formData.get('orderValue'))
+                        if (isRegisteringNew) {
+                            const newId = Date.now()
+                            onAddVendor({
+                                id: newId,
+                                name: formData.get('newName'),
+                                category: formData.get('newCategory'),
+                                contact: formData.get('newContact'),
+                                phone: formData.get('newPhone'),
+                                status: 'Vetting',
+                                metrics: { price: 50, speed: 50, precision: 50, communication: 50 },
+                                contracts: []
+                            })
+                            onReassignPartner(selectedProject.id, linkedVendor?.id, newId, formData.get('orderValue'))
+                        } else {
+                            onReassignPartner(selectedProject.id, linkedVendor?.id, formData.get('vendorId'), formData.get('orderValue'))
+                        }
                         setIsReassignModalOpen(false)
-                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Select New Partner (Optional)</label>
-                            <select name="vendorId" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}>
-                                <option value="">Select later (Mark as Unassigned)</option>
-                                {vendors.filter(v => v.id !== linkedVendor?.id).map(v => <option key={v.id} value={v.id.toString()}>{v.name} ({v.miScore || 0}%)</option>)}
-                            </select>
-                        </div>
+                        setIsRegisteringNew(false)
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                        
+                        {!isRegisteringNew ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Select Replacement</label>
+                                <select name="vendorId" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}>
+                                    <option value="">Select later (Unassigned)</option>
+                                    {vendors.filter(v => v.id !== linkedVendor?.id).map(v => <option key={v.id} value={v.id.toString()}>{v.name} ({v.category})</option>)}
+                                </select>
+                            </div>
+                        ) : (
+                            <>
+                                <input name="newName" required placeholder="New Company Name" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <select name="newCategory" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}>
+                                        <option value="Civil">Civil</option>
+                                        <option value="Carpentry">Carpentry</option>
+                                        <option value="Electrical">Electrical</option>
+                                        <option value="Plumbing">Plumbing</option>
+                                        <option value="Glass">Glass</option>
+                                    </select>
+                                    <input name="newPhone" required placeholder="Phone" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                </div>
+                                <input name="newContact" required placeholder="Contact Person" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            </>
+                        )}
+
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>New Contract Value (INR)</label>
-                            <input name="orderValue" type="number" placeholder="Enter only if assigning now" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            <input name="orderValue" type="number" required placeholder="Ex: 1200000" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
                         </div>
+                        
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                            <button type="button" onClick={() => setIsReassignModalOpen(false)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                            <button type="button" onClick={() => { setIsReassignModalOpen(false); setIsRegisteringNew(false); }} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
                             <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', background: 'var(--danger)', color: '#fff' }}>Terminate & Reassign</button>
                         </div>
                     </form>
