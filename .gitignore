@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+full_strategy.txt
+last_content.txt
+last_resp.json
 
 # Editor directories and files
 .vscode/*

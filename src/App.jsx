@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import SiteReadiness from './components/SiteReadiness'
 import Login from './components/Login'
 import SecuritySetup from './components/SecuritySetup'
@@ -10,6 +10,33 @@ import ProjectDirectory from './components/ProjectDirectory'
 import ClientExperienceHub from './components/ClientExperienceHub'
 import TechnicalCalculator from './components/TechnicalCalculator'
 import AdminPanel from './components/AdminPanel'
+import CommandCenter from './components/CommandCenter'
+
+// --- SAFETY VAULT: ERROR BOUNDARY ---
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '5rem', textAlign: 'center', background: '#1a0000', color: '#ff453a', height: '100vh', width: '100vw', position: 'fixed', inset: 0, zIndex: 9999 }}>
+          <h1 style={{ fontSize: '3rem', fontWeight: '900' }}>🚨 CRITICAL RENDER FAILURE</h1>
+          <p style={{ fontSize: '1.2rem', margin: '2rem 0' }}>The War Room has encountered a data collision. Please capture this report for Meaven Support.</p>
+          <pre style={{ background: '#000', padding: '2rem', borderRadius: '12px', textAlign: 'left', display: 'inline-block', color: '#fff', maxWidth: '80%' }}>
+            {this.state.error?.toString()}
+          </pre>
+          <div style={{ marginTop: '3rem' }}>
+            <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="btn btn-primary">REBOOT & CLEAR CACHE ⟳</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function App() {
   const { user, login, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey } = useAuth()
@@ -21,85 +48,87 @@ function App() {
   const [isProjectSelected, setIsProjectSelected] = useState(false)
   const [selectedClient, setSelectedClient] = useState('')
   
+  // Robust LocalStorage Loader
+  const loadFromStorage = (key, defaultValue) => {
+    try {
+      const saved = localStorage.getItem(key)
+      if (!saved || saved === 'undefined' || saved === 'null') return defaultValue
+      const parsed = JSON.parse(saved)
+      return (parsed !== null && typeof parsed !== 'undefined') ? parsed : defaultValue
+    } catch (e) {
+      console.error(`MI Core: Failed to load ${key}`, e)
+      return defaultValue
+    }
+  }
+
   // Global Portfolios (Clients) State
-  const [portfolios, setPortfolios] = useState(() => {
-    const saved = localStorage.getItem('mi_portfolios')
-    return saved ? JSON.parse(saved) : [
-      { 
-        id: 1, name: 'Maia Labs', 
-        stakeholders: [
-            { name: 'Rohan Sharma', email: 'finance@maia.com', role: 'Finance Head' },
-            { name: 'Aditi V.', email: 'aditi@maia.com', role: 'CEO' }
-        ]
-      }
-    ]
-  })
+  const [portfolios, setPortfolios] = useState(() => loadFromStorage('mi_portfolios', []))
 
   // Global Projects State
-  const [projects, setProjects] = useState(() => {
-    const saved = localStorage.getItem('mi_projects')
-    return saved ? JSON.parse(saved) : [
-      { 
-        id: 1, name: 'Maia HQ', portfolioId: 1, client: 'Maia Labs',
-        stakeholders: [
-            { name: 'Suresh PM', email: 'pm@maia.com', role: 'Project Manager' },
-            { name: 'Ar. Karan', email: 'karan@arch.com', role: 'Architect' },
-            { name: 'Vijay S.', email: 'vijay@site.com', role: 'Supervisor' }
-        ],
-        milestones: { measurementDate: '2026-02-15', siteReadiness: '2026-03-01', completion: null },
-        clientFinancials: {
-            totalValue: 2500000,
-            requests: [
-                { id: 1, amount: 750000, date: '2026-02-16', status: 'Requested', milestone: 'Advance' }
-            ],
-            received: [
-                { id: 1, amount: 750000, date: '2026-02-18', ref: 'BANK_001' }
-            ]
-        },
-        history: [{ id: 1, type: 'info', title: 'Project Initialized', detail: 'Project loop set for Maia HQ', timestamp: new Date().toISOString() }]
-      }
-    ]
-  })
+  const [projects, setProjects] = useState(() => loadFromStorage('mi_projects', []))
 
   // Global Vendor Repository
-  const [vendors, setVendors] = useState(() => {
-    const saved = localStorage.getItem('mi_vendors')
-    return saved ? JSON.parse(saved) : [
-      { 
-        id: 1, name: 'Glass Tech Solutions', category: 'Glass', contact: 'Anil Kumar', phone: '+91 98860 12345', gst: '29ABCDE1234F1Z5', 
-        status: 'Certified', isGstVerified: true, isCertVerified: true,
-        miScore: 92,
-        scores: { quality: 95, timeline: 90, financial: 88, behavior: 94 },
-        history: [
-            { id: 1, type: 'registration', title: 'Onboarded', detail: 'Added to Meaven database', date: '2026-01-10' }
-        ],
-        contracts: [
-            { 
-                id: 101, projectName: 'Maia HQ', orderValue: 1200000, 
-                payments: [{ id: 1, amount: 450000, date: '2026-03-01', status: 'Paid', ref: 'TXN_9821', screenshot: null }] 
-            }
-        ],
-        notes: 'High-quality glass finishing. Good for C-suite projects.'
-      },
-      { 
-        id: 2, name: 'Precision Alum', category: 'Aluminum', contact: 'Sarah J.', phone: '+91 99000 54321', gst: '29FGHIJ5678K2Z9', 
-        status: 'Vetting', isGstVerified: true, isCertVerified: false,
-        miScore: 78,
-        scores: { quality: 80, timeline: 75, financial: 70, behavior: 85 },
-        history: [
-            { id: 1, type: 'registration', title: `Onboarded by Ravi`, detail: 'New potential partner', date: '2026-02-15' }
-        ],
-        contracts: [],
-        notes: ''
-      }
-    ]
-  })
+  const [vendors, setVendors] = useState(() => loadFromStorage('mi_vendors', []))
 
-  const [activeProjectId, setActiveProjectId] = useState(1)
-  const [readinessData, setReadinessData] = useState(() => {
-    const saved = localStorage.getItem('mi_readiness')
-    return saved ? JSON.parse(saved) : {}
-  })
+  const [activeProjectId, setActiveProjectId] = useState(null)
+  const [readinessData, setReadinessData] = useState(() => loadFromStorage('mi_readiness', {}))
+
+  // Global Playbook Template (The Master Checklist)
+  const [globalPlaybookTemplate, setGlobalPlaybookTemplate] = useState(() => loadFromStorage('mi_global_playbook', [
+    { id: 1, category: 'Structural Readiness', label: 'Header/Beam Structural Readiness', status: 'pending', notes: '' },
+    { id: 2, category: 'Structural Readiness', label: 'Opening Dimensions Laser-Verified', status: 'pending', notes: '' },
+    { id: 3, category: 'Structural Readiness', label: 'Floor Level Tolerance (+/- 2mm)', status: 'pending', notes: '' },
+    { id: 4, category: 'Structural Readiness', label: 'Wall Plumbness Verified', status: 'pending', notes: '' },
+    { id: 5, category: 'Site & Access', label: 'Unloading Zone Clear & Accessible', status: 'pending', notes: '' },
+    { id: 6, category: 'Site & Access', label: 'Service Lift Dimensions Verified', status: 'pending', notes: '' },
+    { id: 7, category: 'Site & Access', label: 'Dust-Free Zone for Installation', status: 'pending', notes: '' },
+    { id: 8, category: 'Utilities & Support', label: 'Stable 3-Phase Power Available', status: 'pending', notes: '' },
+  ]))
+
+  // AI Governance: Playbook Proposals
+  const [playbookProposals, setPlaybookProposals] = useState(() => loadFromStorage('mi_playbook_proposals', []))
+
+
+  const handleProposePlaybookUpdate = (proposal) => {
+    const newProposal = { 
+        ...proposal, 
+        id: Date.now(), 
+        status: 'pending', 
+        proposer: user?.name,
+        timestamp: new Date().toISOString() 
+    }
+    setPlaybookProposals(prev => [...prev, newProposal])
+    alert("GOVERNANCE NOTIFICATION: Playbook Update Request sent to Super Admin for technical verification.")
+  }
+
+  const handleApprovePlaybookUpdate = (id) => {
+    const proposal = playbookProposals.find(p => p.id === id)
+    if (!proposal || proposal.status === 'approved') return
+
+    const now = new Date().toLocaleString()
+    setPlaybookProposals(prev => prev.map(p => p.id === id ? { ...p, status: 'approved', approvalTimestamp: now } : p))
+    
+    // INJECT INTO GLOBAL TEMPLATE (Check for duplicates)
+    setGlobalPlaybookTemplate(prev => {
+        if (prev.some(t => t.label === proposal.title)) return prev
+        const newItem = {
+            id: Date.now(),
+            category: proposal.category,
+            label: proposal.title,
+            status: 'pending',
+            notes: `AI-Enhanced Rule (Approved ${now})`
+        }
+        return [...prev, newItem]
+    })
+    
+    alert(`PLAYBOOK AUTHORED: "${proposal.title}" has been globally synchronized.`)
+  }
+
+  useEffect(() => {
+    localStorage.setItem('mi_playbook_proposals', JSON.stringify(playbookProposals))
+    localStorage.setItem('mi_global_playbook', JSON.stringify(globalPlaybookTemplate))
+  }, [playbookProposals, globalPlaybookTemplate])
+
 
   // Sync to LocalStorage (with safety)
   useEffect(() => {
@@ -248,6 +277,15 @@ function App() {
   }
 
   const handleCreateProject = (newProject) => {
+    if (newProject.isNewPortfolio) {
+        const newPortfolio = {
+            id: newProject.portfolioId,
+            name: newProject.client,
+            stakeholders: [] // Can be updated later in Admin or by AI
+        }
+        setPortfolios(prev => [...(prev || []), newPortfolio])
+    }
+
     const project = { 
         ...newProject, 
         id: Date.now(),
@@ -288,7 +326,12 @@ function App() {
     }
   }
 
+  const handleUpdateProject = (projectId, updates) => {
+    setProjects(prev => (prev || []).map(p => Number(p.id) === Number(projectId) ? { ...p, ...updates } : p))
+  }
+
   const handleUpdateReadiness = (projectId, data) => {
+    if (!projectId) return
     const prevData = readinessData[projectId]
     setReadinessData(prev => ({ ...prev, [projectId]: data }))
     if (JSON.stringify(prevData?.items) !== JSON.stringify(data.items)) {
@@ -299,6 +342,16 @@ function App() {
   const handleAddVendor = (newVendor) => {
     const vendor = { ...newVendor, id: Date.now() }
     setVendors([...vendors, vendor])
+  }
+
+  const handleLockLocation = (projectId, coords) => {
+    setProjects(prev => prev.map(p => p.id === projectId ? { 
+        ...p, 
+        coordinates: coords, 
+        locationLocked: true,
+        history: [{ id: Date.now(), type: 'success', title: 'Location Calibrated', detail: `Ground Truth hard-locked at ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`, timestamp: new Date().toISOString() }, ...p.history]
+    } : p))
+    alert("SITE BOUNDARY LOCKED: Ground Truth has been established. All future audits are now geofenced to this precise location.")
   }
 
   const handleUpdateVendor = (id, updates) => {
@@ -387,54 +440,37 @@ function App() {
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '0.5em', fontWeight: '500', textTransform: 'uppercase' }}>INTELLIGENCE HUB</p>
             </div>
 
-            <div className="card animate-slide-up" style={{ width: '100%', maxWidth: '520px', padding: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px' }}>
+            <div className="card animate-slide-up" style={{ width: '100%', maxWidth: '520px', padding: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-premium)' }}>
                 <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>Entry Authorization</h2>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', lineHeight: '1.6' }}>Choose the portfolio or project loop you wish to initialize.</p>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div style={{ textAlign: 'left' }}>
                         <label style={{ fontSize: '0.65rem', color: 'var(--accent-color)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Select Portfolio (By Client)</label>
                         <select 
                             value={selectedClient} 
-                            onChange={(e) => { setSelectedClient(e.target.value); setActiveProjectId(''); }}
-                            style={{ width: '100%', padding: '0.9rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '12px', color: '#fff', fontSize: '1rem' }}
+                            onChange={(e) => setSelectedClient(e.target.value)}
+                            style={{ width: '100%', padding: '1rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-premium)', color: '#fff', fontSize: '1.1rem' }}
                         >
                             <option value="">Choose Client Portfolio...</option>
-                            {uniqueClients.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                        <hr style={{ flex: 1, border: 'none', borderTop: '1px solid var(--border-color)' }} />
-                        OR
-                        <hr style={{ flex: 1, border: 'none', borderTop: '1px solid var(--border-color)' }} />
-                    </div>
-
-                    <div style={{ textAlign: 'left' }}>
-                        <label style={{ fontSize: '0.65rem', color: 'var(--accent-color)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Direct Project Entry</label>
-                        <select 
-                            value={activeProjectId} 
-                            onChange={(e) => { setActiveProjectId(Number(e.target.value)); setSelectedClient(''); }}
-                            style={{ width: '100%', padding: '0.9rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '12px', color: '#fff', fontSize: '1rem' }}
-                        >
-                            <option value="">Choose Specific Project...</option>
-                            {(projects || []).map(p => <option key={p.id} value={p.id}>{p.name} ({p.client})</option>)}
+                            {uniqueClients.length > 0 ? uniqueClients.map(c => <option key={c} value={c}>{c}</option>) : <option value="">No Active Portfolios Found</option>}
                         </select>
                     </div>
 
                     <button 
                         onClick={() => {
-                            if (selectedClient || activeProjectId) {
+                            if (selectedClient) {
                                 setIsProjectSelected(true)
-                                // If client selected, go to Dashboard (EH), else Site Readiness (Deep Dive)
-                                if (selectedClient) setActiveTab('dashboard')
-                                else setActiveTab('readiness')
+                                setActiveTab('dashboard')
+                            } else if (uniqueClients.length === 0) {
+                                // For clean start, allow entering "General Portfolio" or creating a project
+                                setIsNewProjectModalOpen(true)
                             }
                         }}
                         className="btn btn-primary" 
                         style={{ width: '100%', padding: '1.2rem', justifyContent: 'center', fontSize: '1.1rem', marginTop: '1rem' }}
                     >
-                        Initialize Experience Hub
+                        {uniqueClients.length > 0 ? 'Initialize Portfolio Intelligence' : 'Start First Project Loop'}
                     </button>
                 </div>
             </div>
@@ -443,10 +479,11 @@ function App() {
     )
   }
 
-  const activeProject = projects.find(p => p.id === activeProjectId) || projects[0] || { name: 'No Active Project', client: 'N/A' }
+  const activeProject = (projects || []).find(p => Number(p.id) === Number(activeProjectId)) || (projects && projects[0]) || { id: 0, name: 'Initializing...', client: 'Meaven Intelligence' }
 
   return (
-    <div className="dashboard-container">
+    <ErrorBoundary>
+      <div className="dashboard-container">
       <NewProjectModal isOpen={isNewProjectModalOpen} onClose={() => setIsNewProjectModalOpen(false)} onCreate={handleCreateProject} portfolios={portfolios} />
 
       <aside className="sidebar">
@@ -457,9 +494,9 @@ function App() {
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
           <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
-          {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => setActiveTab('projects')} icon="🏗️" label="Command Center" />}
+          {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => setActiveTab('projects')} icon="💰" label="Financial Hub" />}
           {!clientView && <SidebarItem active={activeTab === 'vendors'} onClick={() => setActiveTab('vendors')} icon="🤝" label="Vendor Bench" />}
-          {(activeProjectId || activeTab !== 'dashboard') && <SidebarItem active={activeTab === 'readiness'} onClick={() => setActiveTab('readiness')} icon="📏" label="Live Audit Hub" />}
+          {activeProjectId && <SidebarItem active={activeTab === 'readiness'} onClick={() => setActiveTab('readiness')} icon="📏" label="Live Audit Hub" />}
           <SidebarItem active={activeTab === 'calculator'} onClick={() => setActiveTab('calculator')} icon="🧮" label="Tech Calculator" />
           {user?.role === 'SuperAdmin' && !clientView && (
             <SidebarItem active={activeTab === 'admin'} onClick={() => setActiveTab('admin')} icon="⚙️" label="Governance Console" />
@@ -471,15 +508,22 @@ function App() {
           <div style={{ background: 'var(--bg-accent)', color: 'var(--accent-color)', borderRadius: '4px', padding: '0.5rem', marginTop: '0.5rem', fontSize: '0.85rem', fontWeight: '700' }}>
             {selectedClient ? selectedClient : (activeProject?.name || 'Loading...')}
           </div>
-          <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.65rem', marginTop: '0.5rem', cursor: 'pointer' }}>Change Client/Project ↩</button>
+          <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); setActiveTab('dashboard'); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.65rem', marginTop: '0.5rem', cursor: 'pointer' }}>Change Client/Project ↩</button>
         </div>
 
-        <div className="sidebar-footer">
-          <div className="client-toggle-card card" style={{ padding: '1rem' }}>
+        <div className="sidebar-footer" style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', marginTop: 'auto' }}>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>System Diagnostics</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.7rem', color: 'var(--accent-color)', fontFamily: 'monospace' }}>
+            <span>TAB: {activeTab.toUpperCase()}</span>
+            <span>ID: {activeProjectId || 'NONE'}</span>
+            <span>AUTH: {isProjectSelected ? 'SECURED' : 'PENDING'}</span>
+          </div>
+          
+          <div className="client-toggle-card card" style={{ padding: '0.75rem', marginTop: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="sidebar-text" style={{ fontSize: '0.85rem' }}>{clientView ? 'Secure Mode' : 'Internal Mode'}</span>
-              <button onClick={handleToggleClientView} style={{ width: '40px', height: '22px', backgroundColor: clientView ? 'var(--success)' : 'var(--bg-accent)', borderRadius: '11px', position: 'relative' }}>
-                <div style={{ width: '18px', height: '18px', backgroundColor: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: clientView ? '22px' : '2px', transition: 'var(--transition)' }} />
+              <span style={{ fontSize: '0.75rem' }}>{clientView ? 'Secure' : 'Internal'} Mode</span>
+              <button onClick={handleToggleClientView} style={{ width: '34px', height: '18px', backgroundColor: clientView ? 'var(--success)' : 'var(--bg-accent)', borderRadius: '9px', position: 'relative' }}>
+                <div style={{ width: '14px', height: '14px', backgroundColor: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: clientView ? '18px' : '2px', transition: 'var(--transition)' }} />
               </button>
             </div>
           </div>
@@ -491,13 +535,14 @@ function App() {
           <div>
             <h1 style={{ fontSize: '1.8rem' }}>
               {activeTab === 'dashboard' && (clientView ? 'Portfolio Intelligence' : 'Execution Health Overview')}
+              {activeTab === 'projects' && 'Financial Strategy Hub'}
               {activeTab === 'vendors' && 'Vendor Scoring Engine'}
               {activeTab === 'readiness' && 'Site-Readiness Verification'}
               {activeTab === 'calculator' && 'Technical Calculator'}
               {activeTab === 'admin' && 'System Governance & Access'}
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              {activeTab === 'admin' ? `Super Admin: ${user?.name || 'Authorized User'}` : (selectedClient ? `Client: ${selectedClient}` : `Project: ${activeProject?.name || 'Global View'}`)}
+              {activeTab === 'admin' ? `Super Admin: ${user?.name || 'Authorized User'}` : (selectedClient ? `Portfolio: ${selectedClient}` : `Project: ${activeProject?.name || 'Global View'}`)}
             </p>
           </div>
         </header>
@@ -507,40 +552,47 @@ function App() {
                 <ClientExperienceHub 
                     clientName={selectedClient} 
                     projects={projects} 
-                    onSelectProject={(id) => {
-                        setActiveProjectId(id);
+                    onBack={() => {
+                        setIsProjectSelected(false);
                         setSelectedClient('');
+                        setActiveTab('dashboard');
+                    }}
+                    onSelectProject={(id) => {
+                        setActiveProjectId(Number(id));
+                        setIsProjectSelected(true);
                         setActiveTab('readiness');
                     }} 
                 />
             ) : (
-                <div className="grid-layout animate-fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
-                    <div className="card"><h3>Active Projects</h3><p style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--accent-color)' }}>{projects.length}</p></div>
-                    <div className="card"><h3>Project Timeline</h3><div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                        {activeProject && activeProject.history ? (
-                            activeProject.history.slice().reverse().map(event => (
-                                <div key={event.id} style={{ marginBottom: '1rem' }}>
-                                    <p style={{ margin: 0, fontWeight: '600', fontSize: '0.85rem' }}>{event.title}</p>
-                                    <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{event.detail}</p>
-                                </div>
-                            ))
-                        ) : (
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Select a project in the Command Center to view detailed activity logs.</p>
-                        )}
-                    </div></div>
-                </div>
+                <CommandCenter 
+                  projects={projects}
+                  proposals={playbookProposals}
+                  vendors={vendors}
+                  onSelectProject={(id) => {
+                    setActiveProjectId(Number(id))
+                    setIsProjectSelected(true)
+                    setActiveTab('readiness')
+                  }}
+                  onSelectTab={setActiveTab}
+                />
             )
         )}
 
         {activeTab === 'readiness' && (
           <SiteReadiness 
             project={activeProject} 
-            projects={projects}
-            portfolios={portfolios}
+            projects={projects || []}
+            portfolios={portfolios || []}
+            template={globalPlaybookTemplate || []}
             onCreateProject={handleCreateProject} 
-            data={readinessData[activeProjectId]} 
+            data={readinessData ? readinessData[activeProjectId] : null} 
             onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
             onUpdateMilestones={handleUpdateProjectMilestones} 
+            onProposePlaybookUpdate={handleProposePlaybookUpdate}
+            onBack={() => setActiveTab('dashboard')}
+            onLockLocation={handleLockLocation}
+            onUpdateProject={handleUpdateProject}
+            userRole={user?.role}
             isReadOnly={clientView} 
           />
         )}
@@ -556,6 +608,7 @@ function App() {
             onAddNote={handleAddVendorNote} 
             onAddContract={handleAddVendorContract} 
             onAddProject={handleCreateProject} 
+            onBack={() => setActiveTab('dashboard')}
             isReadOnly={clientView} 
           />
         )}
@@ -565,7 +618,7 @@ function App() {
             projects={projects} 
             vendors={vendors} 
             portfolios={portfolios}
-            onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }} 
+            onSelectProject={(id) => { setActiveProjectId(Number(id)); setActiveTab('readiness'); }} 
             onAddExpense={handleAddProjectExpense} 
             onUpdateValue={handleUpdateProjectValue} 
             onLogPayment={handleLogClientPayment} 
@@ -579,12 +632,21 @@ function App() {
         )}
 
         {activeTab === 'admin' && (
-          <AdminPanel users={users || []} onAddUser={addUser} onRemoveUser={removeUser} onResetUser={resetUser} />
+          <AdminPanel 
+            users={users || []} 
+            proposals={playbookProposals || []}
+            onApproveProposal={handleApprovePlaybookUpdate}
+            onAddUser={addUser} 
+            onRemoveUser={removeUser} 
+            onResetUser={resetUser} 
+            onBack={() => setActiveTab('dashboard')}
+          />
         )}
       </main>
 
       {showPinModal && <PinModal onVerify={handlePinVerify} onCancel={() => setShowPinModal(false)} />}
     </div>
+    </ErrorBoundary>
   )
 }
 
