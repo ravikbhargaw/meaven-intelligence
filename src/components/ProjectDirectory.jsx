@@ -280,7 +280,6 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                 </div>
             </div>
         ) : (
-        ) : (
             <div className="animate-fade-in">
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                     <div className="card" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)', gridColumn: 'span 3' }}>

@@ -12,6 +12,7 @@ import TechnicalCalculator from './components/TechnicalCalculator'
 import AdminPanel from './components/AdminPanel'
 import CommandCenter from './components/CommandCenter'
 import NewPortfolioModal from './components/NewPortfolioModal'
+import ExecutiveSummary from './components/ExecutiveSummary'
 import { supabase } from './supabaseClient'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
@@ -55,6 +56,20 @@ function App() {
   const [readinessData, setReadinessData] = useState({})
   const [playbookProposals, setPlaybookProposals] = useState([])
   const [isSyncing, setIsSyncing] = useState(true)
+  const [navHistory, setNavHistory] = useState([])
+
+  const handleNavigate = (newTab) => {
+    if (newTab === activeTab) return
+    setNavHistory(prev => [...prev, activeTab])
+    setActiveTab(newTab)
+  }
+
+  const handleBack = () => {
+    if (navHistory.length === 0) return
+    const prevTab = navHistory[navHistory.length - 1]
+    setNavHistory(prev => prev.slice(0, -1))
+    setActiveTab(prevTab)
+  }
 
   // --- CLOUD SYNC ENGINE ---
   useEffect(() => {
@@ -297,12 +312,17 @@ function App() {
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.4em', fontWeight: '500', textTransform: 'uppercase', margin: 0 }}>INTELLIGENCE</p>
               </div>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
-                {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => setActiveTab('projects')} icon="📁" label="Project Central" />}
-                {!clientView && <SidebarItem active={activeTab === 'vendors'} onClick={() => setActiveTab('vendors')} icon="🤝" label="Vendor Bench" />}
-                {!clientView && <SidebarItem active={activeTab === 'readiness'} onClick={() => setActiveTab('readiness')} icon="📏" label="Live Audit Hub" />}
-                <SidebarItem active={activeTab === 'calculator'} onClick={() => setActiveTab('calculator')} icon="🧮" label="Tech Calculator" />
-                {user?.role === 'SuperAdmin' && !clientView && ( <SidebarItem active={activeTab === 'admin'} onClick={() => setActiveTab('admin')} icon="⚙️" label="Governance Console" /> )}
+                <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleNavigate('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
+                {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Project Central" />}
+                {!clientView && <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />}
+                {!clientView && <SidebarItem active={activeTab === 'readiness'} onClick={() => handleNavigate('readiness')} icon="📏" label="Live Audit Hub" />}
+                <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />
+                {user?.role === 'SuperAdmin' && !clientView && (
+                  <>
+                    <SidebarItem active={activeTab === 'strategy'} onClick={() => handleNavigate('strategy')} icon="🧠" label="Executive Strategy" />
+                    <SidebarItem active={activeTab === 'admin'} onClick={() => handleNavigate('admin')} icon="⚙️" label="Governance Console" />
+                  </>
+                )}
               </nav>
               <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
@@ -338,6 +358,15 @@ function App() {
             <main className="main-content">
               <header className="main-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                  {navHistory.length > 0 && (
+                    <button 
+                      onClick={handleBack}
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--accent-color)', padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800' }}
+                    >
+                      ← BACK
+                    </button>
+                  )}
                   <h1 style={{ margin: 0, fontSize: '1.4rem' }}>
                     {activeTab === 'dashboard' 
                         ? (clientView ? `Portfolio Experience: ${selectedClient || activeProject?.client || 'Meaven Intelligence'}` : 'Tactical Command Center') 
@@ -345,8 +374,10 @@ function App() {
                         : activeTab === 'vendors' ? 'Partner Ecosystem' 
                         : activeTab === 'readiness' ? 'Site Audit Intelligence' 
                         : activeTab === 'calculator' ? 'Technical Calculation Loop' 
+                        : activeTab === 'strategy' ? 'Strategic Executive Hub'
                         : 'Governance Console'}
                   </h1>
+                </div>
                   <div style={{ padding: '0.4rem 1rem', background: clientView ? 'rgba(52,  green, 0.1)' : 'rgba(102, 178, 194, 0.1)', border: `1px solid ${clientView ? '#34c759' : 'var(--accent-color)'}`, borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ width: '6px', height: '6px', background: clientView ? '#34c759' : 'var(--accent-color)', borderRadius: '50%' }} />
                     <span style={{ fontSize: '0.65rem', fontWeight: '800', color: clientView ? '#34c759' : 'var(--accent-color)' }}>{clientView ? 'SECURE PORTFOLIO' : 'INTERNAL TACTICAL'}</span>
@@ -414,6 +445,7 @@ function App() {
                 />
               )}
               {activeTab === 'calculator' && ( <TechnicalCalculator /> )}
+              {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
               {activeTab === 'admin' && ( <AdminPanel users={users || []} proposals={playbookProposals || []} onApproveProposal={handleApprovePlaybookUpdate} onAddUser={addUser} onRemoveUser={removeUser} onResetUser={resetUser} onBack={() => setActiveTab('dashboard')} /> )}
             </main>
           </div>
