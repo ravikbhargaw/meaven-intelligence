@@ -12,6 +12,7 @@ import TechnicalCalculator from './components/TechnicalCalculator'
 import AdminPanel from './components/AdminPanel'
 import CommandCenter from './components/CommandCenter'
 import NewPortfolioModal from './components/NewPortfolioModal'
+import { supabase } from './supabaseClient'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
 class ErrorBoundary extends React.Component {
@@ -47,18 +48,100 @@ function App() {
   const [isNewPortfolioModalOpen, setIsNewPortfolioModalOpen] = useState(false)
   const [isProjectSelected, setIsProjectSelected] = useState(false)
   const [selectedClient, setSelectedClient] = useState('')
-  const [projects, setProjects] = useState(() => JSON.parse(localStorage.getItem('projects')) || [])
-  const [vendors, setVendors] = useState(() => JSON.parse(localStorage.getItem('vendors')) || [])
-  const [portfolios, setPortfolios] = useState(() => JSON.parse(localStorage.getItem('portfolios')) || [])
+  const [projects, setProjects] = useState([])
+  const [vendors, setVendors] = useState([])
+  const [portfolios, setPortfolios] = useState([])
   const [activeProjectId, setActiveProjectId] = useState(null)
-  const [readinessData, setReadinessData] = useState(() => JSON.parse(localStorage.getItem('readinessData')) || {})
-  const [playbookProposals, setPlaybookProposals] = useState(() => JSON.parse(localStorage.getItem('playbookProposals')) || [])
+  const [readinessData, setReadinessData] = useState({})
+  const [playbookProposals, setPlaybookProposals] = useState([])
+  const [isSyncing, setIsSyncing] = useState(true)
 
-  useEffect(() => { localStorage.setItem('projects', JSON.stringify(projects)) }, [projects])
-  useEffect(() => { localStorage.setItem('vendors', JSON.stringify(vendors)) }, [vendors])
-  useEffect(() => { localStorage.setItem('portfolios', JSON.stringify(portfolios)) }, [portfolios])
+  // --- CLOUD SYNC ENGINE ---
+  useEffect(() => {
+    async function loadTacticalData() {
+        if (!user) return
+        setIsSyncing(true)
+
+        try {
+            const { data: cloudProjects } = await supabase.from('projects').select('*')
+            const { data: cloudVendors } = await supabase.from('vendors').select('*')
+            const { data: cloudPortfolios } = await supabase.from('portfolios').select('*')
+            const { data: cloudReadiness } = await supabase.from('readiness_data').select('*')
+
+            // Migration Check: If cloud is empty, push local data
+            if (!cloudProjects || cloudProjects.length === 0) {
+                const localProjects = JSON.parse(localStorage.getItem('projects')) || []
+                if (localProjects.length > 0) {
+                    await Promise.all(localProjects.map(p => supabase.from('projects').upsert({ id: String(p.id), name: p.name, data: p })))
+                    setProjects(localProjects)
+                }
+            } else {
+                setProjects(cloudProjects.map(p => p.data))
+            }
+
+            if (!cloudVendors || cloudVendors.length === 0) {
+                const localVendors = JSON.parse(localStorage.getItem('vendors')) || []
+                if (localVendors.length > 0) {
+                    await Promise.all(localVendors.map(v => supabase.from('vendors').upsert({ id: String(v.id), name: v.name, data: v })))
+                    setVendors(localVendors)
+                }
+            } else {
+                setVendors(cloudVendors.map(v => v.data))
+            }
+
+            if (!cloudPortfolios || cloudPortfolios.length === 0) {
+                const localPortfolios = JSON.parse(localStorage.getItem('portfolios')) || []
+                if (localPortfolios.length > 0) {
+                    await Promise.all(localPortfolios.map(p => supabase.from('portfolios').upsert({ id: String(p.id), name: p.name, data: p })))
+                    setPortfolios(localPortfolios)
+                }
+            } else {
+                setPortfolios(cloudPortfolios.map(p => p.data))
+            }
+
+            if (cloudReadiness && cloudReadiness.length > 0) {
+                const rData = {}
+                cloudReadiness.forEach(r => rData[r.id] = r.data)
+                setReadinessData(rData)
+            } else {
+                setReadinessData(JSON.parse(localStorage.getItem('readinessData')) || {})
+            }
+
+            setPlaybookProposals(JSON.parse(localStorage.getItem('playbookProposals')) || [])
+        } catch (error) {
+            console.error("Cloud Tactical Sync Failed:", error)
+        } finally {
+            setIsSyncing(false)
+        }
+    }
+    loadTacticalData()
+  }, [user])
+
+  // --- AUTO-PERSISTENCE (LOCAL + CLOUD) ---
+  useEffect(() => { 
+    localStorage.setItem('projects', JSON.stringify(projects))
+    if (!isSyncing && projects.length > 0) {
+        projects.forEach(p => supabase.from('projects').upsert({ id: String(p.id), name: p.name, data: p }).then(() => {}))
+    }
+  }, [projects, isSyncing])
+
+  useEffect(() => { 
+    localStorage.setItem('vendors', JSON.stringify(vendors)) 
+    if (!isSyncing && vendors.length > 0) {
+        vendors.forEach(v => supabase.from('vendors').upsert({ id: String(v.id), name: v.name, data: v }).then(() => {}))
+    }
+  }, [vendors, isSyncing])
+
+  useEffect(() => { 
+    localStorage.setItem('portfolios', JSON.stringify(portfolios)) 
+    if (!isSyncing && portfolios.length > 0) {
+        portfolios.forEach(p => supabase.from('portfolios').upsert({ id: String(p.id), name: p.name, data: p }).then(() => {}))
+    }
+  }, [portfolios, isSyncing])
+
   useEffect(() => { localStorage.setItem('readinessData', JSON.stringify(readinessData)) }, [readinessData])
   useEffect(() => { localStorage.setItem('playbookProposals', JSON.stringify(playbookProposals)) }, [playbookProposals])
+
   useEffect(() => {
     if (user && projects.length > 0) {
       const loginKey = `login_logged_${user.email}_${new Date().toDateString()}`
@@ -79,7 +162,7 @@ function App() {
         sessionStorage.setItem(loginKey, 'true')
       }
     }
-  }, [user])
+  }, [user, isSyncing])
 
   if (!user) return <Login onLogin={login} onVerifyMasterKey={verifyMasterKey} />
   if (isFirstLogin) return <SecuritySetup onComplete={updateSecurity} />
