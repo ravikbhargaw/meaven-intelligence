@@ -102,6 +102,35 @@ function App() {
     setPortfolios(prev => [...(prev || []), newPortfolio]); setSelectedClient(newPortfolio.name); setIsProjectSelected(true); setActiveTab('dashboard');
   }
 
+  const handleLogPayment = (projectId, amount, ref, date, photo) => {
+    setProjects(prev => prev.map(p => {
+        if (Number(p.id) === Number(projectId)) {
+            const financials = p.clientFinancials || { totalValue: 0, requests: [], received: [] }
+            const newPayment = { id: Date.now(), amount: parseInt(amount), ref, date, photo }
+            return { 
+                ...p, 
+                clientFinancials: { ...financials, received: [...(financials.received || []), newPayment] },
+                history: [...(p.history || []), { id: Date.now() + 1, type: 'success', title: 'Payment Received', detail: `₹${parseInt(amount).toLocaleString()} credited. Ref: ${ref}`, timestamp: new Date().toISOString() }]
+            }
+        }
+        return p
+    }))
+  }
+
+  const handleLogPayout = (projectId, amount, ref, date, photo, vendorId) => {
+    setProjects(prev => prev.map(p => {
+        if (Number(p.id) === Number(projectId)) {
+            const newPayout = { id: Date.now(), amount: parseInt(amount), ref, date, photo, vendorId }
+            return { 
+                ...p, 
+                payouts: [...(p.payouts || []), newPayout],
+                history: [...(p.history || []), { id: Date.now() + 1, type: 'warning', title: 'Vendor Payout', detail: `₹${parseInt(amount).toLocaleString()} debited. Ref: ${ref}`, timestamp: new Date().toISOString() }]
+            }
+        }
+        return p
+    }))
+  }
+
   const handleUpdateProjectMilestones = (projectId, milestones) => {
     setProjects(prev => prev.map(p => p.id === projectId ? { ...p, milestones: { ...p.milestones, ...milestones } } : p))
   }
@@ -268,10 +297,13 @@ function App() {
               {activeTab === 'projects' && (
                 <ProjectDirectory 
                   projects={projects} 
+                  vendors={vendors}
                   onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }} 
                   activeProjectId={activeProjectId} 
                   onUpdateMilestones={handleUpdateProjectMilestones}
                   onUpdateProject={handleUpdateProject}
+                  onLogPayment={handleLogPayment}
+                  onLogPayout={handleLogPayout}
                 />
               )}
 

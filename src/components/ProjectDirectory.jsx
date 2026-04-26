@@ -7,12 +7,13 @@ const ModalOverlay = ({ children }) => (
     </div>
 )
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onAssignPartner, onReassignPartner }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAssignPartner, onReassignPartner }) => {
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSubTab, setActiveSubTab] = useState('overview') 
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false)
   const [isEditingValue, setIsEditingValue] = useState(false)
@@ -278,86 +279,81 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                 </div>
             </div>
         ) : (
+        ) : (
             <div className="animate-fade-in">
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        <div className="card" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)' }}>
-                            <h3 style={{ marginBottom: '2rem' }}>Profit & Loss Ledger</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>1. Total Revenue (Top Line)</span>
-                                    <span style={{ fontSize: '1.2rem', fontWeight: '700' }}>₹{(pl.revenue / 100000).toFixed(2)}L</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255, 69, 58, 0.05)', borderRadius: '8px' }}>
-                                    <span style={{ fontSize: '1rem', color: 'var(--danger)' }}>2. Total COGS (Vendor Costs)</span>
-                                    <span style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--danger)' }}>(₹{(pl.cogs / 100000).toFixed(2)}L)</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>3. Direct Site Expenses</span>
-                                    <span style={{ fontSize: '1.2rem', fontWeight: '700' }}>(₹{(pl.expenses / 100000).toFixed(2)}L)</span>
-                                </div>
-                                <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '1rem 0' }} />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', background: 'rgba(50, 215, 75, 0.05)', borderRadius: '12px' }}>
-                                    <div>
-                                        <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--success)' }}>PROJECT EBITDA (Gross Profit)</p>
-                                        <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Ready for Investor Audit</p>
-                                    </div>
-                                    <span style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--success)' }}>₹{(pl.profit / 100000).toFixed(2)}L</span>
-                                </div>
-                            </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div className="card" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)', gridColumn: 'span 3' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>Project Financial Ledger (P&L)</h3>
+                            <div style={{ padding: '0.4rem 1rem', background: 'rgba(50, 215, 75, 0.1)', borderRadius: '20px', color: 'var(--success)', fontSize: '0.7rem', fontWeight: '800' }}>AUDIT READY</div>
                         </div>
-
-                        <div className="card">
-                            <h4 style={{ marginBottom: '1.5rem' }}>Direct Cost Audit (Vendors)</h4>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                        <th style={{ padding: '0.8rem', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Partner Name</th>
-                                        <th style={{ padding: '0.8rem', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Service</th>
-                                        <th style={{ padding: '0.8rem', fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'right' }}>Contract Value</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {(vendors || []).map(v => {
-                                        const contract = (v.contracts || []).find(c => c.projectName === selectedProject.name && c.status === 'Active')
-                                        if (!contract) return null
-                                        return (
-                                            <tr key={v.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                                <td style={{ padding: '0.8rem', fontSize: '0.9rem' }}>{v.name}</td>
-                                                <td style={{ padding: '0.8rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{v.category}</td>
-                                                <td style={{ padding: '0.8rem', fontSize: '0.9rem', fontWeight: '700', textAlign: 'right' }}>₹{(contract.orderValue / 100000).toFixed(2)}L</td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                            <div style={{ borderLeft: '3px solid var(--accent-color)', paddingLeft: '1rem' }}>
+                                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Revenue</p>
+                                <p style={{ margin: '0.3rem 0 0 0', fontSize: '1.4rem', fontWeight: '800' }}>₹{(pl.revenue / 100000).toFixed(2)}L</p>
+                            </div>
+                            <div style={{ borderLeft: '3px solid var(--danger)', paddingLeft: '1rem' }}>
+                                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total COGS</p>
+                                <p style={{ margin: '0.3rem 0 0 0', fontSize: '1.4rem', fontWeight: '800', color: 'var(--danger)' }}>₹{(pl.cogs / 100000).toFixed(2)}L</p>
+                            </div>
+                            <div style={{ borderLeft: '3px solid var(--text-secondary)', paddingLeft: '1rem' }}>
+                                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Site Expenses</p>
+                                <p style={{ margin: '0.3rem 0 0 0', fontSize: '1.4rem', fontWeight: '800' }}>₹{(pl.expenses / 100000).toFixed(2)}L</p>
+                            </div>
+                            <div style={{ borderLeft: '3px solid var(--success)', paddingLeft: '1rem' }}>
+                                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Project EBITDA</p>
+                                <p style={{ margin: '0.3rem 0 0 0', fontSize: '1.4rem', fontWeight: '800', color: 'var(--success)' }}>₹{(pl.profit / 100000).toFixed(2)}L</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        <div className="card">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h4 style={{ margin: 0 }}>Operational Overhead</h4>
-                                <button onClick={() => setIsExpenseModalOpen(true)} style={{ fontSize: '0.7rem', color: 'var(--accent-color)', fontWeight: '600' }}>+ Log Expense</button>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {(selectedProject.expenses || []).map(e => (
-                                    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
-                                        <div>
-                                            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600' }}>{e.description}</p>
-                                            <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{e.date}</p>
-                                        </div>
-                                        <span style={{ fontWeight: '700', fontSize: '0.9rem' }}>₹{parseInt(e.amount).toLocaleString()}</span>
-                                    </div>
-                                ))}
-                            </div>
+                    {/* Section 1: Client Payment Tracking */}
+                    <div className="card" style={{ gridColumn: 'span 1.5' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h4 style={{ margin: 0, color: 'var(--success)' }}>📥 Client Revenue Track</h4>
+                            <button onClick={() => setIsPaymentModalOpen(true)} style={{ background: 'var(--success)', color: '#000', border: 'none', borderRadius: '4px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}>+ Log Receipt</button>
                         </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                            {(selectedProject.clientFinancials?.received || []).map(p => (
+                                <div key={p.id} style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                                        <span style={{ fontWeight: '800', color: 'var(--success)' }}>+ ₹{p.amount.toLocaleString()}</span>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.date}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Ref: {p.ref}</span>
+                                        {p.photo && <span style={{ fontSize: '0.65rem', color: 'var(--accent-color)', cursor: 'pointer' }}>📸 View Receipt</span>}
+                                    </div>
+                                </div>
+                            ))}
+                            {(selectedProject.clientFinancials?.received || []).length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>No payments recorded yet.</p>}
+                        </div>
+                    </div>
 
-                        <div className="card" style={{ background: 'var(--bg-accent)' }}>
-                            <h4 style={{ marginBottom: '1.5rem' }}>🏗️ Site Readiness State</h4>
-                            <button onClick={() => onSelectProject(selectedProject.id)} className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }}>
-                                Jump to Live Audit Hub
-                            </button>
+                    {/* Section 2: Vendor Payout Tracking */}
+                    <div className="card" style={{ gridColumn: 'span 1.5' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h4 style={{ margin: 0, color: 'var(--danger)' }}>📤 Vendor Payout Track</h4>
+                            <button onClick={() => setIsPayoutModalOpen(true)} style={{ background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: '4px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}>+ Log Payout</button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                            {(selectedProject.payouts || []).map(p => {
+                                const vendor = vendors.find(v => v.id === p.vendorId)
+                                return (
+                                    <div key={p.id} style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                                            <span style={{ fontWeight: '800', color: 'var(--danger)' }}>- ₹{p.amount.toLocaleString()}</span>
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.date}</span>
+                                        </div>
+                                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.8rem', fontWeight: '600' }}>To: {vendor?.name || 'Unassigned Vendor'}</p>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Ref: {p.ref}</span>
+                                            {p.photo && <span style={{ fontSize: '0.65rem', color: 'var(--accent-color)', cursor: 'pointer' }}>📸 View Evidence</span>}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                            {(selectedProject.payouts || []).length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem' }}>No payouts recorded yet.</p>}
                         </div>
                     </div>
                 </div>
@@ -462,23 +458,110 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
 
         {isPaymentModalOpen && (
             <ModalOverlay>
-                <div className="card animate-fade-in" style={{ width: '400px', padding: '2.5rem' }}>
-                    <h3 style={{ marginBottom: '1.5rem' }}>Log Client Payment</h3>
+                <div className="card animate-fade-in" style={{ width: '450px', padding: '2.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.5rem' }}>
+                        <span style={{ fontSize: '1.5rem' }}>📥</span>
+                        <h3 style={{ margin: 0 }}>Log Client Receipt</h3>
+                    </div>
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'))
-                        setIsPaymentModalOpen(false)
+                        const photoInput = e.currentTarget.querySelector('input[type="file"]')
+                        const photoFile = photoInput.files[0]
+                        
+                        if (photoFile) {
+                            const reader = new FileReader()
+                            reader.onloadend = () => {
+                                onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), reader.result)
+                                setIsPaymentModalOpen(false)
+                            }
+                            reader.readAsDataURL(photoFile)
+                        } else {
+                            onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), null)
+                            setIsPaymentModalOpen(false)
+                        }
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Amount (INR) *</label>
+                                <input name="amount" type="number" required placeholder="Ex: 500000" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Date *</label>
+                                <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Transaction Ref / ID *</label>
+                            <input name="ref" required placeholder="UTR / NEFT / Bank ID" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Evidence / Screenshot (Optional)</label>
+                            <input type="file" accept="image/*" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0.8rem', fontSize: '0.75rem' }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', background: 'var(--success)', color: '#000' }}>Confirm Receipt</button>
+                        </div>
+                    </form>
+                </div>
+            </ModalOverlay>
+        )}
+
+        {isPayoutModalOpen && (
+            <ModalOverlay>
+                <div className="card animate-fade-in" style={{ width: '450px', padding: '2.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.5rem' }}>
+                        <span style={{ fontSize: '1.5rem' }}>📤</span>
+                        <h3 style={{ margin: 0 }}>Log Vendor Payout</h3>
+                    </div>
+                    <form onSubmit={(e) => {
+                        e.preventDefault()
+                        const formData = new FormData(e.currentTarget)
+                        const photoInput = e.currentTarget.querySelector('input[type="file"]')
+                        const photoFile = photoInput.files[0]
+                        
+                        const submit = (photo) => {
+                            onLogPayout(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), photo, formData.get('vendorId'))
+                            setIsPayoutModalOpen(false)
+                        }
+
+                        if (photoFile) {
+                            const reader = new FileReader()
+                            reader.onloadend = () => submit(reader.result)
+                            reader.readAsDataURL(photoFile)
+                        } else {
+                            submit(null)
+                        }
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Date of Receipt</label>
-                            <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Select Vendor *</label>
+                            <select name="vendorId" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}>
+                                <option value="">Choose partner...</option>
+                                {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                            </select>
                         </div>
-                        <input name="amount" type="number" required placeholder="Amount Received (INR)" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
-                        <input name="ref" required placeholder="Payment Ref (e.g. UTR / Bank ID)" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
-                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                            <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
-                            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Log Receipt</button>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Amount (INR) *</label>
+                                <input name="amount" type="number" required placeholder="Ex: 200000" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Date *</label>
+                                <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Transaction Ref / ID *</label>
+                            <input name="ref" required placeholder="Payment ID / Chq No / UTR" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Evidence / Screenshot (Optional)</label>
+                            <input type="file" accept="image/*" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0.8rem', fontSize: '0.75rem' }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            <button type="button" onClick={() => setIsPayoutModalOpen(false)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', background: 'var(--danger)', color: '#fff' }}>Confirm Payout</button>
                         </div>
                     </form>
                 </div>
