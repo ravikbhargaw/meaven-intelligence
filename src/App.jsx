@@ -304,6 +304,7 @@ function App() {
                   onUpdateProject={handleUpdateProject}
                   onLogPayment={handleLogPayment}
                   onLogPayout={handleLogPayout}
+                  onAddVendor={handleAddVendor}
                 />
               )}
 

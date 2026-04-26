@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly }) => {
+const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isContractModalOpen, setIsContractModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
@@ -523,7 +523,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAdd, onUpdate, on
             <form onSubmit={(e) => {
                 e.preventDefault()
                 const formData = new FormData(e.target)
-                onAdd({
+                onAddVendor({
                     name: formData.get('name'),
                     category: formData.get('category'),
                     contact: formData.get('contact'),

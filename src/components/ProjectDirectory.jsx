@@ -7,7 +7,7 @@ const ModalOverlay = ({ children }) => (
     </div>
 )
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAssignPartner, onReassignPartner }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner }) => {
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSubTab, setActiveSubTab] = useState('overview') 
@@ -17,6 +17,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false)
   const [isEditingValue, setIsEditingValue] = useState(false)
+  const [isRegisteringNew, setIsRegisteringNew] = useState(false)
   
   // Form States for robustness
   const [selectedVendorId, setSelectedVendorId] = useState('')
@@ -364,35 +365,75 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
         {isAssignModalOpen && (
             <ModalOverlay>
                 <div className="card animate-fade-in" style={{ width: '450px', padding: '2.5rem' }}>
-                    <h3 style={{ marginBottom: '1rem' }}>Assign Execution Partner</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '2rem' }}>Select the primary partner for {selectedProject.name}.</p>
-                    <form onSubmit={submitAssignment} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h3 style={{ margin: 0 }}>Assign Partner</h3>
+                        <button 
+                            onClick={() => setIsRegisteringNew(!isRegisteringNew)}
+                            style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}
+                        >
+                            {isRegisteringNew ? '← Select Bench' : '+ New Partner'}
+                        </button>
+                    </div>
+                    <form onSubmit={(e) => {
+                        e.preventDefault()
+                        const formData = new FormData(e.currentTarget)
+                        if (isRegisteringNew) {
+                            const newId = Date.now()
+                            onAddVendor({
+                                id: newId,
+                                name: formData.get('newName'),
+                                category: formData.get('newCategory'),
+                                contact: formData.get('newContact'),
+                                phone: formData.get('newPhone'),
+                                status: 'Vetting',
+                                metrics: { price: 50, speed: 50, precision: 50, communication: 50 },
+                                contracts: []
+                            })
+                            onAssignPartner(selectedProject.id, newId, formData.get('orderValue'))
+                        } else {
+                            onAssignPartner(selectedProject.id, selectedVendorId, formData.get('orderValue'))
+                        }
+                        setIsAssignModalOpen(false)
+                        setIsRegisteringNew(false)
+                        setSelectedVendorId('')
+                        setAssignOrderValue('')
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                        {!isRegisteringNew ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Certified Bench</label>
+                                <select 
+                                    value={selectedVendorId} 
+                                    onChange={(e) => setSelectedVendorId(e.target.value)} 
+                                    required 
+                                    style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}
+                                >
+                                    <option value="">Choose partner...</option>
+                                    {vendors.map(v => <option key={v.id} value={v.id.toString()}>{v.name} ({v.category})</option>)}
+                                </select>
+                            </div>
+                        ) : (
+                            <>
+                                <input name="newName" required placeholder="Company Name" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <select name="newCategory" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}>
+                                        <option value="Civil">Civil</option>
+                                        <option value="Carpentry">Carpentry</option>
+                                        <option value="Electrical">Electrical</option>
+                                        <option value="Plumbing">Plumbing</option>
+                                        <option value="Glass">Glass</option>
+                                    </select>
+                                    <input name="newPhone" required placeholder="Phone" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                </div>
+                                <input name="newContact" required placeholder="Contact Person" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            </>
+                        )}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Select Vendor</label>
-                            <select 
-                                value={selectedVendorId} 
-                                onChange={(e) => setSelectedVendorId(e.target.value)} 
-                                required 
-                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}
-                            >
-                                <option value="">Choose a certified partner...</option>
-                                {vendors.map(v => <option key={v.id} value={v.id.toString()}>{v.name} ({v.miScore || 0}%)</option>)}
-                            </select>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Vendor Contract Value (INR)</label>
-                            <input 
-                                value={assignOrderValue} 
-                                onChange={(e) => setAssignOrderValue(e.target.value)} 
-                                type="number" 
-                                required 
-                                placeholder="Ex: 1200000" 
-                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} 
-                            />
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Contract Value (INR)</label>
+                            <input name="orderValue" type="number" required placeholder="Ex: 1500000" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                            <button type="button" onClick={() => { setIsAssignModalOpen(false); setSelectedVendorId(''); setAssignOrderValue(''); }} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
-                            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Confirm Assignment</button>
+                            <button type="button" onClick={() => { setIsAssignModalOpen(false); setIsRegisteringNew(false); }} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>{isRegisteringNew ? 'Register & Assign' : 'Confirm Assignment'}</button>
                         </div>
                     </form>
                 </div>
