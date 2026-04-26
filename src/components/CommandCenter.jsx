@@ -103,12 +103,12 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
     return (
         <div className="command-center animate-fade-in" style={{ padding: '1rem 0' }}>
             {/* 1. TOP TIER: STRATEGIC INTELLIGENCE & MAP */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
                 {/* DYNAMIC MAP - LIGHT MODE GIS INTERFACE */}
-                <div className="card" style={{ background: '#fff', border: '1px solid #dadce0', padding: '2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ margin: 0, fontSize: '1.2rem', letterSpacing: '0.1em', color: '#3c4043' }}>🌍 GLOBAL PROJECT PRECISION MAP</h3>
-                        <div style={{ display: 'flex', gap: '1rem', fontSize: '0.7rem' }}>
+                <div className="card" style={{ background: '#fff', border: '1px solid #dadce0', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                        <h3 style={{ margin: 0, fontSize: '1rem', letterSpacing: '0.1em', color: '#3c4043' }}>🌍 PROJECT MAP</h3>
+                        <div style={{ display: 'flex', gap: '0.8rem', fontSize: '0.6rem' }}>
                             <span style={{ color: '#34a853', fontWeight: '800' }}>● ACTIVE</span>
                             <span style={{ color: '#ea4335', fontWeight: '800' }}>● ON HOLD</span>
                         </div>
@@ -117,78 +117,47 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                 </div>
 
                 {/* MEAVEN AI BRAIN - ADVANCED INTELLIGENCE LAYER */}
-                <div className="card" style={{ border: '1px solid var(--accent-color)', background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.08) 0%, transparent 100%)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+                <div className="card" style={{ border: '1px solid var(--accent-color)', background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.08) 0%, transparent 100%)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.5rem' }}>
                     <div style={{ position: 'absolute', top: '-20px', right: '-20px', fontSize: '8rem', opacity: 0.03, pointerEvents: 'none' }}>🤖</div>
                     
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
-                        <div className="pulse-icon" style={{ width: '12px', height: '12px', background: 'var(--accent-color)', borderRadius: '50%', boxShadow: '0 0 15px var(--accent-color)' }}></div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                        <div className="pulse-icon" style={{ width: '10px', height: '10px', background: 'var(--accent-color)', borderRadius: '50%', boxShadow: '0 0 10px var(--accent-color)' }}></div>
                         <div>
-                            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--accent-color)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Meaven Tactical Brain</h3>
-                            <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)' }}>Neural Network v4.2 Active</p>
+                            <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--accent-color)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Tactical Brain</h3>
+                            <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)' }}>Neural Network Active</p>
                         </div>
                     </div>
 
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.8rem' }}>
-                        {/* AI Risk Assessment - SCOPED TO SELECTED PROJECT OR GLOBAL */}
-                        <div style={{ padding: '1.2rem', background: projectFocus ? (projectFocus.readiness < 40 ? 'rgba(255, 69, 58, 0.05)' : 'rgba(50, 215, 75, 0.05)') : 'rgba(255, 69, 58, 0.05)', borderRadius: '12px', borderLeft: '4px solid ' + (projectFocus ? (projectFocus.readiness < 40 ? 'var(--danger)' : 'var(--success)') : 'var(--danger)') }}>
-                            <h4 style={{ margin: 0, fontSize: '0.7rem', color: projectFocus ? (projectFocus.readiness < 40 ? 'var(--danger)' : 'var(--success)') : 'var(--danger)', marginBottom: '0.5rem', fontWeight: '800' }}>
-                                {projectFocus ? `TACTICAL STATUS: ${projectFocus.name.toUpperCase()}` : '⚠️ GLOBAL CRITICAL ANOMALIES'}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ padding: '1rem', background: projectFocus ? (projectFocus.readiness < 40 ? 'rgba(255, 69, 58, 0.05)' : 'rgba(50, 215, 75, 0.05)') : 'rgba(255, 69, 58, 0.05)', borderRadius: '12px', borderLeft: '4px solid ' + (projectFocus ? (projectFocus.readiness < 40 ? 'var(--danger)' : 'var(--success)') : 'var(--danger)') }}>
+                            <h4 style={{ margin: 0, fontSize: '0.65rem', color: projectFocus ? (projectFocus.readiness < 40 ? 'var(--danger)' : 'var(--success)') : 'var(--danger)', marginBottom: '0.5rem', fontWeight: '800' }}>
+                                {projectFocus ? `STATUS: ${projectFocus.name.toUpperCase()}` : '⚠️ GLOBAL ANOMALIES'}
                             </h4>
-                            {projectFocus ? (
-                                <p style={{ margin: '0.3rem 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                                    {projectFocus.readiness < 40 
-                                        ? `Readiness lag detected at ${projectFocus.readiness}%. AI predicts structural blockers in the next 72 hours.` 
-                                        : `Project health at ${projectFocus.readiness}%. Execution is trending ahead of baseline technical playbook.`}
-                                </p>
-                            ) : (
-                                projects.filter(proj => proj.readiness < 40 && proj.status === 'In Progress').map(proj => (
-                                    <p key={proj.id} style={{ margin: '0.3rem 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                                        <b>{proj.name}</b>: Readiness lag detected. AI predicts 4-day delivery slippage.
-                                    </p>
-                                ))
-                            )}
+                            <p style={{ margin: '0.3rem 0', fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                                {projectFocus ? (projectFocus.readiness < 40 ? `Lag at ${projectFocus.readiness}%. AI predicts blockers.` : `Health at ${projectFocus.readiness}%. Ahead of playbook.`) : 'Critical deviations detected in baseline delivery.'}
+                            </p>
                         </div>
 
-                        {/* AI Optimization Feed */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                                <span style={{ fontSize: '1.2rem' }}>⚡</span>
-                                <div>
-                                    <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem', color: '#fff' }}>Bench Optimization</p>
-                                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                                        <b>Glass Tech Solutions</b> is outperforming the sector by 18%. Recommend allocation for the upcoming Whitefield loop.
-                                    </p>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                                <span style={{ fontSize: '1.2rem' }}>📈</span>
-                                <div>
-                                    <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem', color: '#fff' }}>EBITDA Forecasting</p>
-                                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                                        Portfolio margin is trending at 31.4%. Strategic overhead reduction could unlock an additional 2.5% by Q3.
-                                    </p>
-                                </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                            <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'flex-start' }}>
+                                <span style={{ fontSize: '1rem' }}>⚡</span>
+                                <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}><b>Bench</b>: Solutions outperforming sector by 18%.</p>
                             </div>
                         </div>
 
-                        <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                            <button 
-                                onClick={() => onSelectTab('admin')} 
-                                style={{ width: '100%', background: 'var(--accent-color)', border: 'none', color: '#000', fontSize: '0.75rem', fontWeight: '800', padding: '1rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
-                            >
-                                <span>🤖</span> ACCESS FULL AI GOVERNANCE
-                            </button>
+                        <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
+                            <button onClick={() => onSelectTab('admin')} style={{ width: '100%', background: 'var(--accent-color)', border: 'none', color: '#000', fontSize: '0.7rem', fontWeight: '800', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer' }}>🤖 AI GOVERNANCE</button>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* 2. TACTICAL HUD */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '4rem' }}>
-                <HUDCard label="Global Exposure" value={`₹${(stats.totalValue / 10000000).toFixed(2)}Cr`} subtext="Live Portfolio Value" trend="+12%" color="var(--accent-color)" />
-                <HUDCard label="Network Pulse" value={`${stats.avgReadiness}%`} subtext="Avg execution Health" trend="Optimal" color="var(--success)" />
-                <HUDCard label="AI Anomalies" value={stats.activeAnomalies} subtext="Governance Actions" trend="Pending" color="var(--danger)" pulse />
-                <HUDCard label="Data Integrity" value={`${stats.complianceRate.toFixed(1)}%`} subtext="Audit Accuracy" trend="+0.2%" color="var(--success)" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
+                <HUDCard label="Global Exposure" value={`₹${(stats.totalValue / 10000000).toFixed(2)}Cr`} subtext="Live Value" trend="+12%" color="var(--accent-color)" />
+                <HUDCard label="Network Pulse" value={`${stats.avgReadiness}%`} subtext="Execution Health" trend="Optimal" color="var(--success)" />
+                <HUDCard label="AI Anomalies" value={stats.activeAnomalies} subtext="Governance" trend="Pending" color="var(--danger)" pulse />
+                <HUDCard label="Data Integrity" value={`${stats.complianceRate.toFixed(1)}%`} subtext="Accuracy" trend="+0.2%" color="var(--success)" />
             </div>
 
             {/* 3. COMPACT PORTFOLIO GRID */}

@@ -27,7 +27,7 @@ const PinModal = ({ onVerify, onCancel }) => {
       zIndex: 10000,
       animation: 'fadeIn 0.2s ease-out'
     }}>
-      <div className="card animate-fade-in" style={{ width: '350px', padding: '2.5rem', textAlign: 'center' }}>
+      <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 350px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)', textAlign: 'center' }}>
         <h3 style={{ marginBottom: '1rem' }}>Enter Security PIN</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '2rem' }}>
           Accessing internal cost data requires a 6-digit PIN.

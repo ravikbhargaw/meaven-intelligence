@@ -357,97 +357,130 @@ function App() {
             </aside>
             <main className="main-content">
               <header className="main-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                  {navHistory.length > 0 && (
-                    <button 
-                      onClick={handleBack}
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--accent-color)', padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800' }}
-                    >
-                      ← BACK
-                    </button>
-                  )}
-                  <h1 style={{ margin: 0, fontSize: '1.4rem' }}>
-                    {activeTab === 'dashboard' 
-                        ? (clientView ? `Portfolio Experience: ${selectedClient || activeProject?.client || 'Meaven Intelligence'}` : 'Tactical Command Center') 
-                        : activeTab === 'projects' ? 'Project Financial Hub' 
-                        : activeTab === 'vendors' ? 'Partner Ecosystem' 
-                        : activeTab === 'readiness' ? 'Site Audit Intelligence' 
-                        : activeTab === 'calculator' ? 'Technical Calculation Loop' 
-                        : activeTab === 'strategy' ? 'Strategic Executive Hub'
-                        : 'Governance Console'}
-                  </h1>
-                </div>
-                  <div style={{ padding: '0.4rem 1rem', background: clientView ? 'rgba(52,  green, 0.1)' : 'rgba(102, 178, 194, 0.1)', border: `1px solid ${clientView ? '#34c759' : 'var(--accent-color)'}`, borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {navHistory.length > 0 && (
+                      <button 
+                        onClick={handleBack}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--accent-color)', padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800' }}
+                      >
+                        ← BACK
+                      </button>
+                    )}
+                    <h1 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.4rem)' }}>
+                      {activeTab === 'dashboard' 
+                          ? (clientView ? `Experience: ${selectedClient || activeProject?.client || 'Meaven'}` : 'Tactical Command') 
+                          : activeTab === 'projects' ? 'Financial Hub' 
+                          : activeTab === 'vendors' ? 'Partner Bench' 
+                          : activeTab === 'readiness' ? 'Audit Hub' 
+                          : activeTab === 'calculator' ? 'Tech Calc' 
+                          : activeTab === 'strategy' ? 'Executive Hub'
+                          : 'Admin'}
+                    </h1>
+                  </div>
+                  <div className="desktop-only" style={{ padding: '0.4rem 1rem', background: clientView ? 'rgba(52, 215, 75, 0.1)' : 'rgba(102, 178, 194, 0.1)', border: `1px solid ${clientView ? '#34c759' : 'var(--accent-color)'}`, borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ width: '6px', height: '6px', background: clientView ? '#34c759' : 'var(--accent-color)', borderRadius: '50%' }} />
                     <span style={{ fontSize: '0.65rem', fontWeight: '800', color: clientView ? '#34c759' : 'var(--accent-color)' }}>{clientView ? 'SECURE PORTFOLIO' : 'INTERNAL TACTICAL'}</span>
                   </div>
                 </div>
-                <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}>⟳ Switch Portfolio</button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}>⟳ Switch</button>
+                </div>
               </header>
-              {activeTab === 'dashboard' && (
-                clientView ? (
-                  <ClientExperienceHub 
-                    portfolioName={selectedClient || activeProject?.client} 
-                    projects={projects.filter(p => p.client === (selectedClient || activeProject?.client))} 
-                    vendors={vendors} 
-                    onViewProject={(id) => { setActiveProjectId(id); setActiveTab('dashboard'); }} 
-                  />
-                ) : (
-                  <CommandCenter 
+
+              <div className="tab-content-wrapper">
+                {activeTab === 'dashboard' && (
+                  clientView ? (
+                    <ClientExperienceHub 
+                      portfolioName={selectedClient || activeProject?.client} 
+                      projects={projects.filter(p => p.client === (selectedClient || activeProject?.client))} 
+                      vendors={vendors} 
+                      onViewProject={(id) => { setActiveProjectId(id); setActiveTab('dashboard'); }} 
+                    />
+                  ) : (
+                    <CommandCenter 
+                      projects={projects} 
+                      activeProjectId={activeProjectId} 
+                      setActiveProjectId={setActiveProjectId} 
+                      vendors={vendors}
+                      onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }}
+                      onLockLocation={handleLockLocation}
+                      onUpdateReadiness={handleUpdateReadiness}
+                      readinessData={readinessData}
+                      onUpdateFinancials={handleUpdateProject}
+                    />
+                  )
+                )}
+
+                {activeTab === 'projects' && (
+                  <ProjectDirectory 
                     projects={projects} 
-                    activeProjectId={activeProjectId} 
-                    setActiveProjectId={setActiveProjectId} 
                     vendors={vendors}
-                    onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }}
-                    onLockLocation={handleLockLocation}
-                    onUpdateReadiness={handleUpdateReadiness}
-                    readinessData={readinessData}
-                    onUpdateFinancials={handleUpdateProject}
+                    onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }} 
+                    activeProjectId={activeProjectId} 
+                    onUpdateMilestones={handleUpdateProjectMilestones}
+                    onUpdateProject={handleUpdateProject}
+                    onLogPayment={handleLogPayment}
+                    onLogPayout={handleLogPayout}
+                    onAddVendor={handleAddVendor}
                   />
-                )
-              )}
+                )}
 
-              {activeTab === 'projects' && (
-                <ProjectDirectory 
-                  projects={projects} 
-                  vendors={vendors}
-                  onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }} 
-                  activeProjectId={activeProjectId} 
-                  onUpdateMilestones={handleUpdateProjectMilestones}
-                  onUpdateProject={handleUpdateProject}
-                  onLogPayment={handleLogPayment}
-                  onLogPayout={handleLogPayout}
-                  onAddVendor={handleAddVendor}
-                />
-              )}
+                {activeTab === 'vendors' && (
+                  <VendorScoring 
+                    vendors={vendors} 
+                    projects={projects} 
+                    onAddContract={handleAddVendorContract} 
+                    onAddPayment={handleAddVendorPayment} 
+                    onUpdateVendor={handleUpdateVendor}
+                    onAddVendor={handleAddVendor}
+                    onAssignVendor={handleAssignVendor}
+                    onReassign={handleReassignProject}
+                  />
+                )}
 
-              {activeTab === 'vendors' && (
-                <VendorScoring 
-                  vendors={vendors} 
-                  projects={projects} 
-                  onAddContract={handleAddVendorContract} 
-                  onAddPayment={handleAddVendorPayment} 
-                  onUpdateVendor={handleUpdateVendor}
-                  onAddVendor={handleAddVendor}
-                  onAssignVendor={handleAssignVendor}
-                  onReassign={handleReassignProject}
-                />
-              )}
-
-              {activeTab === 'readiness' && (
-                <SiteReadiness 
-                  project={activeProject}
-                  projects={projects}
-                  data={readinessData[activeProjectId]} 
-                  onSelectProject={setActiveProjectId}
-                  onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
-                />
-              )}
-              {activeTab === 'calculator' && ( <TechnicalCalculator /> )}
-              {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
-              {activeTab === 'admin' && ( <AdminPanel users={users || []} proposals={playbookProposals || []} onApproveProposal={handleApprovePlaybookUpdate} onAddUser={addUser} onRemoveUser={removeUser} onResetUser={resetUser} onBack={() => setActiveTab('dashboard')} /> )}
+                {activeTab === 'readiness' && (
+                  <SiteReadiness 
+                    project={activeProject}
+                    projects={projects}
+                    data={readinessData[activeProjectId]} 
+                    onSelectProject={setActiveProjectId}
+                    onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
+                  />
+                )}
+                {activeTab === 'calculator' && ( <TechnicalCalculator /> )}
+                {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
+                {activeTab === 'admin' && ( <AdminPanel users={users || []} proposals={playbookProposals || []} onApproveProposal={handleApprovePlaybookUpdate} onAddUser={addUser} onRemoveUser={removeUser} onResetUser={resetUser} onBack={() => setActiveTab('dashboard')} /> )}
+              </div>
             </main>
+
+            {/* Mobile Navigation Engine */}
+            <nav className="bottom-nav mobile-only">
+              <button className={`bottom-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleNavigate('dashboard')}>
+                <span>📊</span>
+                <span>Dashboard</span>
+              </button>
+              <button className={`bottom-nav-item ${activeTab === 'projects' ? 'active' : ''}`} onClick={() => handleNavigate('projects')}>
+                <span>📁</span>
+                <span>Projects</span>
+              </button>
+              {!clientView && (
+                <button className={`bottom-nav-item ${activeTab === 'vendors' ? 'active' : ''}`} onClick={() => handleNavigate('vendors')}>
+                  <span>🤝</span>
+                  <span>Vendors</span>
+                </button>
+              )}
+              {user?.role === 'SuperAdmin' && !clientView && (
+                <button className={`bottom-nav-item ${activeTab === 'strategy' ? 'active' : ''}`} onClick={() => handleNavigate('strategy')}>
+                  <span>🧠</span>
+                  <span>Strategy</span>
+                </button>
+              )}
+              <button className="bottom-nav-item" onClick={() => setIsNewProjectModalOpen(true)}>
+                <span style={{ color: 'var(--accent-color)' }}>➕</span>
+                <span>New</span>
+              </button>
+            </nav>
           </div>
         )}
       </div>

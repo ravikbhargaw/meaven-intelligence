@@ -27,7 +27,7 @@ const SecuritySetup = ({ onComplete }) => {
       justifyContent: 'center', 
       background: 'var(--bg-primary)' 
     }}>
-      <div className="card animate-fade-in" style={{ width: '450px', padding: '3rem' }}>
+      <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 3rem)' }}>
         <h2 style={{ marginBottom: '0.5rem' }}>Update Security Credentials</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
           As a new user, you must set a secure password and a 6-digit PIN to access sensitive execution data.

@@ -75,79 +75,52 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
           ← Back to Partner Directory
         </button>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
             <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <h1 style={{ margin: 0, filter: isReadOnly ? 'blur(8px)' : 'none' }}>{selectedVendor.name}</h1>
-                    <span style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', borderRadius: '20px', background: selectedVendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)', color: selectedVendor.status === 'Certified' ? 'var(--success)' : '#FF9500', fontWeight: '600' }}>
-                        {selectedVendor.status}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', filter: isReadOnly ? 'blur(8px)' : 'none' }}>{selectedVendor.name}</h1>
+                    <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: selectedVendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)', color: selectedVendor.status === 'Certified' ? 'var(--success)' : '#FF9500', fontWeight: '800', letterSpacing: '0.05em' }}>
+                        {selectedVendor.status.toUpperCase()}
                     </span>
                 </div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: '0.5rem' }}>{selectedVendor.category} Division | {selectedVendor.contact}</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>{selectedVendor.category} Division | {selectedVendor.contact}</p>
             </div>
             <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '2.5rem', fontWeight: '800', color: score > 80 ? 'var(--success)' : 'var(--accent-color)' }}>
+                <div style={{ fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: '800', color: score > 80 ? 'var(--success)' : 'var(--accent-color)', lineHeight: 1 }}>
                     {score}
                 </div>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Intelligence Score</span>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Intelligence Score</span>
             </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem', marginBottom: '3rem' }}>
             <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)' }}>
-                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Portfolio Order</p>
-                <p style={{ fontSize: '1.5rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalOrder / 100000).toFixed(2)}L</p>
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Across {selectedVendor.contracts?.length || 0} Projects</p>
+                <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Portfolio</p>
+                <p style={{ fontSize: '1.3rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalOrder / 100000).toFixed(2)}L</p>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>{selectedVendor.contracts?.length || 0} Active Sites</p>
             </div>
             <div className="card" style={{ background: 'rgba(50, 215, 75, 0.05)' }}>
-                <p style={{ fontSize: '0.65rem', color: 'var(--success)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Paid till Date</p>
-                <p style={{ fontSize: '1.5rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalPaid / 100000).toFixed(2)}L</p>
+                <p style={{ fontSize: '0.6rem', color: 'var(--success)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Paid to Date</p>
+                <p style={{ fontSize: '1.3rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalPaid / 100000).toFixed(2)}L</p>
             </div>
             <div className="card" style={{ background: 'rgba(255, 69, 58, 0.05)' }}>
-                <p style={{ fontSize: '0.65rem', color: 'var(--danger)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Outstanding</p>
-                <p style={{ fontSize: '1.5rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.due / 100000).toFixed(2)}L</p>
+                <p style={{ fontSize: '0.6rem', color: 'var(--danger)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Due</p>
+                <p style={{ fontSize: '1.3rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.due / 100000).toFixed(2)}L</p>
             </div>
-            {/* AI PARTNER INTELLIGENCE LAYER */}
-            <div className="card" style={{ gridColumn: 'span 2', border: '1px solid var(--accent-color)', background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.08) 0%, transparent 100%)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '5rem', opacity: 0.05 }}>🧠</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                    <div>
-                        <h4 style={{ margin: 0, fontSize: '0.8rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Meaven AI Partner Intelligence</h4>
-                        <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Predictive Reliability & Technical Gap Analysis</p>
-                    </div>
-                    <div style={{ padding: '0.3rem 0.8rem', borderRadius: '20px', background: 'rgba(50, 215, 75, 0.1)', color: 'var(--success)', fontSize: '0.65rem', fontWeight: '800' }}>HIGH RELIABILITY ZONE</div>
+            <div className="card" style={{ border: '1px solid var(--accent-color)', background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.08) 0%, transparent 100%)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.7rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>AI Health Audit</h4>
+                    <div style={{ fontSize: '0.55rem', fontWeight: '900', color: 'var(--success)' }}>OPTIMAL</div>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                    <div>
-                        <p style={{ fontSize: '0.75rem', lineHeight: '1.6', margin: 0, color: 'var(--text-secondary)' }}>
-                            {selectedVendor.miScore > 85 
-                                ? "Technical reliability is trending 12% above industry baseline. AI recommends this partner for high-complexity structural glazing."
-                                : "Execution risk detected in site precision. AI suggests immediate technical recalibration for 'Opening Dimension' verification."}
-                        </p>
-                        <div style={{ marginTop: '1.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.65rem' }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>Predictive 90-Day Reliability</span>
-                                <span style={{ color: 'var(--accent-color)', fontWeight: '800' }}>94.2%</span>
-                            </div>
-                            <div style={{ height: '4px', width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '2px' }}>
-                                <div style={{ height: '100%', width: '94.2%', background: 'var(--accent-color)', borderRadius: '2px' }}></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '1.5rem' }}>
-                        <h5 style={{ margin: '0 0 0.8rem 0', fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>AI Tactical Suggestions</h5>
-                        <ul style={{ padding: 0, margin: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                            <li style={{ fontSize: '0.7rem', display: 'flex', gap: '0.5rem' }}><span style={{ color: 'var(--accent-color)' }}>▹</span> Automated audit loop every 15 days.</li>
-                            <li style={{ fontSize: '0.7rem', display: 'flex', gap: '0.5rem' }}><span style={{ color: 'var(--accent-color)' }}>▹</span> Prioritize for Mumbai Sector expansions.</li>
-                            <li style={{ fontSize: '0.7rem', display: 'flex', gap: '0.5rem' }}><span style={{ color: 'var(--accent-color)' }}>▹</span> Issue 'Technical Excellence' certification.</li>
-                        </ul>
-                    </div>
-                </div>
+                <p style={{ fontSize: '0.75rem', lineHeight: '1.4', margin: 0, color: 'var(--text-secondary)' }}>
+                    {selectedVendor.miScore > 85 
+                        ? "Partner reliability is high. AI recommends for complex structural works."
+                        : "Site precision variance detected. AI suggests more frequent audits."}
+                </p>
             </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div className="card" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -206,18 +179,18 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
                             )}
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-standard)' }}>
-                                <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Contract Order</p>
-                                <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0.3rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.order / 100000).toFixed(2)}L</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.8rem', marginBottom: '2rem' }}>
+                            <div style={{ padding: '0.8rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Contract</p>
+                                <p style={{ fontSize: '1.1rem', fontWeight: '800', margin: '0.2rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.order / 100000).toFixed(2)}L</p>
                             </div>
-                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-standard)' }}>
-                                <p style={{ fontSize: '0.6rem', color: 'var(--success)', textTransform: 'uppercase' }}>Paid to Date</p>
-                                <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0.3rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.paid / 100000).toFixed(2)}L</p>
+                            <div style={{ padding: '0.8rem', background: 'rgba(50, 215, 75, 0.05)', borderRadius: '8px' }}>
+                                <p style={{ fontSize: '0.55rem', color: 'var(--success)', textTransform: 'uppercase' }}>Paid</p>
+                                <p style={{ fontSize: '1.1rem', fontWeight: '800', margin: '0.2rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.paid / 100000).toFixed(2)}L</p>
                             </div>
-                            <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-standard)' }}>
-                                <p style={{ fontSize: '0.6rem', color: 'var(--danger)', textTransform: 'uppercase' }}>Current Due</p>
-                                <p style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0.3rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.due / 100000).toFixed(2)}L</p>
+                            <div style={{ padding: '0.8rem', background: 'rgba(255, 69, 58, 0.05)', borderRadius: '8px' }}>
+                                <p style={{ fontSize: '0.55rem', color: 'var(--danger)', textTransform: 'uppercase' }}>Due</p>
+                                <p style={{ fontSize: '1.1rem', fontWeight: '800', margin: '0.2rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.due / 100000).toFixed(2)}L</p>
                             </div>
                         </div>
 
@@ -279,7 +252,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
         {/* INTEGRATED PROJECT LINK/CREATE MODAL */}
         {isContractModalOpen && (
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000 }}>
-                <div className="card animate-fade-in" style={{ width: '450px', padding: '2.5rem' }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
                     <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
                         <button onClick={() => setLinkMode('existing')} style={{ flex: 1, padding: '0.5rem', background: linkMode === 'existing' ? 'var(--accent-color)' : 'none', color: linkMode === 'existing' ? '#000' : 'var(--text-secondary)', border: 'none', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>Choose Existing</button>
                         <button onClick={() => setLinkMode('new')} style={{ flex: 1, padding: '0.5rem', background: linkMode === 'new' ? 'var(--accent-color)' : 'none', color: linkMode === 'new' ? '#000' : 'var(--text-secondary)', border: 'none', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>+ Create New Site</button>
@@ -354,7 +327,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
         {/* PAYMENT MODAL (Existing logic) */}
         {isPaymentModalOpen && (
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000 }}>
-                <div className="card animate-fade-in" style={{ width: '400px', padding: '2.5rem' }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
                     <h3 style={{ marginBottom: '1.5rem' }}>Log Payment for {selectedContract.projectName}</h3>
                     <form onSubmit={(e) => {
                         e.preventDefault()
@@ -454,7 +427,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
         </select>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.2rem' }}>
         {filteredVendors.map(vendor => {
           const score = calculateScore(vendor.metrics)
           const globalFin = getGlobalFinancials(vendor)
@@ -518,7 +491,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
 
       {isAddModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000 }}>
-          <div className="card animate-fade-in" style={{ width: '450px', padding: '2.5rem' }}>
+          <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
             <h3 style={{ marginBottom: '1.5rem' }}>Register New Partner</h3>
             <form onSubmit={(e) => {
                 e.preventDefault()

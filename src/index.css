@@ -79,6 +79,8 @@ button {
 .dashboard-container {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .sidebar {
@@ -98,19 +100,69 @@ button {
   margin-left: 280px;
   padding: 2.5rem;
   background-color: var(--bg-primary);
+  max-width: 100%;
+  width: calc(100% - 280px);
 }
 
 @media (max-width: 1024px) {
-  .sidebar {
-    width: 80px;
-    padding: 2rem 0.75rem;
-  }
-  .main-content {
-    margin-left: 80px;
-  }
-  .sidebar-text {
-    display: none;
-  }
+  .sidebar { width: 80px; padding: 2rem 0.75rem; }
+  .main-content { margin-left: 80px; width: calc(100% - 80px); }
+  .sidebar-text { display: none; }
+}
+
+@media (max-width: 768px) {
+  .sidebar { display: none !important; }
+  .main-content { margin-left: 0 !important; padding: 1.5rem !important; padding-bottom: 100px !important; width: 100% !important; overflow-x: hidden; }
+  .main-header { position: sticky; top: 0; z-index: 90; background: var(--bg-glass-heavy); backdrop-filter: blur(20px); margin: -1.5rem -1.5rem 1.5rem -1.5rem; padding: 1.5rem; border-bottom: 1px solid var(--border-color); width: calc(100% + 3rem); }
+  .card, .glass-card, .glass-card-heavy { max-width: 100% !important; }
+  .desktop-only { display: none !important; }
+}
+
+@media (min-width: 769px) {
+  .mobile-only { display: none !important; }
+  .bottom-nav { display: none !important; }
+}
+
+/* Bottom Navigation (Mobile) */
+.bottom-nav {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  height: 70px;
+  background: var(--bg-glass-heavy);
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border: 1px solid var(--glass-border);
+  border-radius: 35px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+  padding: 0 10px;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: var(--transition-premium);
+  flex: 1;
+}
+
+.bottom-nav-item.active {
+  color: var(--accent-color);
+}
+
+.bottom-nav-item span:first-child {
+  font-size: 1.4rem;
 }
 
 /* Component Styles */
@@ -134,8 +186,15 @@ button {
   font-weight: 600;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   transition: var(--transition-premium);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .btn { padding: 0.6rem 1.2rem; font-size: 0.8rem; border-radius: 12px; }
+  .card { padding: 1.2rem !important; }
 }
 
 .pulse-icon {

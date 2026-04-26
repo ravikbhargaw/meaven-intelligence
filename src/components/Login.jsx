@@ -38,8 +38,8 @@ const Login = ({ onLogin, onVerifyMasterKey }) => {
       <div style={{ position: 'absolute', width: '400px', height: '400px', background: 'var(--accent-color)', opacity: 0.03, filter: 'blur(80px)', borderRadius: '50%', bottom: '-100px', right: '-100px' }}></div>
 
       <div className="card animate-fade-in" style={{ 
-        width: '450px', 
-        padding: '4rem 3.5rem', 
+        width: 'clamp(300px, 90%, 450px)', 
+        padding: 'clamp(2rem, 8vw, 4rem) clamp(1.5rem, 5vw, 3.5rem)', 
         background: 'rgba(255,255,255,0.02)', 
         backdropFilter: 'blur(20px)', 
         border: '1px solid rgba(255,255,255,0.05)',
