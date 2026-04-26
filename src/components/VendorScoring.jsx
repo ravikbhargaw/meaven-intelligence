@@ -522,8 +522,10 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
             <h3 style={{ marginBottom: '1.5rem' }}>Register New Partner</h3>
             <form onSubmit={(e) => {
                 e.preventDefault()
-                const formData = new FormData(e.target)
-                onAddVendor({
+                const form = e.currentTarget
+                const formData = new FormData(form)
+                
+                const newVendorData = {
                     name: formData.get('name'),
                     category: formData.get('category'),
                     contact: formData.get('contact'),
@@ -533,10 +535,13 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
                     isGstVerified: false,
                     isCertVerified: false,
                     metrics: { price: 50, speed: 50, precision: 50, communication: 50 },
-                    history: [{ id: 1, type: 'registration', title: 'Partner Onboarded', detail: 'Added to Meaven database via CRM', date: new Date().toISOString().split('T')[0] }],
+                    history: [{ id: Date.now(), type: 'registration', title: 'Partner Onboarded', detail: 'Added to Meaven database via CRM', date: new Date().toISOString().split('T')[0] }],
                     contracts: [],
                     notes: ''
-                })
+                }
+
+                console.log('Registering Vendor:', newVendorData)
+                onAddVendor(newVendorData)
                 setIsAddModalOpen(false)
             }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
               <input name="name" required placeholder="Company Name" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
