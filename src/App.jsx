@@ -59,7 +59,27 @@ function App() {
   useEffect(() => { localStorage.setItem('portfolios', JSON.stringify(portfolios)) }, [portfolios])
   useEffect(() => { localStorage.setItem('readinessData', JSON.stringify(readinessData)) }, [readinessData])
   useEffect(() => { localStorage.setItem('playbookProposals', JSON.stringify(playbookProposals)) }, [playbookProposals])
-  useEffect(() => { if (user) setClientView(true) }, [user])
+  useEffect(() => {
+    if (user && projects.length > 0) {
+      const loginKey = `login_logged_${user.email}_${new Date().toDateString()}`
+      if (!sessionStorage.getItem(loginKey)) {
+        setProjects(prev => prev.map(p => ({
+          ...p,
+          history: [
+            ...(p.history || []),
+            { 
+              id: Date.now() + Math.random(), 
+              type: 'info', 
+              title: 'Tactical Access Authorized', 
+              detail: `Operator ${user.name} initialized secure session`, 
+              timestamp: new Date().toISOString() 
+            }
+          ]
+        })))
+        sessionStorage.setItem(loginKey, 'true')
+      }
+    }
+  }, [user])
 
   if (!user) return <Login onLogin={login} onVerifyMasterKey={verifyMasterKey} />
   if (isFirstLogin) return <SecuritySetup onComplete={updateSecurity} />
@@ -166,7 +186,7 @@ function App() {
               </div>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                 <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
-                {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => setActiveTab('projects')} icon="💰" label="Financial Hub" />}
+                {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => setActiveTab('projects')} icon="📁" label="Project Central" />}
                 {!clientView && <SidebarItem active={activeTab === 'vendors'} onClick={() => setActiveTab('vendors')} icon="🤝" label="Vendor Bench" />}
                 {!clientView && <SidebarItem active={activeTab === 'readiness'} onClick={() => setActiveTab('readiness')} icon="📏" label="Live Audit Hub" />}
                 <SidebarItem active={activeTab === 'calculator'} onClick={() => setActiveTab('calculator')} icon="🧮" label="Tech Calculator" />
