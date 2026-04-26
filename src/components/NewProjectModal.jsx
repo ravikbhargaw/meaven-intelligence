@@ -3,25 +3,59 @@ import { useState } from 'react'
 const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
   const [isNewPortfolio, setIsNewPortfolio] = useState(portfolios.length === 0)
   const [newPortfolioName, setNewPortfolioName] = useState('')
+  const [errors, setErrors] = useState({})
+  
   const [projectData, setProjectData] = useState({
     name: '',
     location: '',
     portfolioId: '',
-    pm: { name: '', email: '' },
-    architect: { name: '', email: '' },
-    supervisor: { name: '', email: '' }
+    pm: { name: '', email: '', phone: '' },
+    architect: { name: '', email: '', phone: '' },
+    supervisor: { name: '', email: '', phone: '' }
   })
 
   if (!isOpen) return null
 
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const validatePhone = (phone) => /^\d{10}$/.test(phone)
+
+  const validateStakeholder = (role, data) => {
+    const roleErrors = {}
+    if (!data.name.trim()) roleErrors.name = 'Name is required'
+    
+    const hasEmail = data.email.trim().length > 0
+    const hasPhone = data.phone.trim().length > 0
+
+    if (!hasEmail && !hasPhone) {
+        roleErrors.contact = 'Either Email or Phone is mandatory'
+    } else {
+        if (hasEmail && !validateEmail(data.email)) roleErrors.email = 'Invalid email format'
+        if (hasPhone && !validatePhone(data.phone)) roleErrors.phone = 'Phone must be 10 digits'
+    }
+    return roleErrors
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     
+    const newErrors = {}
+    const pmErrors = validateStakeholder('pm', projectData.pm)
+    const archErrors = validateStakeholder('architect', projectData.architect)
+    const supErrors = validateStakeholder('supervisor', projectData.supervisor)
+
+    if (Object.keys(pmErrors).length > 0) newErrors.pm = pmErrors
+    if (Object.keys(archErrors).length > 0) newErrors.architect = archErrors
+    if (Object.keys(supErrors).length > 0) newErrors.supervisor = supErrors
+
+    if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors)
+        return
+    }
+
     let finalPortfolioId = projectData.portfolioId
     let finalClient = ''
 
     if (isNewPortfolio) {
-        // Create a temporary ID for the new portfolio
         finalPortfolioId = Date.now()
         finalClient = newPortfolioName
     } else {
@@ -34,7 +68,7 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
         ...projectData,
         portfolioId: finalPortfolioId,
         client: finalClient,
-        isNewPortfolio, // Pass this to App.jsx to handle portfolio creation
+        isNewPortfolio,
         stakeholders: [
             { ...projectData.pm, role: 'Project Manager' },
             { ...projectData.architect, role: 'Site Architect' },
@@ -44,16 +78,42 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
     onClose()
   }
 
+  const renderStakeholderFields = (role, label) => {
+    const data = projectData[role]
+    const roleErrors = errors[role] || {}
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+            <h4 style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--accent-color)', margin: 0 }}>{label}</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.8rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <input type="text" placeholder="Name" value={data.name} onChange={(e) => setProjectData({...projectData, [role]: {...data, name: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.name ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.85rem' }} />
+                    {roleErrors.name && <span style={{ fontSize: '0.6rem', color: '#ff453a' }}>{roleErrors.name}</span>}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <input type="email" placeholder="Email" value={data.email} onChange={(e) => setProjectData({...projectData, [role]: {...data, email: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.email || roleErrors.contact ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.85rem' }} />
+                    {roleErrors.email && <span style={{ fontSize: '0.6rem', color: '#ff453a' }}>{roleErrors.email}</span>}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <input type="tel" placeholder="10-digit Phone" value={data.phone} onChange={(e) => setProjectData({...projectData, [role]: {...data, phone: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.phone || roleErrors.contact ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.85rem' }} />
+                    {roleErrors.phone && <span style={{ fontSize: '0.6rem', color: '#ff453a' }}>{roleErrors.phone}</span>}
+                </div>
+            </div>
+            {roleErrors.contact && <p style={{ fontSize: '0.6rem', color: '#ff453a', margin: 0 }}>{roleErrors.contact}</p>}
+        </div>
+    )
+  }
+
   return (
     <div style={{ 
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
       background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 4000 
     }}>
-      <div className="card animate-fade-in" style={{ width: '600px', padding: '2.5rem', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--accent-color)' }}>
+      <div className="card animate-fade-in" style={{ width: '750px', padding: '2.5rem', maxHeight: '95vh', overflowY: 'auto', border: '1px solid var(--accent-color)' }}>
         <h2 style={{ marginBottom: '0.5rem' }}>🚀 Initialize New Project Loop</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
-          Deploy Meaven Intelligence for a new project. Define the portfolio and execution team below.
+          Deploy Meaven Intelligence. Define the portfolio and execution stakeholders.
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
@@ -97,43 +157,10 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
           </div>
 
           <hr style={{ border: 'none', borderBottom: '1px solid var(--border-color)', margin: '0.5rem 0' }} />
-          <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>Execution Stakeholders</h4>
-
-          {/* Project Manager */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Project Manager Name</label>
-                <input type="text" placeholder="Name" value={projectData.pm.name} onChange={(e) => setProjectData({...projectData, pm: {...projectData.pm, name: e.target.value}})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff' }} required />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>PM Email</label>
-                <input type="email" placeholder="email@company.com" value={projectData.pm.email} onChange={(e) => setProjectData({...projectData, pm: {...projectData.pm, email: e.target.value}})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff' }} required />
-            </div>
-          </div>
-
-          {/* Architect */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Architect Name</label>
-                <input type="text" placeholder="Name" value={projectData.architect.name} onChange={(e) => setProjectData({...projectData, architect: {...projectData.architect, name: e.target.value}})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Architect Email</label>
-                <input type="email" placeholder="email@arch.com" value={projectData.architect.email} onChange={(e) => setProjectData({...projectData, architect: {...projectData.architect, email: e.target.value}})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff' }} />
-            </div>
-          </div>
-
-          {/* Supervisor */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Site Supervisor Name</label>
-                <input type="text" placeholder="Name" value={projectData.supervisor.name} onChange={(e) => setProjectData({...projectData, supervisor: {...projectData.supervisor, name: e.target.value}})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff' }} required />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Supervisor Email</label>
-                <input type="email" placeholder="email@site.com" value={projectData.supervisor.email} onChange={(e) => setProjectData({...projectData, supervisor: {...projectData.supervisor, email: e.target.value}})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff' }} required />
-            </div>
-          </div>
+          
+          {renderStakeholderFields('pm', 'Project Manager')}
+          {renderStakeholderFields('architect', 'Site Architect')}
+          {renderStakeholderFields('supervisor', 'Site Supervisor')}
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
             <button type="button" onClick={onClose} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Discard</button>
