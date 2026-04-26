@@ -40,7 +40,7 @@ class ErrorBoundary extends React.Component {
 }
 
 function App() {
-  const { user, login, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey } = useAuth()
+  const { user, login, logout, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey } = useAuth()
   const [clientView, setClientView] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false)
@@ -187,8 +187,18 @@ function App() {
                 </div>
                 <button onClick={() => setIsNewProjectModalOpen(true)} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '0.8rem', fontWeight: '800' }}>+ INITIALIZE PROJECT LOOP</button>
                 <div style={{ padding: '1rem', background: 'var(--bg-accent)', borderRadius: '12px', marginTop: '1rem' }}>
-                  <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Active Operator</p>
-                  <p style={{ fontSize: '0.8rem', fontWeight: '600' }}>{user.name}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Active Operator</p>
+                      <p style={{ fontSize: '0.8rem', fontWeight: '600' }}>{user.name}</p>
+                    </div>
+                    <button 
+                      onClick={logout} 
+                      style={{ background: 'none', border: 'none', color: '#ff453a', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(255, 69, 58, 0.1)' }}
+                    >
+                      LOGOUT
+                    </button>
+                  </div>
                   <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.65rem', marginTop: '0.5rem', cursor: 'pointer', padding: 0 }}>Change Client ↩</button>
                 </div>
               </div>

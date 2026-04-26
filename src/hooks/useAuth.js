@@ -95,7 +95,12 @@ const useAuth = () => {
     return false
   }
 
-  return { user, login, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey }
+  const logout = () => {
+    setUser(null)
+    localStorage.removeItem('mi_current_user')
+  }
+
+  return { user, login, logout, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey }
 }
 
 export default useAuth
