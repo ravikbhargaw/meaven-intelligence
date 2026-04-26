@@ -9,7 +9,8 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
         const total = projects.reduce((sum, p) => sum + (p.clientFinancials?.totalValue || 0), 0)
         const avg = projects.length > 0 ? Math.round(projects.reduce((sum, p) => sum + (p.readiness || 0), 0) / projects.length) : 0
         const anomalies = proposals.filter(p => p.status === 'pending').length
-        setStats({ totalValue: total, avgReadiness: avg, activeAnomalies: anomalies, complianceRate: 98.2 + (Math.random() * 1.5) })
+        // Stabilized Compliance Rate to prevent blinking
+        setStats({ totalValue: total, avgReadiness: avg, activeAnomalies: anomalies, complianceRate: 99.4 })
     }, [projects, proposals])
 
     const projectFocus = viewedProject ? projects.find(proj => Number(proj.id) === Number(viewedProject)) : null

@@ -196,7 +196,15 @@ function App() {
             <main className="main-content">
               <header className="main-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <h1 style={{ margin: 0, fontSize: '1.4rem' }}>{activeTab === 'dashboard' ? (clientView ? `Portfolio Experience: ${selectedClient}` : 'Tactical Command Center') : activeTab === 'projects' ? 'Project Financial Hub' : activeTab === 'vendors' ? 'Partner Ecosystem' : activeTab === 'readiness' ? 'Site Audit Intelligence' : activeTab === 'calculator' ? 'Technical Calculation Loop' : 'Governance Console'}</h1>
+                  <h1 style={{ margin: 0, fontSize: '1.4rem' }}>
+                    {activeTab === 'dashboard' 
+                        ? (clientView ? `Portfolio Experience: ${selectedClient || activeProject?.client || 'Meaven Intelligence'}` : 'Tactical Command Center') 
+                        : activeTab === 'projects' ? 'Project Financial Hub' 
+                        : activeTab === 'vendors' ? 'Partner Ecosystem' 
+                        : activeTab === 'readiness' ? 'Site Audit Intelligence' 
+                        : activeTab === 'calculator' ? 'Technical Calculation Loop' 
+                        : 'Governance Console'}
+                  </h1>
                   <div style={{ padding: '0.4rem 1rem', background: clientView ? 'rgba(52,  green, 0.1)' : 'rgba(102, 178, 194, 0.1)', border: `1px solid ${clientView ? '#34c759' : 'var(--accent-color)'}`, borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ width: '6px', height: '6px', background: clientView ? '#34c759' : 'var(--accent-color)', borderRadius: '50%' }} />
                     <span style={{ fontSize: '0.65rem', fontWeight: '800', color: clientView ? '#34c759' : 'var(--accent-color)' }}>{clientView ? 'SECURE PORTFOLIO' : 'INTERNAL TACTICAL'}</span>
@@ -204,10 +212,60 @@ function App() {
                 </div>
                 <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}>⟳ Switch Portfolio</button>
               </header>
-              {activeTab === 'dashboard' && ( clientView ? ( <ClientExperienceHub portfolioName={selectedClient} projects={projects.filter(p => p.client === selectedClient)} vendors={vendors} onViewProject={(id) => { setActiveProjectId(id); setActiveTab('dashboard'); }} /> ) : ( <CommandCenter projects={projects} activeProjectId={activeProjectId} setActiveProjectId={setActiveProjectId} vendors={vendors} onLockLocation={handleLockLocation} onUpdateReadiness={handleUpdateReadiness} readinessData={readinessData} onUpdateFinancials={handleUpdateProject} /> ) )}
-              {activeTab === 'projects' && ( <ProjectDirectory projects={projects} onSelectProject={setActiveProjectId} activeProjectId={activeProjectId} onUpdateMilestones={handleUpdateProjectMilestones} onUpdateProject={handleUpdateProject} /> )}
-              {activeTab === 'vendors' && ( <VendorScoring vendors={vendors} projects={projects} onAddContract={handleAddVendorContract} onAddPayment={handleAddVendorPayment} onUpdateVendor={handleUpdateVendor} onAddVendor={handleAddVendor} onAssignVendor={handleAssignVendor} onReassign={handleReassignProject} /> )}
-              {activeTab === 'readiness' && ( <SiteReadiness projectId={activeProjectId} projectName={activeProject?.name} data={readinessData[activeProjectId]} onSave={(data) => handleUpdateReadiness(activeProjectId, data)} stakeholders={activeProject?.stakeholders} /> )}
+              {activeTab === 'dashboard' && (
+                clientView ? (
+                  <ClientExperienceHub 
+                    portfolioName={selectedClient || activeProject?.client} 
+                    projects={projects.filter(p => p.client === (selectedClient || activeProject?.client))} 
+                    vendors={vendors} 
+                    onViewProject={(id) => { setActiveProjectId(id); setActiveTab('dashboard'); }} 
+                  />
+                ) : (
+                  <CommandCenter 
+                    projects={projects} 
+                    activeProjectId={activeProjectId} 
+                    setActiveProjectId={setActiveProjectId} 
+                    vendors={vendors}
+                    onLockLocation={handleLockLocation}
+                    onUpdateReadiness={handleUpdateReadiness}
+                    readinessData={readinessData}
+                    onUpdateFinancials={handleUpdateProject}
+                  />
+                )
+              )}
+
+              {activeTab === 'projects' && (
+                <ProjectDirectory 
+                  projects={projects} 
+                  onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }} 
+                  activeProjectId={activeProjectId} 
+                  onUpdateMilestones={handleUpdateProjectMilestones}
+                  onUpdateProject={handleUpdateProject}
+                />
+              )}
+
+              {activeTab === 'vendors' && (
+                <VendorScoring 
+                  vendors={vendors} 
+                  projects={projects} 
+                  onAddContract={handleAddVendorContract} 
+                  onAddPayment={handleAddVendorPayment} 
+                  onUpdateVendor={handleUpdateVendor}
+                  onAddVendor={handleAddVendor}
+                  onAssignVendor={handleAssignVendor}
+                  onReassign={handleReassignProject}
+                />
+              )}
+
+              {activeTab === 'readiness' && (
+                <SiteReadiness 
+                  projectId={activeProjectId} 
+                  projectName={activeProject?.name} 
+                  data={readinessData[activeProjectId]} 
+                  onSave={(data) => handleUpdateReadiness(activeProjectId, data)} 
+                  stakeholders={activeProject?.stakeholders}
+                />
+              )}
               {activeTab === 'calculator' && ( <TechnicalCalculator /> )}
               {activeTab === 'admin' && ( <AdminPanel users={users || []} proposals={playbookProposals || []} onApproveProposal={handleApprovePlaybookUpdate} onAddUser={addUser} onRemoveUser={removeUser} onResetUser={resetUser} onBack={() => setActiveTab('dashboard')} /> )}
             </main>

@@ -21,17 +21,18 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
 
   const validateStakeholder = (role, data) => {
     const roleErrors = {}
-    if (!data.name.trim()) roleErrors.name = 'Name is required'
-    
+    const hasName = data.name.trim().length > 0
     const hasEmail = data.email.trim().length > 0
     const hasPhone = data.phone.trim().length > 0
 
-    if (!hasEmail && !hasPhone) {
-        roleErrors.contact = 'Either Email or Phone is mandatory'
-    } else {
-        if (hasEmail && !validateEmail(data.email)) roleErrors.email = 'Invalid email format'
-        if (hasPhone && !validatePhone(data.phone)) roleErrors.phone = 'Phone must be 10 digits'
+    if (hasName) {
+        if (!hasEmail) roleErrors.email = 'Email is mandatory'
+        else if (!validateEmail(data.email)) roleErrors.email = 'Invalid email format'
+        
+        if (!hasPhone) roleErrors.phone = 'Phone is mandatory'
+        else if (!validatePhone(data.phone)) roleErrors.phone = 'Phone must be 10 digits'
     }
+    
     return roleErrors
   }
 
@@ -42,6 +43,16 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
     const pmErrors = validateStakeholder('pm', projectData.pm)
     const archErrors = validateStakeholder('architect', projectData.architect)
     const supErrors = validateStakeholder('supervisor', projectData.supervisor)
+
+    const pmFilled = projectData.pm.name.trim().length > 0
+    const archFilled = projectData.architect.name.trim().length > 0
+    const supFilled = projectData.supervisor.name.trim().length > 0
+
+    if (!pmFilled && !archFilled && !supFilled) {
+        newErrors.general = 'At least one stakeholder block (Name, Email, Phone) is mandatory.'
+        setErrors(newErrors)
+        return
+    }
 
     if (Object.keys(pmErrors).length > 0) newErrors.pm = pmErrors
     if (Object.keys(archErrors).length > 0) newErrors.architect = archErrors
@@ -84,22 +95,24 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-            <h4 style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--accent-color)', margin: 0 }}>{label}</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--accent-color)', margin: 0 }}>{label}</h4>
+                {projectData[role].name && <span style={{ fontSize: '0.6rem', color: 'var(--success)' }}>✔ ACTIVE BLOCK</span>}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.8rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                     <input type="text" placeholder="Name" value={data.name} onChange={(e) => setProjectData({...projectData, [role]: {...data, name: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.name ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.85rem' }} />
                     {roleErrors.name && <span style={{ fontSize: '0.6rem', color: '#ff453a' }}>{roleErrors.name}</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                    <input type="email" placeholder="Email" value={data.email} onChange={(e) => setProjectData({...projectData, [role]: {...data, email: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.email || roleErrors.contact ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.85rem' }} />
+                    <input type="email" placeholder="Email" value={data.email} onChange={(e) => setProjectData({...projectData, [role]: {...data, email: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.email ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.85rem' }} />
                     {roleErrors.email && <span style={{ fontSize: '0.6rem', color: '#ff453a' }}>{roleErrors.email}</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                    <input type="tel" placeholder="10-digit Phone" value={data.phone} onChange={(e) => setProjectData({...projectData, [role]: {...data, phone: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.phone || roleErrors.contact ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.85rem' }} />
+                    <input type="tel" placeholder="10-digit Phone" value={data.phone} onChange={(e) => setProjectData({...projectData, [role]: {...data, phone: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.phone ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.85rem' }} />
                     {roleErrors.phone && <span style={{ fontSize: '0.6rem', color: '#ff453a' }}>{roleErrors.phone}</span>}
                 </div>
             </div>
-            {roleErrors.contact && <p style={{ fontSize: '0.6rem', color: '#ff453a', margin: 0 }}>{roleErrors.contact}</p>}
         </div>
     )
   }
@@ -162,7 +175,8 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
           {renderStakeholderFields('architect', 'Site Architect')}
           {renderStakeholderFields('supervisor', 'Site Supervisor')}
 
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+          {errors.general && <p style={{ color: '#ff453a', fontSize: '0.8rem', fontWeight: '800', textAlign: 'center', background: 'rgba(255, 69, 58, 0.1)', padding: '0.5rem', borderRadius: '4px', margin: '1rem 0' }}>⚠️ {errors.general}</p>}
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
             <button type="button" onClick={onClose} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Discard</button>
             <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', fontWeight: '800' }}>START EXECUTION LOOP</button>
           </div>
