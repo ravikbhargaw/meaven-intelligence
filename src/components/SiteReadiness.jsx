@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-const SiteReadiness = ({ project, projects, portfolios = [], template = [], data, onUpdate, onUpdateMilestones, onProposePlaybookUpdate, userRole, isReadOnly, onBack, onLockLocation, onUpdateProject }) => {
+const SiteReadiness = ({ project, projects, portfolios = [], template = [], data, onUpdate, onUpdateMilestones, onProposePlaybookUpdate, userRole, isReadOnly, onBack, onLockLocation, onUpdateProject, onSelectProject }) => {
   const [items, setItems] = useState(data?.items || template || [])
   const [photos, setPhotos] = useState(data?.photos || [])
   const [observations, setObservations] = useState(data?.observations || '')
@@ -13,18 +13,26 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
   const [isCalibrating, setIsCalibrating] = useState(false)
   const [isMigrating, setIsMigrating] = useState(false)
 
-  // SYNC WITH GLOBAL PLAYBOOK (ONE-TIME INITIALIZATION)
+  const defaultTemplate = [
+    { id: 1, label: 'Physical Site Measurement & Verification', status: 'pending', category: 'Civil', notes: '' },
+    { id: 2, label: 'Electrical Point Mapping (As-per-Site)', status: 'pending', category: 'MEP', notes: '' },
+    { id: 3, label: 'Wall Finish & Plastering Check', status: 'pending', category: 'Civil', notes: '' },
+    { id: 4, label: 'Plumbing Core Cutting & Slope Check', status: 'pending', category: 'MEP', notes: '' },
+    { id: 5, label: 'Flooring Leveling & Readiness', status: 'pending', category: 'Finishes', notes: '' }
+  ]
+
+  // SYNC WITH GLOBAL PLAYBOOK
   useEffect(() => {
     if (data && data.items) {
         setItems(Array.isArray(data.items) ? data.items : [])
         setPhotos(Array.isArray(data.photos) ? data.photos : [])
         setObservations(data.observations || '')
     } else {
-        setItems(Array.isArray(template) ? template : [])
+        setItems(defaultTemplate)
         setPhotos([])
         setObservations('')
     }
-  }, [project?.id, data, template]) // Fixed dependencies
+  }, [project?.id, data])
 
   // MANUAL SYNC HANDLER (TO PREVENT LOOPS)
   const syncToParent = (newItems, newPhotos, newObs) => {
@@ -70,16 +78,46 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
     }
   }
 
-  if (!project || !project.id) return (
-    <div className="card animate-fade-in" style={{ textAlign: 'center', padding: '4rem', margin: '2rem' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>Please select a project to initialize the Live Audit Hub.</p>
-    </div>
-  )
+  // RENDER AUDIT BENCH IF NO ACTIVE PROJECT OR INITIALIZING
+  if (!project || project.id === 0) {
+    return (
+      <div className="audit-bench-view animate-fade-in" style={{ padding: '1rem' }}>
+        <div style={{ marginBottom: '3rem' }}>
+          <h2 style={{ fontSize: '2rem', fontWeight: '900', margin: 0 }}>Project Audit Bench</h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Deploy technical audit playbooks to newly initialized project loops.</p>
+        </div>
 
-  const safeProjects = Array.isArray(projects) ? projects : []
-  const safePortfolios = Array.isArray(portfolios) ? portfolios : []
-  const portfolio = safePortfolios.find(p => Number(p.id) === Number(project?.portfolioId)) || { name: 'General Portfolio', stakeholders: [] }
-  const pm = project?.pmEmail || 'Not Assigned'
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
+          {(projects || []).map(p => (
+            <div key={p.id} className="card cinematic-hover" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(102, 178, 194, 0.1)', color: 'var(--accent-color)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: '800' }}>#{p.id}</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '800', color: p.readiness > 0 ? 'var(--success)' : 'var(--text-secondary)' }}>{p.readiness > 0 ? 'DEPLOYED' : 'PENDING'}</span>
+                </div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{p.name}</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>{p.client}</p>
+              </div>
+              
+              <button 
+                onClick={() => onSelectProject(p.id)}
+                className="btn btn-primary" 
+                style={{ width: '100%', marginTop: '2rem', justifyContent: 'center' }}
+              >
+                {p.readiness > 0 ? 'Open Audit Hub →' : 'Deploy Audit Playbook 🚀'}
+              </button>
+            </div>
+          ))}
+          {(projects || []).length === 0 && (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '5rem', background: 'rgba(0,0,0,0.1)', borderRadius: '20px', border: '1px dashed var(--border-color)' }}>
+              <p style={{ color: 'var(--text-secondary)' }}>No project loops initialized yet. Use the sidebar to start a new project.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const siteReadiness = project?.readiness || 0
   const financials = project?.clientFinancials || { totalValue: 0, requests: [], received: [] }
   const totalReceived = (financials.received || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0)

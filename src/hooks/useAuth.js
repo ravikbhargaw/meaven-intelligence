@@ -1,9 +1,24 @@
 import { useState, useEffect } from 'react'
 
 const useAuth = () => {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mi_current_user')
+      if (saved && saved !== 'undefined' && saved !== 'null') return JSON.parse(saved)
+    } catch (e) {
+      console.error('Session recovery failed')
+    }
+    return null
+  })
+  
   const [isFirstLogin, setIsFirstLogin] = useState(false)
   const [showPinModal, setShowPinModal] = useState(false)
+
+  // Persist current user session
+  useEffect(() => {
+    if (user) localStorage.setItem('mi_current_user', JSON.stringify(user))
+    else localStorage.removeItem('mi_current_user')
+  }, [user])
   
   // Multi-User Registry
   const [users, setUsers] = useState(() => {

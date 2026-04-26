@@ -226,6 +226,7 @@ function App() {
                     activeProjectId={activeProjectId} 
                     setActiveProjectId={setActiveProjectId} 
                     vendors={vendors}
+                    onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }}
                     onLockLocation={handleLockLocation}
                     onUpdateReadiness={handleUpdateReadiness}
                     readinessData={readinessData}
@@ -259,11 +260,11 @@ function App() {
 
               {activeTab === 'readiness' && (
                 <SiteReadiness 
-                  projectId={activeProjectId} 
-                  projectName={activeProject?.name} 
+                  project={activeProject}
+                  projects={projects}
                   data={readinessData[activeProjectId]} 
-                  onSave={(data) => handleUpdateReadiness(activeProjectId, data)} 
-                  stakeholders={activeProject?.stakeholders}
+                  onSelectProject={setActiveProjectId}
+                  onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
                 />
               )}
               {activeTab === 'calculator' && ( <TechnicalCalculator /> )}
