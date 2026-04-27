@@ -242,37 +242,48 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                         <p style={{ fontSize: '1.3rem', fontWeight: '800' }}>₹{(outstanding / 100000).toFixed(2)}L</p>
                     </div>
 
-                    <div className="card" style={{ border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                    <div className="card" style={{ border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1.2rem', minWidth: '320px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0 }}>Timeline Health</p>
-                            {selectedProject.endDate && (
-                                <span style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent-color)' }}>
-                                    {(() => {
-                                        const diff = new Date(selectedProject.endDate) - new Date();
-                                        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                                        return days > 0 ? `${days} Days Left` : (days === 0 ? 'Due Today' : `${Math.abs(days)} Days Overdue`);
-                                    })()}
-                                </span>
-                            )}
+                            <p style={{ fontSize: '0.6rem', color: 'var(--accent-color)', textTransform: 'uppercase', margin: 0, letterSpacing: '0.1em', fontWeight: '800' }}>🛰️ TIMELINE HEALTH</p>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div>
-                                <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>MEAVEN PROMISE</label>
-                                <input 
-                                    type="date" 
-                                    value={selectedProject.endDate || ''}
-                                    onChange={(e) => onUpdateValue(selectedProject.id, { endDate: e.target.value })}
-                                    style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '0.3rem', color: '#fff', fontSize: '0.7rem' }}
-                                />
-                            </div>
-                            <div>
-                                <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>VENDOR PROMISE</label>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vendor → Meaven</label>
                                 <input 
                                     type="date" 
                                     value={selectedProject.vendorEndDate || ''}
                                     onChange={(e) => onUpdateValue(selectedProject.id, { vendorEndDate: e.target.value })}
-                                    style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '0.3rem', color: '#fff', fontSize: '0.7rem' }}
+                                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '0.5rem', color: '#fff', fontSize: '0.75rem', width: '100%' }}
                                 />
+                                {selectedProject.vendorEndDate && (
+                                    <div style={{ fontSize: '0.6rem', fontWeight: '700', color: (new Date(selectedProject.vendorEndDate) - new Date()) > 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                        {(() => {
+                                            const diff = new Date(selectedProject.vendorEndDate) - new Date();
+                                            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                                            return days > 0 ? `${days} Days Left` : (days === 0 ? 'Due Today' : `${Math.abs(days)} Days Overdue`);
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meaven → Client</label>
+                                <input 
+                                    type="date" 
+                                    value={selectedProject.endDate || ''}
+                                    onChange={(e) => onUpdateValue(selectedProject.id, { endDate: e.target.value })}
+                                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '0.5rem', color: '#fff', fontSize: '0.75rem', width: '100%' }}
+                                />
+                                {selectedProject.endDate && (
+                                    <div style={{ fontSize: '0.6rem', fontWeight: '700', color: (new Date(selectedProject.endDate) - new Date()) > 0 ? 'var(--accent-color)' : 'var(--danger)' }}>
+                                        {(() => {
+                                            const diff = new Date(selectedProject.endDate) - new Date();
+                                            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                                            return days > 0 ? `${days} Days Left` : (days === 0 ? 'Due Today' : `${Math.abs(days)} Days Overdue`);
+                                        })()}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
