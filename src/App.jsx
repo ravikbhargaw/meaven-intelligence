@@ -203,7 +203,17 @@ function App() {
         const newPortfolio = { id: newProject.portfolioId, name: newProject.client, stakeholders: [] }
         setPortfolios(prev => [...(prev || []), newPortfolio])
     }
-    const project = { ...newProject, id: Date.now(), milestones: { measurementDate: null, siteReadiness: null, completion: null }, clientFinancials: { totalValue: 0, requests: [], received: [] }, history: [{ id: 1, type: 'info', title: 'Project Initialized', detail: `Project loop set for ${newProject.name}`, timestamp: new Date().toISOString() }] }
+    const project = { 
+        ...newProject, 
+        id: Date.now(), 
+        status: 'Active',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: null,
+        vendorEndDate: null,
+        milestones: { measurementDate: null, siteReadiness: null, completion: null }, 
+        clientFinancials: { totalValue: 0, requests: [], received: [] }, 
+        history: [{ id: 1, type: 'info', title: 'Project Initialized', detail: `Project loop set for ${newProject.name}`, timestamp: new Date().toISOString() }] 
+    }
     setProjects([...(projects || []), project]); setActiveProjectId(project.id); setIsNewProjectModalOpen(false);
   }
 

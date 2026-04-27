@@ -70,7 +70,7 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                             <h3 style={{ fontSize: '0.8rem', color: projectAnomalies ? 'var(--danger)' : 'var(--accent-color)', marginBottom: '1.5rem', letterSpacing: '0.1em' }}>{projectAnomalies ? '⚠️ PROJECT ANOMALY' : '✓ SITE HEALTH'}</h3>
                             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.7' }}>
                                 {projectAnomalies 
-                                    ? `Project ${p.id} shows significant deviation in site readiness. Critical path at risk due to material sync issues.`
+                                    ? `Project ${p.name} shows significant deviation in site readiness. Critical path at risk due to material sync issues.`
                                     : "Execution is trending ahead of the baseline technical playbook. No deviations detected."}
                             </p>
                         </div>

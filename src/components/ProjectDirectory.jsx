@@ -127,8 +127,22 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-                <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>{selectedProject.name}</h1>
+            <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>{selectedProject.name}</h1>
+                    <select 
+                        value={selectedProject.status || 'Active'}
+                        onChange={(e) => onUpdateValue(selectedProject.id, { status: e.target.value })}
+                        style={{ 
+                            background: (selectedProject.status === 'Completed' ? 'var(--success)' : (selectedProject.status === 'On Hold' ? 'var(--danger)' : 'var(--accent-color)')),
+                            color: '#000', border: 'none', borderRadius: '20px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer'
+                        }}
+                    >
+                        <option value="Active">ACTIVE</option>
+                        <option value="Completed">COMPLETED</option>
+                        <option value="On Hold">ON HOLD</option>
+                    </select>
+                </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Client: {selectedProject.client}</p>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -226,6 +240,41 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                     <div className="card" style={{ background: 'rgba(255, 69, 58, 0.05)' }}>
                         <p style={{ fontSize: '0.6rem', color: 'var(--danger)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Outstanding</p>
                         <p style={{ fontSize: '1.3rem', fontWeight: '800' }}>₹{(outstanding / 100000).toFixed(2)}L</p>
+                    </div>
+
+                    <div className="card" style={{ border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0 }}>Timeline Health</p>
+                            {selectedProject.endDate && (
+                                <span style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent-color)' }}>
+                                    {(() => {
+                                        const diff = new Date(selectedProject.endDate) - new Date();
+                                        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                                        return days > 0 ? `${days} Days Left` : (days === 0 ? 'Due Today' : `${Math.abs(days)} Days Overdue`);
+                                    })()}
+                                </span>
+                            )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div>
+                                <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>MEAVEN PROMISE</label>
+                                <input 
+                                    type="date" 
+                                    value={selectedProject.endDate || ''}
+                                    onChange={(e) => onUpdateValue(selectedProject.id, { endDate: e.target.value })}
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '0.3rem', color: '#fff', fontSize: '0.7rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.2rem' }}>VENDOR PROMISE</label>
+                                <input 
+                                    type="date" 
+                                    value={selectedProject.vendorEndDate || ''}
+                                    onChange={(e) => onUpdateValue(selectedProject.id, { vendorEndDate: e.target.value })}
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '0.3rem', color: '#fff', fontSize: '0.7rem' }}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
