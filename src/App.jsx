@@ -425,7 +425,7 @@ function App() {
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>Security Clearance</span>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: clientView ? '#34c759' : 'var(--accent-color)', boxShadow: `0 0 10px ${clientView ? '#34c759' : 'var(--accent-color)'}` }} />
                   </div>
-                  <div onClick={() => { if (clientView) setShowPinModal(true); else setClientView(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.8rem', background: 'var(--bg-primary)', borderRadius: '12px', cursor: 'pointer', border: '1px solid var(--border-color)' }}>
+                  <div onClick={() => { if (clientView) setShowPinModal(true); else { setClientView(true); setActiveTab('dashboard'); } }} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.8rem', background: 'var(--bg-primary)', borderRadius: '12px', cursor: 'pointer', border: '1px solid var(--border-color)' }}>
                     <div style={{ width: '40px', height: '22px', background: clientView ? 'rgba(255,255,255,0.1)' : 'var(--accent-color)', borderRadius: '11px', position: 'relative' }}>
                         <div style={{ width: '16px', height: '16px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: clientView ? '3px' : '21px', transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)' }} />
                     </div>
