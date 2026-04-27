@@ -281,7 +281,10 @@ function App() {
     setPlaybookProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'approved' } : p))
   }
 
-  const uniqueClients = [...new Set((projects || []).map(p => p.client || 'General Portfolio'))]
+  const uniqueClients = [...new Set([
+    ...(projects || []).map(p => p.client || 'General Portfolio'),
+    ...(portfolios || []).map(p => p.name)
+  ])].filter(Boolean)
   const activeProject = (projects || []).find(p => Number(p.id) === Number(activeProjectId)) || (projects && projects[0]) || { id: 0, name: 'Initializing...', client: 'Meaven Intelligence' }
 
   return (
