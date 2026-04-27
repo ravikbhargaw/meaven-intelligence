@@ -270,9 +270,24 @@ function App() {
                         type: 'note', 
                         title: 'Tactical Intel', 
                         detail: note, 
-                        date: new Date().toISOString().split('T')[0] 
+                        date: new Date().toISOString().split('T')[0],
+                        isClientVisible: false
                     }
                 ]
+            }
+        }
+        return p
+    }))
+  }
+
+  const handleToggleTimelineVisibility = (projectId, historyId) => {
+    setProjects(prev => prev.map(p => {
+        if (Number(p.id) === Number(projectId)) {
+            return {
+                ...p,
+                history: (p.history || []).map(h => 
+                    h.id === historyId ? { ...h, isClientVisible: !h.isClientVisible } : h
+                )
             }
         }
         return p
@@ -489,6 +504,7 @@ function App() {
                     onLogPayout={handleLogPayout}
                     onAddVendor={handleAddVendor}
                     onAddNote={handleProjectAddNote}
+                    onToggleVisibility={handleToggleTimelineVisibility}
                     userRole={user?.role}
                   />
                 )}

@@ -7,7 +7,7 @@ const ModalOverlay = ({ children }) => (
     </div>
 )
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, userRole }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole }) => {
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSubTab, setActiveSubTab] = useState('overview') 
@@ -351,7 +351,22 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                                     {i < (selectedProject.history?.length || 0) - 1 && <div style={{ position: 'absolute', left: '4px', top: '15px', bottom: '-20px', width: '2px', background: 'var(--border-color)' }} />}
                                     <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem' }}>{h.title}</p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem' }}>{h.title}</p>
+                                                {h.type === 'note' && (
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); onToggleVisibility(selectedProject.id, h.id); }}
+                                                        title={h.isClientVisible ? "Visible to Client" : "Internal Only"}
+                                                        style={{ 
+                                                            background: h.isClientVisible ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255,255,255,0.05)', 
+                                                            border: `1px solid ${h.isClientVisible ? 'var(--success)' : 'var(--border-color)'}`,
+                                                            borderRadius: '4px', padding: '0.1rem 0.3rem', fontSize: '0.6rem', color: h.isClientVisible ? 'var(--success)' : 'var(--text-secondary)', cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        {h.isClientVisible ? '👁️ PUSHED' : '👁️ PUSH'}
+                                                    </button>
+                                                )}
+                                            </div>
                                             <span style={{ fontSize: '0.6rem', color: '#444' }}>{h.date || h.timestamp?.split('T')[0]}</span>
                                         </div>
                                         <p style={{ margin: '0.2rem 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{h.detail}</p>

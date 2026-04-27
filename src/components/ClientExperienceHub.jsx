@@ -305,6 +305,26 @@ const ProjectExecutiveCard = ({ project, onClick, index, isPaused, isCompleted }
                 <TimelineStep label="Install" active={readiness >= 100 || isCompleted} />
             </div>
 
+            {/* AUTHORIZED CLIENT TIMELINE */}
+            {project.history?.some(h => h.isClientVisible) && (
+                <div style={{ marginBottom: '2.5rem', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <h4 style={{ fontSize: '0.65rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '1.2rem', fontWeight: '800' }}>🛰️ AUTHORIZED SITE UPDATES</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {project.history.filter(h => h.isClientVisible).map(h => (
+                            <div key={h.id} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                <div style={{ minWidth: '60px', fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '700', paddingTop: '0.2rem' }}>
+                                    {h.date || h.timestamp?.split('T')[0]}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: '700', fontSize: '0.8rem', color: '#fff' }}>{h.title}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem', lineHeight: '1.4' }}>{h.detail}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* FOOTER ACTION */}
             <div style={{ 
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
