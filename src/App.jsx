@@ -269,7 +269,7 @@ function App() {
   }
 
   const handleAddVendorContract = (vendorId, projectName, orderValue) => {
-    setVendors(vendors.map(v => v.id === vendorId ? { ...v, contracts: [...(v.contracts || []), { id: Date.now(), projectName, orderValue: parseInt(orderValue), payments: [] }] } : v))
+    setVendors(vendors.map(v => v.id === vendorId ? { ...v, contracts: [...(v.contracts || []), { id: Date.now(), projectName, orderValue: parseInt(orderValue), status: 'Active', payments: [] }] } : v))
   }
 
   const handleVendorAddNote = (vendorId, note) => {

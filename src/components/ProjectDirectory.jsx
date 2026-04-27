@@ -31,7 +31,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
   const selectedProject = (projects || []).find(p => p.id === selectedProjectId)
 
   // Find linked vendor (Active only)
-  const linkedVendor = (vendors || []).find(v => (v.contracts || []).some(c => c.projectName === selectedProject?.name && c.status === 'Active'))
+  // Find linked vendor (Robust detection)
+  const linkedVendor = (vendors || []).find(v => 
+    v.name === selectedProject?.assignedVendor || 
+    (v.contracts || []).some(c => 
+        (c.projectName || '').toLowerCase().trim() === (selectedProject?.name || '').toLowerCase().trim() && 
+        (c.status === 'Active' || !c.status)
+    )
+  )
 
   // INTELLIGENCE ENGINE: Recommend Top 3 Best Fit Vendors
   const getRecommendations = () => {
