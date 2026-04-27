@@ -272,6 +272,27 @@ function App() {
     setVendors(vendors.map(v => v.id === vendorId ? { ...v, contracts: [...(v.contracts || []), { id: Date.now(), projectName, orderValue: parseInt(orderValue), payments: [] }] } : v))
   }
 
+  const handleVendorAddNote = (vendorId, note) => {
+    setVendors(prev => prev.map(v => {
+        if (v.id === vendorId) {
+            return {
+                ...v,
+                history: [
+                    ...(v.history || []),
+                    { 
+                        id: Date.now(), 
+                        type: 'note', 
+                        title: 'Intelligence Update', 
+                        detail: note, 
+                        date: new Date().toISOString().split('T')[0] 
+                    }
+                ]
+            }
+        }
+        return v
+    }))
+  }
+
   const handleAssignVendor = (projectId, vendor) => {
     setProjects(prev => prev.map(p => p.id === projectId ? { ...p, assignedVendor: vendor.name } : p))
   }
@@ -448,6 +469,7 @@ function App() {
                     onAddPayment={handleAddVendorPayment} 
                     onUpdateVendor={handleUpdateVendor}
                     onAddVendor={handleAddVendor}
+                    onAddNote={handleVendorAddNote}
                     onAssignVendor={handleAssignVendor}
                     onReassign={handleReassignProject}
                   />

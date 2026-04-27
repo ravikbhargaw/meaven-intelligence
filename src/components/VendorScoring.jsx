@@ -154,15 +154,44 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
                 <div className="card" style={{ background: 'var(--bg-accent)' }}>
                     <h4 style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>Compliance Verification</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
                             <span style={{ color: 'var(--text-secondary)' }}>GST Verified</span>
-                            <span>{selectedVendor.isGstVerified ? '✅' : '❌'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                <span>{selectedVendor.isGstVerified ? '✅' : '❌'}</span>
+                                {!isReadOnly && (
+                                    <button 
+                                        onClick={() => onUpdateVendor(selectedVendor.id, { isGstVerified: !selectedVendor.isGstVerified })}
+                                        style={{ fontSize: '0.65rem', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}
+                                    >
+                                        {selectedVendor.isGstVerified ? 'Unverify' : 'Verify Now'}
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
                             <span style={{ color: 'var(--text-secondary)' }}>Quality Audit</span>
-                            <span>{selectedVendor.isCertVerified ? '✅' : '❌'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                <span>{selectedVendor.isCertVerified ? '✅' : '❌'}</span>
+                                {!isReadOnly && (
+                                    <button 
+                                        onClick={() => onUpdateVendor(selectedVendor.id, { isCertVerified: !selectedVendor.isCertVerified })}
+                                        style={{ fontSize: '0.65rem', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}
+                                    >
+                                        {selectedVendor.isCertVerified ? 'Unverify' : 'Verify Now'}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
+                    {(selectedVendor.isGstVerified && selectedVendor.isCertVerified && selectedVendor.status !== 'Certified') && !isReadOnly && (
+                        <button 
+                            onClick={() => onUpdateVendor(selectedVendor.id, { status: 'Certified' })}
+                            className="btn btn-primary" 
+                            style={{ width: '100%', marginTop: '1.5rem', fontSize: '0.75rem', padding: '0.6rem' }}
+                        >
+                            UPGRADE TO CERTIFIED PARTNER
+                        </button>
+                    )}
                 </div>
             </div>
 
