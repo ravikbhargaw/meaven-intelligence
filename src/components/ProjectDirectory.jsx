@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // MOVE OUTSIDE to prevent re-mounting on every state change (which causes focus loss)
 const ModalOverlay = ({ children }) => (
@@ -23,6 +23,15 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
   // Form States for robustness
   const [selectedVendorId, setSelectedVendorId] = useState('')
   const [assignOrderValue, setAssignOrderValue] = useState('')
+  const [isSignOffModalOpen, setIsSignOffModalOpen] = useState(false)
+  const [signOffEmail, setSignOffEmail] = useState({ subject: '', body: '', to: '' })
+
+  useEffect(() => {
+    if (selectedProjectId) {
+        const p = projects.find(proj => Number(proj.id) === Number(selectedProjectId));
+        if (p) window.lastActiveProject = p;
+    }
+  }, [selectedProjectId, projects]);
 
   const filteredProjects = (projects || []).filter(p => 
     (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -99,6 +108,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
     const financials = selectedProject.clientFinancials || { totalValue: 0, requests: [], received: [] }
     const totalReceived = (financials.received || []).reduce((sum, r) => sum + r.amount, 0)
     const outstanding = pl.revenue - totalReceived
+    const linkedVendor = (vendors || []).find(v => (v.contracts || []).some(c => c.projectName === selectedProject.name));
 
     return (
       <div className="project-detail-view animate-fade-in" style={{ paddingBottom: '5rem' }}>
@@ -134,13 +144,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                         value={selectedProject.status || 'Active'}
                         onChange={(e) => onUpdateValue(selectedProject.id, { status: e.target.value })}
                         style={{ 
-                            background: (selectedProject.status === 'Completed' ? 'var(--success)' : (selectedProject.status === 'On Hold' ? 'var(--danger)' : 'var(--accent-color)')),
-                            color: '#000', border: 'none', borderRadius: '20px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer'
+                            background: (selectedProject.status === 'Completed' ? 'var(--success)' : (selectedProject.status === 'On Hold' ? 'var(--danger)' : (selectedProject.status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)'))),
+                            color: selectedProject.status === 'Final Closure' ? '#fff' : '#000', border: 'none', borderRadius: '20px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer'
                         }}
                     >
                         <option value="Active">ACTIVE</option>
                         <option value="Completed">COMPLETED</option>
                         <option value="On Hold">ON HOLD</option>
+                        <option value="Final Closure">FINAL CLOSURE</option>
                     </select>
                 </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Client: {selectedProject.client}</p>
@@ -205,6 +216,19 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                         )}
                     </div>
 
+                    <div className="card" style={{ background: 'rgba(50, 215, 75, 0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <p style={{ fontSize: '0.6rem', color: 'var(--success)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Collected</p>
+                            <button onClick={() => setIsPaymentModalOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', fontSize: '0.6rem', fontWeight: '700' }}>+ Log</button>
+                        </div>
+                        <p style={{ fontSize: '1.3rem', fontWeight: '800' }}>₹{(totalReceived / 100000).toFixed(2)}L</p>
+                    </div>
+
+                    <div className="card" style={{ background: 'rgba(255, 69, 58, 0.05)' }}>
+                        <p style={{ fontSize: '0.6rem', color: 'var(--danger)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Outstanding</p>
+                        <p style={{ fontSize: '1.3rem', fontWeight: '800' }}>₹{(outstanding / 100000).toFixed(2)}L</p>
+                    </div>
+
                     <div className="card" style={{ 
                         background: linkedVendor ? 'rgba(50, 215, 75, 0.05)' : 'rgba(255, 69, 58, 0.05)',
                         border: linkedVendor ? 'none' : '1px solid var(--danger)',
@@ -219,7 +243,10 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                             )}
                         </div>
                         {linkedVendor ? (
-                            <div>
+                            <div 
+                                onClick={() => { window.navigateToVendorBench?.(linkedVendor.id); }}
+                                style={{ cursor: 'pointer' }}
+                            >
                                 <p style={{ fontSize: '1rem', fontWeight: '800', margin: 0 }}>{linkedVendor.name}</p>
                             </div>
                         ) : (
@@ -227,19 +254,6 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                                 <p style={{ fontSize: '1rem', fontWeight: '800', margin: 0, color: 'var(--danger)' }}>UNASSIGNED</p>
                             </div>
                         )}
-                    </div>
-
-                    <div className="card" style={{ background: 'rgba(50, 215, 75, 0.05)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <p style={{ fontSize: '0.6rem', color: 'var(--success)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Collected</p>
-                            <button onClick={() => setIsPaymentModalOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--success)', cursor: 'pointer', fontSize: '0.6rem', fontWeight: '700' }}>+ Log</button>
-                        </div>
-                        <p style={{ fontSize: '1.3rem', fontWeight: '800' }}>₹{(totalReceived / 100000).toFixed(2)}L</p>
-                    </div>
-
-                    <div className="card" style={{ background: 'rgba(255, 69, 58, 0.05)' }}>
-                        <p style={{ fontSize: '0.6rem', color: 'var(--danger)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Outstanding</p>
-                        <p style={{ fontSize: '1.3rem', fontWeight: '800' }}>₹{(outstanding / 100000).toFixed(2)}L</p>
                     </div>
 
                     <div className="card" style={{ border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '220px' }}>
@@ -386,6 +400,51 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                         </p>
                     </div>
                 </div>
+                {/* PROJECT SIGN-OFF WORKFLOW */}
+                <div className="card" style={{ border: '1px solid var(--border-color)', marginTop: '2rem', marginBottom: '2rem', padding: '2rem', background: 'rgba(255,255,255,0.01)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>📜 PROJECT MANAGER SIGN-OFF</h4>
+                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Formal technical and financial closure authorization.</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            {selectedProject.managerSignOff ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontWeight: '800', fontSize: '0.8rem' }}>
+                                    <span>✓ SIGNED OFF</span>
+                                </div>
+                            ) : (
+                                <button 
+                                    onClick={() => {
+                                        setIsSignOffModalOpen(true);
+                                        const clientTimeline = (selectedProject.history || [])
+                                            .filter(h => h.isClientVisible)
+                                            .map(h => `- ${h.date || h.timestamp?.split('T')[0]}: ${h.title} (${h.detail})`)
+                                            .join('\n');
+                                        
+                                        setSignOffEmail({
+                                            to: selectedProject.stakeholders?.join(', ') || 'project.manager@meaven.co',
+                                            subject: `Final Sign-off Request: ${selectedProject.name}`,
+                                            body: `Dear Team,\n\nPlease review and provide the final sign-off for ${selectedProject.name}.\n\nAUTHORISED SITE TIMELINE:\n${clientTimeline || 'No entries pushed to client view yet.'}\n\nRegards,\nMeaven Intelligence Hub`
+                                        });
+                                    }}
+                                    className="btn btn-outline" 
+                                    style={{ fontSize: '0.7rem', padding: '0.6rem 1.2rem', borderColor: 'var(--accent-color)', color: 'var(--accent-color)' }}
+                                >
+                                    REQUEST SIGN-OFF
+                                </button>
+                            )}
+                            <button 
+                                onClick={() => onUpdateValue(selectedProject.id, { managerSignOff: !selectedProject.managerSignOff })}
+                                style={{ 
+                                    padding: '0.5rem 1rem', background: selectedProject.managerSignOff ? 'var(--success)' : 'rgba(255,255,255,0.05)', 
+                                    border: 'none', borderRadius: '8px', color: selectedProject.managerSignOff ? '#000' : '#fff', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' 
+                                }}
+                            >
+                                {selectedProject.managerSignOff ? 'REVERSE SIGN-OFF' : 'AUTHORIZE MANUALLY'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         ) : (
             <div className="animate-fade-in">
@@ -397,7 +456,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1.2rem' }}>
                             <div style={{ borderLeft: '3px solid var(--accent-color)', paddingLeft: '1rem' }}>
-                                <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Revenue</p>
+                                <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Project Value</p>
                                 <p style={{ margin: '0.2rem 0 0 0', fontSize: '1.2rem', fontWeight: '800' }}>₹{(pl.revenue / 100000).toFixed(2)}L</p>
                             </div>
                             <div style={{ borderLeft: '3px solid var(--danger)', paddingLeft: '1rem' }}>
@@ -418,7 +477,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                     {/* Section 1: Client Payment Tracking */}
                     <div className="card">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h4 style={{ margin: 0, color: 'var(--success)', fontSize: '0.9rem' }}>📥 Revenue</h4>
+                            <h4 style={{ margin: 0, color: 'var(--success)', fontSize: '0.9rem' }}>📥 Receipts</h4>
                             <button onClick={() => setIsPaymentModalOpen(true)} style={{ background: 'var(--success)', color: '#000', border: 'none', borderRadius: '4px', padding: '0.3rem 0.6rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer' }}>+ Log</button>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -442,14 +501,27 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                             {(selectedProject.payouts || []).map(p => {
-                                const vendor = vendors.find(v => v.id === p.vendorId)
+                                const vendor = vendors.find(v => String(v.id) === String(p.vendorId))
                                 return (
                                     <div key={p.id} style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
                                             <span style={{ fontWeight: '800', color: 'var(--danger)', fontSize: '0.85rem' }}>- ₹{p.amount.toLocaleString()}</span>
                                             <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{p.date}</span>
                                         </div>
-                                        <p style={{ margin: '0 0 0.2rem 0', fontSize: '0.75rem', fontWeight: '600' }}>To: {vendor?.name || 'Partner'}</p>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                            {vendor ? (
+                                                <div 
+                                                    onClick={() => { window.navigateToVendorBench?.(vendor.id); }}
+                                                    style={{ fontSize: '0.85rem', color: 'var(--accent-color)', cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                                >
+                                                    <span>To: {vendor.name}</span>
+                                                    <span style={{ fontSize: '0.6rem' }}>↗</span>
+                                                </div>
+                                            ) : (
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>To: Unknown Partner</span>
+                                            )}
+                                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', opacity: 0.6 }}>Transaction Ref: {p.ref}</span>
+                                        </div>
                                     </div>
                                 )
                             })}
@@ -631,6 +703,60 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                             <button type="submit" className="btn btn-primary" style={{ flex: 1, background: 'var(--danger)', color: '#fff', fontSize: '0.75rem' }}>Confirm</button>
                         </div>
                     </form>
+                </div>
+            </ModalOverlay>
+        )}
+
+        {/* SIGN-OFF EMAIL MODAL */}
+        {isSignOffModalOpen && (
+            <ModalOverlay>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 600px)', padding: '2.5rem' }}>
+                    <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-color)' }}>Draft Sign-off Authorization</h3>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div>
+                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Recipients</label>
+                            <input 
+                                value={signOffEmail.to}
+                                onChange={(e) => setSignOffEmail({ ...signOffEmail, to: e.target.value })}
+                                style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Subject</label>
+                            <input 
+                                value={signOffEmail.subject}
+                                onChange={(e) => setSignOffEmail({ ...signOffEmail, subject: e.target.value })}
+                                style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Email Body</span>
+                                <span style={{ color: 'var(--success)' }}>📎 Timeline Attached</span>
+                            </label>
+                            <textarea 
+                                value={signOffEmail.body}
+                                onChange={(e) => setSignOffEmail({ ...signOffEmail, body: e.target.value })}
+                                style={{ width: '100%', height: '250px', padding: '1rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem', lineHeight: '1.6' }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => setIsSignOffModalOpen(false)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                            <button 
+                                onClick={() => {
+                                    onAddNote(selectedProject.id, `Sign-off email sent to: ${signOffEmail.to}`);
+                                    alert("Email Sent! (Reminder 1: Awaiting for final sign off - scheduled in 6 hours)");
+                                    setIsSignOffModalOpen(false);
+                                }}
+                                className="btn btn-primary" 
+                                style={{ flex: 1, justifyContent: 'center' }}
+                            >
+                                🚀 Send Authorization Email
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </ModalOverlay>
         )}

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 
-const AdminPanel = ({ users = [], proposals = [], onApproveProposal, onAddUser, onRemoveUser, onResetUser, onBack }) => {
+const AdminPanel = ({ users = [], proposals = [], onApproveProposal, onAddUser, onRemoveUser, onResetUser, onBack, msaTemplate, onUpdateMsa }) => {
     const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Admin' })
+    const [localMsa, setLocalMsa] = useState(msaTemplate)
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -20,6 +21,36 @@ const AdminPanel = ({ users = [], proposals = [], onApproveProposal, onAddUser, 
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    {/* MSA GOVERNANCE EDITOR */}
+                    <div className="card" style={{ border: '1px solid #7b61ff', background: 'rgba(123, 97, 255, 0.02)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0, color: '#7b61ff' }}>📜 MSA Contract Governance</h3>
+                            <button 
+                                onClick={() => {
+                                    onUpdateMsa(localMsa);
+                                    alert("MSA Governance Template Updated Successfully!");
+                                }}
+                                className="btn btn-primary" 
+                                style={{ background: '#7b61ff', color: '#fff', fontSize: '0.7rem', padding: '0.5rem 1rem' }}
+                            >
+                                Save Global Template
+                            </button>
+                        </div>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1rem' }}>
+                            Edit the master legal text for partner agreements. Use dynamic tags for auto-population:
+                        </p>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                            {['{{VENDOR_NAME}}', '{{ADDRESS}}', '{{PAN}}', '{{GST}}', '{{DATE}}', '{{CATEGORY}}'].map(tag => (
+                                <code key={tag} style={{ fontSize: '0.6rem', padding: '0.2rem 0.4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', color: 'var(--accent-color)' }}>{tag}</code>
+                            ))}
+                        </div>
+                        <textarea 
+                            value={localMsa}
+                            onChange={(e) => setLocalMsa(e.target.value)}
+                            style={{ width: '100%', height: '350px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.5rem', color: '#fff', fontSize: '0.85rem', lineHeight: '1.6', fontFamily: 'monospace' }}
+                        />
+                    </div>
+
                     {/* USER LIST */}
                     <div className="card">
                         <h3 style={{ marginBottom: '1.5rem' }}>Active Team Members</h3>

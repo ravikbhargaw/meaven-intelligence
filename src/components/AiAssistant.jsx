@@ -42,15 +42,38 @@ const AiAssistant = ({ activeTab, clientView, userName }) => {
     setInput('');
     setIsTyping(true);
 
-    // Mock AI Response
+    // Context-Aware Intelligence Engine
     setTimeout(() => {
       setIsTyping(false);
+      let aiResponse = "";
+      
+      const query = content.toLowerCase();
+      const activeProj = window.lastActiveProject;
+
+      if (query.includes('status')) {
+        if (activeProj) {
+            const collected = (activeProj.clientFinancials?.received || []).reduce((s, r) => s + r.amount, 0);
+            aiResponse = `Analyzing ${activeProj.name} (${activeProj.status}): Technical readiness is at ${activeProj.readiness || 0}%. Financials: ₹${(activeProj.clientFinancials?.totalValue / 100000).toFixed(2)}L contract, with ₹${(collected / 100000).toFixed(2)}L collected. Partner assigned: ${activeProj.linkedVendor || 'Unassigned'}.`;
+        } else {
+            aiResponse = "I am ready to analyze any project site. Please select a project in Project Central or Audit Hub to initialize a context-aware summary.";
+        }
+      } else if (query.includes('payout') || query.includes('money') || query.includes('revenue')) {
+        if (activeProj) {
+            const payouts = (activeProj.payouts || []).reduce((s, p) => s + p.amount, 0);
+            aiResponse = `Project ${activeProj.name} Financial Audit: Total Payouts to date is ₹${(payouts / 100000).toFixed(2)}L. The projected margin remains healthy.`;
+        } else {
+            aiResponse = "Please select a project to view specific financial intelligence.";
+        }
+      } else {
+        aiResponse = `Analyzing "${content}"... Based on current Tactical Data, I recommend checking the ${selectedTabLabel()} for active loops.`;
+      }
+
       const systemMsg = { 
         role: 'system', 
-        content: `Analyzing ${content}... Based on current Tactical Data, I recommend checking the latest Site Readiness scores for active loops in ${selectedTabLabel()}.` 
+        content: aiResponse 
       };
       setMessages(prev => [...prev, systemMsg]);
-    }, 1500);
+    }, 1200);
   };
 
   const selectedTabLabel = () => {
@@ -83,7 +106,13 @@ const AiAssistant = ({ activeTab, clientView, userName }) => {
         </div>
       </div>
 
-      <div className={`ai-panel ${isOpen ? 'open' : ''}`}>
+      <div className={`ai-panel ${isOpen ? 'open' : ''}`} style={{ 
+        background: 'rgba(15, 15, 15, 0.85)', 
+        backdropFilter: 'blur(40px) saturate(200%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+        border: '1px solid rgba(255, 255, 255, 0.15)',
+        boxShadow: '0 20px 80px rgba(0,0,0,0.8)'
+      }}>
         <div className="ai-panel-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#7b61ff', boxShadow: '0 0 10px #7b61ff' }} />

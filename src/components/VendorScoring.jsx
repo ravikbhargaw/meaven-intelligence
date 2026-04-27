@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly }) => {
+const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: selectedVendorIdProp, msaTemplate, onSelectVendor, onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isContractModalOpen, setIsContractModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
@@ -10,6 +10,21 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
   const [filterCategory, setFilterCategory] = useState('All')
   const [filterStatus, setFilterStatus] = useState('All')
   const [noteText, setNoteText] = useState('')
+  const [isVaultModalOpen, setIsVaultModalOpen] = useState(false)
+  const [isMsaModalOpen, setIsMsaModalOpen] = useState(false)
+  const [isEsignMode, setIsEsignMode] = useState(false)
+  const [signerName, setSignerName] = useState('')
+  
+  useEffect(() => {
+    if (selectedVendorIdProp !== undefined) {
+        setSelectedVendorId(selectedVendorIdProp);
+    }
+  }, [selectedVendorIdProp]);
+
+  const handleSetSelectedVendor = (id) => {
+    setSelectedVendorId(id);
+    if (onSelectVendor) onSelectVendor(id);
+  }
   
   // New Contract Modal State
   const [linkMode, setLinkMode] = useState('existing') // 'existing' or 'new'
@@ -69,7 +84,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
     return (
       <div className="vendor-detail-view animate-fade-in" style={{ paddingBottom: '5rem' }}>
         <button 
-          onClick={() => { setSelectedVendorId(null); setActiveContractId(null); }} 
+          onClick={() => handleSetSelectedVendor(null)} 
           style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '2rem', fontSize: '0.9rem', fontWeight: '600' }}
         >
           ← Back to Partner Directory
@@ -124,7 +139,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div className="card" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Active Contracts</h4>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Project Sites</h4>
                         {!isReadOnly && (
                             <button onClick={() => { setLinkMode('existing'); setIsContractModalOpen(true); }} style={{ color: 'var(--accent-color)', fontSize: '0.75rem', fontWeight: '600' }}>+ Link Project</button>
                         )}
@@ -144,7 +159,25 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
                                     border: '1px solid ' + (activeContractId === c.id ? 'var(--accent-color)' : 'transparent')
                                 }}
                             >
-                                <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem' }}>{c.projectName}</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem' }}>{c.projectName}</p>
+                                    {(() => {
+                                        const p = projects.find(proj => proj.name === c.projectName);
+                                        const status = p?.status || 'Active';
+                                        return (
+                                            <span 
+                                                title="This status is synchronized with Project Central. Modify it there to update partner records."
+                                                style={{ 
+                                                    fontSize: '0.5rem', padding: '0.2rem 0.5rem', borderRadius: '4px', 
+                                                    background: status === 'Completed' ? 'var(--success)' : (status === 'On Hold' ? 'var(--danger)' : (status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)')),
+                                                    color: status === 'Final Closure' ? '#fff' : '#000', fontWeight: '800', cursor: 'help'
+                                                }}
+                                            >
+                                                {status.toUpperCase()}
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
                                 <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', opacity: 0.7 }}>Order: ₹{(c.orderValue / 100000).toFixed(2)}L</p>
                             </div>
                         ))}
@@ -152,46 +185,121 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
                 </div>
 
                 <div className="card" style={{ background: 'var(--bg-accent)' }}>
-                    <h4 style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>Compliance Verification</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
-                            <span style={{ color: 'var(--text-secondary)' }}>GST Verified</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                <span>{selectedVendor.isGstVerified ? '✅' : '❌'}</span>
-                                {!isReadOnly && (
-                                    <button 
-                                        onClick={() => onUpdateVendor(selectedVendor.id, { isGstVerified: !selectedVendor.isGstVerified })}
-                                        style={{ fontSize: '0.65rem', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}
-                                    >
-                                        {selectedVendor.isGstVerified ? 'Unverify' : 'Verify Now'}
-                                    </button>
-                                )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>🛡️ Compliance Vault</h4>
+                        <button 
+                            onClick={() => setIsVaultModalOpen(true)}
+                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--accent-color)', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer' }}
+                        >
+                            MANAGE VAULT
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                        {/* Mandatory Data Fields */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                            <div>
+                                <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Phone</label>
+                                <input 
+                                    value={selectedVendor.phone || ''}
+                                    onChange={(e) => onUpdateVendor(selectedVendor.id, { phone: e.target.value })}
+                                    placeholder="Add phone..."
+                                    style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: '#fff', fontSize: '0.8rem', padding: '0.2rem 0' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>PAN</label>
+                                <input 
+                                    value={selectedVendor.pan || ''}
+                                    onChange={(e) => onUpdateVendor(selectedVendor.id, { pan: e.target.value })}
+                                    placeholder="Add PAN..."
+                                    style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: '#fff', fontSize: '0.8rem', padding: '0.2rem 0' }}
+                                />
                             </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
-                            <span style={{ color: 'var(--text-secondary)' }}>Quality Audit</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                <span>{selectedVendor.isCertVerified ? '✅' : '❌'}</span>
-                                {!isReadOnly && (
-                                    <button 
-                                        onClick={() => onUpdateVendor(selectedVendor.id, { isCertVerified: !selectedVendor.isCertVerified })}
-                                        style={{ fontSize: '0.65rem', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}
-                                    >
-                                        {selectedVendor.isCertVerified ? 'Unverify' : 'Verify Now'}
-                                    </button>
-                                )}
-                            </div>
+                        <div>
+                            <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Physical Address</label>
+                            <input 
+                                value={selectedVendor.address || ''}
+                                onChange={(e) => onUpdateVendor(selectedVendor.id, { address: e.target.value })}
+                                placeholder="Full Registered Address..."
+                                style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: '#fff', fontSize: '0.8rem', padding: '0.2rem 0' }}
+                            />
+                        </div>
+
+                        {/* Mandatory Document Status */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.5rem' }}>
+                            {[
+                                { label: 'GST Certificate', key: 'GST' },
+                                { label: 'PAN Card Doc', key: 'PAN' },
+                                { label: 'Cancelled Cheque', key: 'Cheque' }
+                            ].map(doc => {
+                                const hasDoc = (selectedVendor.documents || []).some(d => d.tag === doc.key);
+                                return (
+                                    <div key={doc.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', padding: '0.5rem', background: 'rgba(0,0,0,0.1)', borderRadius: '6px' }}>
+                                        <span style={{ color: hasDoc ? '#fff' : 'var(--text-secondary)' }}>{doc.label}</span>
+                                        <span style={{ fontWeight: '800', color: hasDoc ? 'var(--success)' : 'var(--danger)' }}>{hasDoc ? 'VERIFIED ✅' : 'MISSING ❌'}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
-                    {(selectedVendor.isGstVerified && selectedVendor.isCertVerified && selectedVendor.status !== 'Certified') && !isReadOnly && (
-                        <button 
-                            onClick={() => onUpdateVendor(selectedVendor.id, { status: 'Certified' })}
-                            className="btn btn-primary" 
-                            style={{ width: '100%', marginTop: '1.5rem', fontSize: '0.75rem', padding: '0.6rem' }}
-                        >
-                            UPGRADE TO CERTIFIED PARTNER
-                        </button>
-                    )}
+
+                    {(() => {
+                        const hasPhone = !!selectedVendor.phone;
+                        const hasAddress = !!selectedVendor.address;
+                        const hasPan = !!selectedVendor.pan;
+                        const hasGstDoc = (selectedVendor.documents || []).some(d => d.tag === 'GST');
+                        const hasPanDoc = (selectedVendor.documents || []).some(d => d.tag === 'PAN');
+                        const hasChequeDoc = (selectedVendor.documents || []).some(d => d.tag === 'Cheque');
+                        
+                        const isEligible = hasPhone && hasAddress && hasPan && hasGstDoc && hasPanDoc && hasChequeDoc;
+
+                        return (
+                            <div style={{ marginTop: '1.5rem' }}>
+                                {selectedVendor.status === 'Certified' ? (
+                                    <div style={{ textAlign: 'center', padding: '0.8rem', background: 'rgba(50, 215, 75, 0.1)', borderRadius: '8px', border: '1px solid var(--success)', color: 'var(--success)', fontSize: '0.75rem', fontWeight: '800' }}>
+                                        ✨ MEAVEN CERTIFIED PARTNER
+                                    </div>
+                                ) : (
+                                    <div title={!isEligible ? "Verification Requirements Incomplete: Ensure Phone, Address, PAN, and all 3 Mandatory Docs are present." : "Ready for Institutional Certification"}>
+                                        <button 
+                                            disabled={!isEligible || isReadOnly}
+                                            onClick={() => onUpdateVendor(selectedVendor.id, { status: 'Certified', msaStatus: 'Pending' })}
+                                            className="btn btn-primary" 
+                                            style={{ width: '100%', fontSize: '0.75rem', padding: '0.6rem', opacity: isEligible ? 1 : 0.4 }}
+                                        >
+                                            {isEligible ? 'UPGRADE TO CERTIFIED PARTNER' : '🔒 CERTIFICATION LOCKED'}
+                                        </button>
+                                        {!isEligible && (
+                                            <p style={{ fontSize: '0.55rem', color: 'var(--danger)', marginTop: '0.5rem', textAlign: 'center' }}>
+                                                Checklist: {!hasPhone && 'Phone, '}{!hasAddress && 'Address, '}{!hasPan && 'PAN, '}{(!hasGstDoc || !hasPanDoc || !hasChequeDoc) && 'Compliance Docs'} missing.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* MSA Workflow */}
+                                {selectedVendor.status === 'Certified' && (
+                                    <div style={{ marginTop: '1rem' }}>
+                                        {selectedVendor.msaStatus === 'Executed' ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.8rem', background: 'rgba(123, 97, 255, 0.1)', border: '1px solid #7b61ff', color: '#7b61ff', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800' }}>
+                                                📜 MSA EXECUTED
+                                            </div>
+                                        ) : (
+                                            <button 
+                                                onClick={() => setIsMsaModalOpen(true)}
+                                                className="btn btn-outline" 
+                                                style={{ width: '100%', color: '#7b61ff', borderColor: '#7b61ff', fontSize: '0.75rem' }}
+                                            >
+                                                {selectedVendor.msaStatus === 'Sent' ? '⌛ AWAITING SIGNATURE' : '📜 ISSUE MSA CONTRACT'}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
 
@@ -200,7 +308,24 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
                     <div className="card animate-fade-in" style={{ border: '1px solid var(--accent-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                             <div>
-                                <h3 style={{ margin: 0 }}>{selectedContract.projectName} Ledger</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <h3 style={{ margin: 0 }}>{selectedContract.projectName} Ledger</h3>
+                                    {(() => {
+                                        const p = projects.find(proj => proj.name === selectedContract.projectName);
+                                        const status = p?.status || 'Active';
+                                        return (
+                                            <span 
+                                                style={{ 
+                                                    fontSize: '0.6rem', padding: '0.2rem 0.8rem', borderRadius: '20px', 
+                                                    background: status === 'Completed' ? 'var(--success)' : (status === 'On Hold' ? 'var(--danger)' : (status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)')),
+                                                    color: status === 'Final Closure' ? '#fff' : '#000', fontWeight: '800'
+                                                }}
+                                            >
+                                                {status.toUpperCase()}
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
                                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.4rem' }}>Tracking independent financial cycles for this site.</p>
                             </div>
                             {!isReadOnly && (
@@ -407,6 +532,199 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
                 </div>
             </div>
         )}
+        {/* DOCUMENT VAULT MODAL */}
+        {isVaultModalOpen && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 6000 }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 650px)', padding: '2.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <h3 style={{ margin: 0 }}>🗄️ Partner Document Vault</h3>
+                        <button onClick={() => setIsVaultModalOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                    </div>
+
+                    <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <h4 style={{ marginTop: 0, fontSize: '0.8rem', color: 'var(--accent-color)', textTransform: 'uppercase' }}>Upload New Verification Docs</h4>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <input 
+                                type="file" 
+                                id="vault-upload"
+                                multiple
+                                onChange={(e) => {
+                                    const files = Array.from(e.target.files);
+                                    const newDocs = files.map(f => ({
+                                        id: Date.now() + Math.random(),
+                                        name: f.name,
+                                        type: f.type,
+                                        date: new Date().toISOString().split('T')[0],
+                                        url: URL.createObjectURL(f)
+                                    }));
+                                    onUpdateVendor(selectedVendor.id, { 
+                                        documents: [...(selectedVendor.documents || []), ...newDocs] 
+                                    });
+                                }}
+                                style={{ display: 'none' }} 
+                            />
+                            <button onClick={() => document.getElementById('vault-upload').click()} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>+ Select Files</button>
+                            <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Accepts PDF, PNG, JPG</p>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {(selectedVendor.documents || []).length > 0 ? (selectedVendor.documents.map(doc => (
+                            <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ width: '40px', height: '40px', background: 'rgba(102, 178, 194, 0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                                        {doc.type.includes('pdf') ? '📄' : '🖼️'}
+                                    </div>
+                                    <div>
+                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem' }}>{doc.name}</p>
+                                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Uploaded: {doc.date}</p>
+                                    </div>
+                                </div>
+                                
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <select 
+                                        value={doc.tag || ''}
+                                        onChange={(e) => {
+                                            const updatedDocs = selectedVendor.documents.map(d => 
+                                                d.id === doc.id ? { ...d, tag: e.target.value } : d
+                                            );
+                                            onUpdateVendor(selectedVendor.id, { documents: updatedDocs });
+                                        }}
+                                        style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: doc.tag ? 'var(--success)' : '#fff', fontSize: '0.7rem', padding: '0.3rem', borderRadius: '4px' }}
+                                    >
+                                        <option value="">No Tag</option>
+                                        <option value="GST">GST Cert</option>
+                                        <option value="PAN">PAN Card</option>
+                                        <option value="Cheque">Cancelled Cheque</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <a href={doc.url} download={doc.name} style={{ textDecoration: 'none', fontSize: '1.2rem' }} title="Download">📥</a>
+                                    <button 
+                                        onClick={() => {
+                                            const updatedDocs = selectedVendor.documents.filter(d => d.id !== doc.id);
+                                            onUpdateVendor(selectedVendor.id, { documents: updatedDocs });
+                                        }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.9rem' }}
+                                    >🗑️</button>
+                                </div>
+                            </div>
+                        ))) : (
+                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+                                <p>No documents found in vault.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
+        {/* MSA CONTRACT MODAL / ESIGN PORTAL */}
+        {isMsaModalOpen && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(30px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 7000 }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 800px)', padding: '0', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ padding: '1.5rem 2rem', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ margin: 0, color: 'var(--accent-color)' }}>{isEsignMode ? '✍️ Digital Signature Portal' : '📜 MSA Contract Generation'}</h3>
+                        <button onClick={() => { setIsMsaModalOpen(false); setIsEsignMode(false); }} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                    </div>
+
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '3rem', background: '#fff', color: '#333', fontFamily: 'serif' }}>
+                        <div style={{ maxWidth: '600px', margin: '0 auto', fontSize: '0.9rem', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
+                            {(() => {
+                                let content = msaTemplate || '';
+                                content = content.replace(/{{VENDOR_NAME}}/g, selectedVendor.name || '');
+                                content = content.replace(/{{ADDRESS}}/g, selectedVendor.address || '[ADDRESS PENDING]');
+                                content = content.replace(/{{GST}}/g, selectedVendor.gst || '');
+                                content = content.replace(/{{PAN}}/g, selectedVendor.pan || '');
+                                content = content.replace(/{{DATE}}/g, new Date().toLocaleDateString());
+                                content = content.replace(/{{CATEGORY}}/g, selectedVendor.category || '');
+                                return content;
+                            })()}
+
+                            <div style={{ marginTop: '4rem', borderTop: '2px solid #333', paddingTop: '2rem', display: 'flex', justifyContent: 'space-between' }}>
+                                <div style={{ flex: 1 }}>
+                                    <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#666' }}>Meaven Designs Authorised Signatory</p>
+                                    <p style={{ fontFamily: '"Great Vibes", cursive', fontSize: '1.5rem', margin: '0.5rem 0' }}>Ravi Bhargaw</p>
+                                    <p style={{ fontSize: '0.7rem' }}>Director of Operations</p>
+                                </div>
+                                <div style={{ flex: 1, textAlign: 'right' }}>
+                                    <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#666' }}>Partner Authorised Signatory</p>
+                                    {selectedVendor.msaStatus === 'Executed' ? (
+                                        <>
+                                            <p style={{ fontFamily: '"Great Vibes", cursive', fontSize: '1.5rem', margin: '0.5rem 0', color: 'var(--success)' }}>{selectedVendor.signerName}</p>
+                                            <p style={{ fontSize: '0.7rem' }}>Digitally Signed on {selectedVendor.msaDate}</p>
+                                        </>
+                                    ) : (
+                                        <div style={{ height: '50px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: '0.7rem' }}>
+                                            {isEsignMode ? 'AWAITING SIGNATURE' : 'PENDING ISSUE'}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ padding: '2rem', background: 'var(--bg-accent)', borderTop: '1px solid var(--border-color)' }}>
+                        {!isEsignMode ? (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Review the contract terms before issuing to the partner.</p>
+                                <button 
+                                    onClick={() => {
+                                        onUpdateVendor(selectedVendor.id, { msaStatus: 'Sent' });
+                                        setIsEsignMode(true); // Switch to Esign Mode for simulation
+                                    }}
+                                    className="btn btn-primary"
+                                >
+                                    🚀 Issue & Send to Partner
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>Type Full Name to Sign Digitally</label>
+                                        <input 
+                                            value={signerName}
+                                            onChange={(e) => setSignerName(e.target.value)}
+                                            placeholder="John Doe"
+                                            style={{ width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--accent-color)', borderRadius: '8px', padding: '1rem', color: '#fff', fontSize: '1.1rem', fontFamily: '"Great Vibes", cursive' }}
+                                        />
+                                    </div>
+                                    <button 
+                                        disabled={!signerName.trim()}
+                                        onClick={() => {
+                                            const signedDate = new Date().toLocaleDateString();
+                                            const newDoc = {
+                                                id: Date.now(),
+                                                name: `Executed_MSA_${selectedVendor.name}.pdf`,
+                                                type: 'application/pdf',
+                                                date: signedDate,
+                                                tag: 'MSA',
+                                                url: '#',
+                                                status: 'Signed'
+                                            };
+                                            onUpdateVendor(selectedVendor.id, { 
+                                                msaStatus: 'Executed', 
+                                                msaDate: signedDate, 
+                                                signerName: signerName,
+                                                documents: [...(selectedVendor.documents || []), newDoc]
+                                            });
+                                            setIsMsaModalOpen(false);
+                                            setIsEsignMode(false);
+                                            setSignerName('');
+                                            alert("Contract Executed! The signed PDF has been automatically stored in the Document Vault.");
+                                        }}
+                                        className="btn btn-primary" 
+                                        style={{ padding: '1.2rem 2.5rem', fontSize: '1rem' }}
+                                    >
+                                        ✅ Sign & Execute
+                                    </button>
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)', textAlign: 'center' }}>By clicking 'Sign & Execute', you acknowledge that this typed signature is legally binding and equivalent to a hand-written signature.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
       </div>
     )
   }
@@ -462,7 +780,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
           const globalFin = getGlobalFinancials(vendor)
 
           return (
-            <div key={vendor.id} className="card vendor-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => setSelectedVendorId(vendor.id)}>
+            <div key={vendor.id} className="card vendor-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => handleSetSelectedVendor(vendor.id)}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   <span style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(102, 178, 194, 0.1)', color: 'var(--accent-color)', textTransform: 'uppercase', fontWeight: '700' }}>{vendor.category}</span>
@@ -526,6 +844,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
                 e.preventDefault()
                 const form = e.currentTarget
                 const formData = new FormData(form)
+                const files = form.querySelector('input[type="file"]').files
                 
                 const newVendorData = {
                     name: formData.get('name'),
@@ -533,16 +852,24 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
                     contact: formData.get('contact'),
                     phone: formData.get('phone'),
                     gst: formData.get('gst'),
+                    address: formData.get('address') || '',
+                    pan: formData.get('pan') || '',
                     status: 'Vetting',
                     isGstVerified: false,
                     isCertVerified: false,
                     metrics: { price: 50, speed: 50, precision: 50, communication: 50 },
                     history: [{ id: Date.now(), type: 'registration', title: 'Partner Onboarded', detail: 'Added to Meaven database via CRM', date: new Date().toISOString().split('T')[0] }],
                     contracts: [],
+                    documents: Array.from(files).slice(0, 5).map(f => ({
+                        id: Date.now() + Math.random(),
+                        name: f.name,
+                        type: f.type,
+                        date: new Date().toISOString().split('T')[0],
+                        url: URL.createObjectURL(f) // Local preview URL
+                    })),
                     notes: ''
                 }
 
-                console.log('Registering Vendor:', newVendorData)
                 onAddVendor(newVendorData)
                 setIsAddModalOpen(false)
             }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
@@ -553,6 +880,11 @@ const VendorScoring = ({ vendors, projects, portfolios = [], onAddVendor, onUpda
               <input name="contact" required placeholder="Primary Contact Person" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
               <input name="phone" required placeholder="Phone Number" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
               <input name="gst" required placeholder="GST Number" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+              
+              <div style={{ border: '1px dashed var(--border-color)', borderRadius: '8px', padding: '1rem', textAlign: 'center' }}>
+                  <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Onboarding Attachments (Max 5: PDF, PNG, JPG)</p>
+                  <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }} />
+              </div>
               
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setIsAddModalOpen(false)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>

@@ -54,10 +54,22 @@ function App() {
   const [vendors, setVendors] = useState([])
   const [portfolios, setPortfolios] = useState([])
   const [activeProjectId, setActiveProjectId] = useState(null)
+  const [selectedVendorId, setSelectedVendorId] = useState(null)
   const [readinessData, setReadinessData] = useState({})
   const [playbookProposals, setPlaybookProposals] = useState([])
   const [isSyncing, setIsSyncing] = useState(true)
   const [navHistory, setNavHistory] = useState([])
+  const [msaTemplate, setMsaTemplate] = useState(`
+MASTER SERVICE AGREEMENT
+
+This Agreement is made on {{DATE}} between:
+Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRESS}}.
+
+1. SERVICES: The Partner agrees to provide {{CATEGORY}} services as per individual Project Work Orders.
+2. COMPLIANCE: The Partner represents that GST ({{GST}}) and PAN ({{PAN}}) are valid.
+3. CONFIDENTIALITY: All project data is strictly confidential.
+4. JURISDICTION: This agreement is governed by the laws of India.
+  `.trim())
 
   const handleNavigate = (newTab) => {
     if (newTab === activeTab) return
@@ -155,6 +167,66 @@ function App() {
     }
   }, [portfolios, isSyncing])
 
+  useEffect(() => {
+    localStorage.setItem('meaven_projects', JSON.stringify(projects))
+    localStorage.setItem('meaven_vendors', JSON.stringify(vendors))
+    localStorage.setItem('meaven_portfolios', JSON.stringify(portfolios))
+    localStorage.setItem('meaven_readiness', JSON.stringify(readinessData))
+  }, [projects, vendors, portfolios, readinessData])
+
+  useEffect(() => {
+    window.navigateToVendorBench = (vendorId) => {
+        setSelectedVendorId(vendorId)
+        setActiveTab('vendors')
+    }
+  }, [])
+
+  // 🔄 GLOBAL FINANCIAL RECONCILIATION ENGINE
+  // Ensures legacy data (payouts logged before the sync update) are mirrored in Vendor Bench
+  useEffect(() => {
+    if (projects.length > 0 && vendors.length > 0) {
+        setVendors(prevVendors => {
+            let hasChanges = false;
+            const updatedVendors = prevVendors.map(vendor => {
+                let vendorUpdated = false;
+                const updatedContracts = (vendor.contracts || []).map(contract => {
+                    // Find the project associated with this contract
+                    const project = projects.find(p => p.name === contract.projectName);
+                    if (!project || !project.payouts) return contract;
+
+                    // Filter project payouts that belong to this vendor
+                    const projectPayoutsForVendor = project.payouts.filter(p => String(p.vendorId) === String(vendor.id));
+                    
+                    // Check if any payout is missing from the vendor contract ledger
+                    const missingPayouts = projectPayoutsForVendor.filter(pp => 
+                        !(contract.payments || []).some(cp => cp.ref === pp.ref && cp.amount === pp.amount)
+                    );
+
+                    if (missingPayouts.length > 0) {
+                        vendorUpdated = true;
+                        hasChanges = true;
+                        return {
+                            ...contract,
+                            payments: [...(contract.payments || []), ...missingPayouts.map(mp => ({
+                                id: mp.id,
+                                amount: mp.amount,
+                                date: mp.date,
+                                ref: mp.ref,
+                                isLegacySync: true
+                            }))]
+                        };
+                    }
+                    return contract;
+                });
+
+                return vendorUpdated ? { ...vendor, contracts: updatedContracts } : vendor;
+            });
+
+            return hasChanges ? updatedVendors : prevVendors;
+        });
+    }
+  }, [projects.length]); // Run when project count changes or on mount
+
   useEffect(() => { localStorage.setItem('readinessData', JSON.stringify(readinessData)) }, [readinessData])
   useEffect(() => { localStorage.setItem('playbookProposals', JSON.stringify(playbookProposals)) }, [playbookProposals])
 
@@ -244,7 +316,8 @@ function App() {
   }
 
   const handleLogPayout = (projectId, amount, ref, date, photo, vendorId) => {
-    setProjects(prev => prev.map(p => {
+    // 1. Update Project Ledger
+    setProjects(prev => (prev || []).map(p => {
         if (Number(p.id) === Number(projectId)) {
             const newPayout = { id: Date.now(), amount: parseInt(amount), ref, date, photo, vendorId }
             return { 
@@ -262,6 +335,31 @@ function App() {
         }
         return p
     }))
+
+    // 2. Synchronize to Vendor Bench (Specific Contract)
+    if (vendorId) {
+        setVendors(prev => (prev || []).map(v => {
+            if (String(v.id) === String(vendorId)) {
+                const projectName = projects.find(p => p.id === projectId)?.name
+                return {
+                    ...v,
+                    contracts: (v.contracts || []).map(c => {
+                        if (c.projectName === projectName) {
+                            return {
+                                ...c,
+                                payments: [
+                                    ...(c.payments || []),
+                                    { id: Date.now(), amount: parseInt(amount), date, ref }
+                                ]
+                            }
+                        }
+                        return c
+                    })
+                }
+            }
+            return v
+        }))
+    }
   }
 
   const handleUpdateProjectMilestones = (projectId, milestones) => {
@@ -527,6 +625,9 @@ function App() {
                   <VendorScoring 
                     vendors={vendors} 
                     projects={projects} 
+                    selectedVendorId={selectedVendorId}
+                    msaTemplate={msaTemplate}
+                    onSelectVendor={setSelectedVendorId}
                     onAddContract={handleAddVendorContract} 
                     onAddPayment={handleAddVendorPayment} 
                     onUpdateVendor={handleUpdateVendor}
