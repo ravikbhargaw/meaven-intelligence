@@ -248,6 +248,27 @@ function App() {
     setProjects(prev => (prev || []).map(p => Number(p.id) === Number(projectId) ? { ...p, ...updates } : p))
   }
 
+  const handleProjectAddNote = (projectId, note) => {
+    setProjects(prev => (prev || []).map(p => {
+        if (Number(p.id) === Number(projectId)) {
+            return {
+                ...p,
+                history: [
+                    ...(p.history || []),
+                    { 
+                        id: Date.now(), 
+                        type: 'note', 
+                        title: 'Tactical Intel', 
+                        detail: note, 
+                        date: new Date().toISOString().split('T')[0] 
+                    }
+                ]
+            }
+        }
+        return p
+    }))
+  }
+
   const handleUpdateReadiness = (projectId, data) => {
     setReadinessData(prev => ({ ...prev, [projectId]: data }))
   }
@@ -457,6 +478,7 @@ function App() {
                     onLogPayment={handleLogPayment}
                     onLogPayout={handleLogPayout}
                     onAddVendor={handleAddVendor}
+                    onAddNote={handleProjectAddNote}
                     userRole={user?.role}
                   />
                 )}

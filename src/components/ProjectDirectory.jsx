@@ -7,7 +7,7 @@ const ModalOverlay = ({ children }) => (
     </div>
 )
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, userRole }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, userRole }) => {
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSubTab, setActiveSubTab] = useState('overview') 
@@ -18,6 +18,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false)
   const [isEditingValue, setIsEditingValue] = useState(false)
   const [isRegisteringNew, setIsRegisteringNew] = useState(false)
+  const [noteText, setNoteText] = useState('')
   
   // Form States for robustness
   const [selectedVendorId, setSelectedVendorId] = useState('')
@@ -262,14 +263,33 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
                     <div className="card">
-                        <h4 style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>📜 Project Timeline</h4>
+                        <h4 style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>🔍 Project Intelligence Timeline</h4>
+                        
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem' }}>
+                            <textarea 
+                                value={noteText}
+                                onChange={(e) => setNoteText(e.target.value)}
+                                placeholder="Add a tactical note, site update, or risk warning..."
+                                style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1rem', color: '#fff', fontSize: '0.85rem', minHeight: '80px' }}
+                            />
+                            <button 
+                                disabled={!noteText.trim()}
+                                onClick={() => { onAddNote(selectedProject.id, noteText); setNoteText(''); }}
+                                className="btn btn-primary" 
+                                style={{ height: 'fit-content', padding: '0.8rem 1.5rem', fontSize: '0.8rem' }}
+                            >Post</button>
+                        </div>
+
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             {(selectedProject.history || []).slice().reverse().map((h, i) => (
                                 <div key={h.id} style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
-                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: h.type === 'success' ? 'var(--success)' : (h.type === 'warning' ? 'var(--danger)' : (h.type === 'info' ? 'var(--accent-color)' : '#444')), marginTop: '4px', zIndex: 2 }} />
+                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: h.type === 'success' ? 'var(--success)' : (h.type === 'warning' ? 'var(--danger)' : (h.type === 'info' ? 'var(--accent-color)' : (h.type === 'note' ? '#fff' : '#444'))), marginTop: '4px', zIndex: 2 }} />
                                     {i < (selectedProject.history?.length || 0) - 1 && <div style={{ position: 'absolute', left: '4px', top: '15px', bottom: '-20px', width: '2px', background: 'var(--border-color)' }} />}
                                     <div style={{ flex: 1 }}>
-                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem' }}>{h.title}</p>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem' }}>{h.title}</p>
+                                            <span style={{ fontSize: '0.6rem', color: '#444' }}>{h.date || h.timestamp?.split('T')[0]}</span>
+                                        </div>
                                         <p style={{ margin: '0.2rem 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{h.detail}</p>
                                     </div>
                                 </div>
