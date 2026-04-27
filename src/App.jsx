@@ -13,6 +13,7 @@ import AdminPanel from './components/AdminPanel'
 import CommandCenter from './components/CommandCenter'
 import NewPortfolioModal from './components/NewPortfolioModal'
 import ExecutiveSummary from './components/ExecutiveSummary'
+import AiAssistant from './components/AiAssistant'
 import { supabase } from './supabaseClient'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
@@ -483,6 +484,11 @@ function App() {
             </nav>
           </div>
         )}
+        <AiAssistant 
+          activeTab={activeTab} 
+          clientView={clientView} 
+          userName={user?.name || 'Operator'} 
+        />
       </div>
     </ErrorBoundary>
   )
