@@ -247,40 +247,44 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                             <p style={{ fontSize: '0.55rem', color: 'var(--accent-color)', textTransform: 'uppercase', margin: 0, letterSpacing: '0.1em', fontWeight: '800' }}>🛰️ TIMELINE HEALTH</p>
                         </div>
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                                <label style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vendor → Meaven</label>
-                                <input 
-                                    type="date" 
-                                    value={selectedProject.vendorEndDate || ''}
-                                    onChange={(e) => onUpdateValue(selectedProject.id, { vendorEndDate: e.target.value })}
-                                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '0.4rem', color: '#fff', fontSize: '0.7rem', width: '100%' }}
-                                />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>Vendor → Meaven</label>
+                                    <input 
+                                        type="date" 
+                                        value={selectedProject.vendorEndDate || ''}
+                                        onChange={(e) => onUpdateValue(selectedProject.id, { vendorEndDate: e.target.value })}
+                                        style={{ background: 'none', border: 'none', color: '#fff', fontSize: '0.75rem', width: '100%', outline: 'none' }}
+                                    />
+                                </div>
                                 {selectedProject.vendorEndDate && (
-                                    <div style={{ fontSize: '0.55rem', fontWeight: '700', color: (new Date(selectedProject.vendorEndDate) - new Date()) > 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                    <div style={{ fontSize: '0.6rem', fontWeight: '800', color: (new Date(selectedProject.vendorEndDate) - new Date()) > 0 ? 'var(--success)' : 'var(--danger)', marginLeft: '0.5rem' }}>
                                         {(() => {
                                             const diff = new Date(selectedProject.vendorEndDate) - new Date();
                                             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                                            return days > 0 ? `${days}d Left` : (days === 0 ? 'Due' : `${Math.abs(days)}d Late`);
+                                            return days > 0 ? `${days}d` : (days === 0 ? 'Due' : `${Math.abs(days)}d!`);
                                         })()}
                                     </div>
                                 )}
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                                <label style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meaven → Client</label>
-                                <input 
-                                    type="date" 
-                                    value={selectedProject.endDate || ''}
-                                    onChange={(e) => onUpdateValue(selectedProject.id, { endDate: e.target.value })}
-                                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '0.4rem', color: '#fff', fontSize: '0.7rem', width: '100%' }}
-                                />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>Meaven → Client</label>
+                                    <input 
+                                        type="date" 
+                                        value={selectedProject.endDate || ''}
+                                        onChange={(e) => onUpdateValue(selectedProject.id, { endDate: e.target.value })}
+                                        style={{ background: 'none', border: 'none', color: '#fff', fontSize: '0.75rem', width: '100%', outline: 'none' }}
+                                    />
+                                </div>
                                 {selectedProject.endDate && (
-                                    <div style={{ fontSize: '0.55rem', fontWeight: '700', color: (new Date(selectedProject.endDate) - new Date()) > 0 ? 'var(--accent-color)' : 'var(--danger)' }}>
+                                    <div style={{ fontSize: '0.6rem', fontWeight: '800', color: (new Date(selectedProject.endDate) - new Date()) > 0 ? 'var(--accent-color)' : 'var(--danger)', marginLeft: '0.5rem' }}>
                                         {(() => {
                                             const diff = new Date(selectedProject.endDate) - new Date();
                                             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                                            return days > 0 ? `${days}d Left` : (days === 0 ? 'Due' : `${Math.abs(days)}d Late`);
+                                            return days > 0 ? `${days}d` : (days === 0 ? 'Due' : `${Math.abs(days)}d!`);
                                         })()}
                                     </div>
                                 )}
