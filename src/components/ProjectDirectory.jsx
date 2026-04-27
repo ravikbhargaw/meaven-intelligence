@@ -353,7 +353,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                                 <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem' }}>{h.title}</p>
-                                                {h.type === 'note' && (
+                                                {['note', 'success', 'warning'].includes(h.type) && (
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); onToggleVisibility(selectedProject.id, h.id); }}
                                                         title={h.isClientVisible ? "Visible to Client" : "Internal Only"}

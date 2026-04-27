@@ -229,7 +229,14 @@ function App() {
             return { 
                 ...p, 
                 clientFinancials: { ...financials, received: [...(financials.received || []), newPayment] },
-                history: [...(p.history || []), { id: Date.now() + 1, type: 'success', title: 'Payment Received', detail: `₹${parseInt(amount).toLocaleString()} credited. Ref: ${ref}`, timestamp: new Date().toISOString() }]
+                history: [...(p.history || []), { 
+                    id: Date.now() + 1, 
+                    type: 'success', 
+                    title: 'Payment Received', 
+                    detail: `₹${parseInt(amount).toLocaleString()} credited. Ref: ${ref}`, 
+                    timestamp: new Date().toISOString(),
+                    isClientVisible: false
+                }]
             }
         }
         return p
@@ -243,7 +250,14 @@ function App() {
             return { 
                 ...p, 
                 payouts: [...(p.payouts || []), newPayout],
-                history: [...(p.history || []), { id: Date.now() + 1, type: 'warning', title: 'Vendor Payout', detail: `₹${parseInt(amount).toLocaleString()} debited. Ref: ${ref}`, timestamp: new Date().toISOString() }]
+                history: [...(p.history || []), { 
+                    id: Date.now() + 1, 
+                    type: 'warning', 
+                    title: 'Vendor Payout', 
+                    detail: `₹${parseInt(amount).toLocaleString()} debited. Ref: ${ref}`, 
+                    timestamp: new Date().toISOString(),
+                    isClientVisible: false
+                }]
             }
         }
         return p
