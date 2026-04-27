@@ -451,13 +451,13 @@ function App() {
                   <ProjectDirectory 
                     projects={projects} 
                     vendors={vendors}
+                    portfolios={portfolios}
                     onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }} 
-                    activeProjectId={activeProjectId} 
-                    onUpdateMilestones={handleUpdateProjectMilestones}
-                    onUpdateProject={handleUpdateProject}
+                    onUpdateValue={handleUpdateProject}
                     onLogPayment={handleLogPayment}
                     onLogPayout={handleLogPayout}
                     onAddVendor={handleAddVendor}
+                    userRole={user?.role}
                   />
                 )}
 

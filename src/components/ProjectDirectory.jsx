@@ -7,7 +7,7 @@ const ModalOverlay = ({ children }) => (
     </div>
 )
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, userRole }) => {
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSubTab, setActiveSubTab] = useState('overview') 
@@ -138,15 +138,47 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                         <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Contract Value</p>
                         {isEditingValue ? (
                             <input 
-                                autoFocus type="number" defaultValue={pl.revenue}
-                                onBlur={(e) => { onUpdateValue(selectedProject.id, e.target.value); setIsEditingValue(false); }}
-                                onKeyDown={(e) => { if (e.key === 'Enter') { onUpdateValue(selectedProject.id, e.target.value); setIsEditingValue(false); }}}
+                                autoFocus type="number" defaultValue={pl.revenue || ''}
+                                onBlur={(e) => { 
+                                    if (e.target.value && e.target.value !== '0') {
+                                        onUpdateValue(selectedProject.id, { 
+                                            clientFinancials: { 
+                                                ...(selectedProject.clientFinancials || {}), 
+                                                totalValue: parseInt(e.target.value) 
+                                            } 
+                                        }); 
+                                    }
+                                    setIsEditingValue(false); 
+                                }}
+                                onKeyDown={(e) => { 
+                                    if (e.key === 'Enter') { 
+                                        if (e.target.value && e.target.value !== '0') {
+                                            onUpdateValue(selectedProject.id, { 
+                                                clientFinancials: { 
+                                                    ...(selectedProject.clientFinancials || {}), 
+                                                    totalValue: parseInt(e.target.value) 
+                                                } 
+                                            }); 
+                                        }
+                                        setIsEditingValue(false); 
+                                    }
+                                }}
                                 style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', borderRadius: '4px', padding: '0.4rem', color: '#fff', fontSize: '1rem', width: '100%' }}
                             />
                         ) : (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                 <p style={{ fontSize: '1.3rem', fontWeight: '800', margin: 0 }}>₹{(pl.revenue / 100000).toFixed(2)}L</p>
-                                <button onClick={() => setIsEditingValue(true)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.7rem' }}>✎</button>
+                                {(pl.revenue === 0 || userRole === 'SuperAdmin') ? (
+                                    <button 
+                                        onClick={() => setIsEditingValue(true)} 
+                                        title={pl.revenue > 0 ? "Super Admin Override" : "Set Contract Value"}
+                                        style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.7rem' }}
+                                    >
+                                        ✎
+                                    </button>
+                                ) : (
+                                    <span title="Locked by Institutional Protocol. Only Super Admin can modify." style={{ fontSize: '0.8rem', opacity: 0.5, cursor: 'help' }}>🔒</span>
+                                )}
                             </div>
                         )}
                     </div>
