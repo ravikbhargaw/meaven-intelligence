@@ -113,7 +113,7 @@ const Login = ({ onLogin, onVerifyMasterKey }) => {
 
         <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
             <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                System: MEAVEN v4.0.2 • Secured by NeuralAuth
+                System: MEAVEN v7.0.0 (AI Integrated) • Secured by NeuralAuth
             </p>
         </div>
       </div>

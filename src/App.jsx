@@ -180,8 +180,18 @@ function App() {
     }
   }, [user, isSyncing])
 
-  if (!user) return <Login onLogin={login} onVerifyMasterKey={verifyMasterKey} />
-  if (isFirstLogin) return <SecuritySetup onComplete={updateSecurity} />
+  if (!user) return (
+    <div className="dashboard-app-root">
+      <Login onLogin={login} onVerifyMasterKey={verifyMasterKey} />
+      <AiAssistant activeTab="dashboard" clientView={true} userName="Guest" />
+    </div>
+  )
+  if (isFirstLogin) return (
+    <div className="dashboard-app-root">
+      <SecuritySetup onComplete={updateSecurity} />
+      <AiAssistant activeTab="dashboard" clientView={false} userName={user?.name || 'Operator'} />
+    </div>
+  )
 
   const handlePinVerify = (pin) => {
     if (verifyPin(pin)) { setClientView(false); setShowPinModal(false); }
