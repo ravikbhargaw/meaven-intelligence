@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import SiteReadiness from './SiteReadiness'
 
 // MOVE OUTSIDE to prevent re-mounting on every state change (which causes focus loss)
 const ModalOverlay = ({ children }) => (
@@ -7,7 +8,16 @@ const ModalOverlay = ({ children }) => (
     </div>
 )
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole }) => {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '---';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}-${m}-${y}`;
+  }
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSubTab, setActiveSubTab] = useState('overview') 
@@ -25,6 +35,42 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
   const [assignOrderValue, setAssignOrderValue] = useState('')
   const [isSignOffModalOpen, setIsSignOffModalOpen] = useState(false)
   const [signOffEmail, setSignOffEmail] = useState({ subject: '', body: '', to: '' })
+  const [showAllHistory, setShowAllHistory] = useState(false)
+  
+  useEffect(() => {
+    if (activeProjectId) {
+        setSelectedProjectId(activeProjectId)
+    }
+  }, [activeProjectId])
+
+  const handleStatusChange = (newStatus) => {
+    if (newStatus === 'Completed') {
+        const confirmHandover = window.confirm("Site reaching 100% completion. Initialize Formal Handover Sequence & Client Email Loop?");
+        if (confirmHandover) {
+            // Prepare Sign-Off Email
+            const clientTimeline = (selectedProject.history || [])
+                .filter(h => h.isClientVisible)
+                .map(h => `- ${h.date || h.timestamp?.split('T')[0]}: ${h.title} (${h.detail})`)
+                .join('\n');
+            
+            setSignOffEmail({
+                to: selectedProject.stakeholders?.join(', ') || 'project.manager@meaven.co',
+                subject: `Final Sign-off Request: ${selectedProject.name}`,
+                body: `Dear Team,\n\nPlease review and provide the final sign-off for ${selectedProject.name}.\n\nAUTHORISED SITE TIMELINE:\n${clientTimeline || 'No entries pushed to client view yet.'}\n\nRegards,\nMeaven Intelligence Hub`
+            });
+            
+            setIsSignOffModalOpen(true);
+
+            onUpdateValue(selectedProject.id, { 
+                status: 'Completed',
+                isSignOffRequested: true,
+                isHandoverPending: true 
+            });
+        }
+    } else {
+        onUpdateValue(selectedProject.id, { status: newStatus });
+    }
+  }
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -108,7 +154,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
     const financials = selectedProject.clientFinancials || { totalValue: 0, requests: [], received: [] }
     const totalReceived = (financials.received || []).reduce((sum, r) => sum + r.amount, 0)
     const outstanding = pl.revenue - totalReceived
-    const linkedVendor = (vendors || []).find(v => (v.contracts || []).some(c => c.projectName === selectedProject.name));
+    const linkedVendor = (vendors || []).find(v => (v.contracts || []).some(c => c.projectName === selectedProject.name && (c.status === 'Active' || !c.status)));
 
     return (
       <div className="project-detail-view animate-fade-in" style={{ paddingBottom: '5rem' }}>
@@ -140,19 +186,27 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
             <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>{selectedProject.name}</h1>
-                    <select 
-                        value={selectedProject.status || 'Active'}
-                        onChange={(e) => onUpdateValue(selectedProject.id, { status: e.target.value })}
-                        style={{ 
-                            background: (selectedProject.status === 'Completed' ? 'var(--success)' : (selectedProject.status === 'On Hold' ? 'var(--danger)' : (selectedProject.status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)'))),
-                            color: selectedProject.status === 'Final Closure' ? '#fff' : '#000', border: 'none', borderRadius: '20px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer'
-                        }}
-                    >
-                        <option value="Active">ACTIVE</option>
-                        <option value="Completed">COMPLETED</option>
-                        <option value="On Hold">ON HOLD</option>
-                        <option value="Final Closure">FINAL CLOSURE</option>
-                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <select 
+                            value={selectedProject.status || 'Active'}
+                            onChange={(e) => handleStatusChange(e.target.value)}
+                            style={{ 
+                                background: (selectedProject.status === 'Completed' ? 'var(--success)' : (selectedProject.status === 'On Hold' ? 'var(--danger)' : (selectedProject.status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)'))),
+                                color: selectedProject.status === 'Final Closure' ? '#fff' : '#000', border: 'none', borderRadius: '20px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer'
+                            }}
+                        >
+                            <option value="Active">ACTIVE</option>
+                            <option value="Completed">COMPLETED</option>
+                            <option value="On Hold">ON HOLD</option>
+                            <option value="Final Closure">FINAL CLOSURE</option>
+                        </select>
+                        {selectedProject.isSignOffRequested && !selectedProject.managerSignOff && (
+                            <span style={{ fontSize: '0.6rem', color: '#FF9500', fontWeight: '800', letterSpacing: '0.05em' }}>(AWAITING HANDOVER SIGN-OFF)</span>
+                        )}
+                        {selectedProject.managerSignOff && (
+                            <span style={{ fontSize: '0.6rem', color: 'var(--success)', fontWeight: '800', letterSpacing: '0.05em' }}>(HANDOVER COMPLETE ✓)</span>
+                        )}
+                    </div>
                 </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Client: {selectedProject.client}</p>
             </div>
@@ -307,6 +361,31 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                     </div>
                 </div>
 
+                {/* v8.0.2 UNIFIED AUDIT ENGINE (MERGED INTO OPERATIONS HUB) */}
+                <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(102, 178, 194, 0.2)', borderRadius: '12px', padding: '1.5rem', marginTop: '2rem', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(102, 178, 194, 0.1)', paddingBottom: '1rem' }}>
+                        <span style={{ fontSize: '1.2rem' }}>🛰️</span>
+                        <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>LIVE SITE AUDIT CHECKLIST</h4>
+                    </div>
+                    <SiteReadiness 
+                        project={selectedProject} 
+                        data={selectedProject.readinessData} 
+                        isReadOnly={false} 
+                        onUpdate={(updatedAuditData) => {
+                            // Calculate new readiness based on checklist completion
+                            const total = updatedAuditData.items?.length || 0;
+                            const passed = updatedAuditData.items?.filter(i => i.status === 'passed').length || 0;
+                            const newReadiness = total > 0 ? Math.round((passed / total) * 100) : 0;
+                            
+                            onUpdateValue(selectedProject.id, { 
+                                readinessData: updatedAuditData,
+                                readiness: newReadiness
+                            });
+                        }}
+                        onBack={() => {}} // No-op here as we are inside the directory
+                    />
+                </div>
+
                 {!linkedVendor && (
                     <div className="card animate-fade-in" style={{ background: 'rgba(102, 178, 194, 0.05)', border: '1px solid rgba(102, 178, 194, 0.2)', marginBottom: '3rem', padding: 'clamp(1rem, 4vw, 1.5rem)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -358,35 +437,51 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                             >Post</button>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            {(selectedProject.history || []).slice().reverse().map((h, i) => (
-                                <div key={h.id} style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
-                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: h.type === 'success' ? 'var(--success)' : (h.type === 'warning' ? 'var(--danger)' : (h.type === 'info' ? 'var(--accent-color)' : (h.type === 'note' ? '#fff' : '#444'))), marginTop: '4px', zIndex: 2 }} />
-                                    {i < (selectedProject.history?.length || 0) - 1 && <div style={{ position: 'absolute', left: '4px', top: '15px', bottom: '-20px', width: '2px', background: 'var(--border-color)' }} />}
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                                <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem' }}>{h.title}</p>
-                                                {['note', 'success', 'warning'].includes(h.type) && (
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); onToggleVisibility(selectedProject.id, h.id); }}
-                                                        title={h.isClientVisible ? "Visible to Client" : "Internal Only"}
-                                                        style={{ 
-                                                            background: h.isClientVisible ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255,255,255,0.05)', 
-                                                            border: `1px solid ${h.isClientVisible ? 'var(--success)' : 'var(--border-color)'}`,
-                                                            borderRadius: '4px', padding: '0.1rem 0.3rem', fontSize: '0.6rem', color: h.isClientVisible ? 'var(--success)' : 'var(--text-secondary)', cursor: 'pointer'
-                                                        }}
-                                                    >
-                                                        {h.isClientVisible ? '👁️ PUSHED' : '👁️ PUSH'}
-                                                    </button>
-                                                )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '100px' }}>
+                            {(() => {
+                                const history = (selectedProject.history || []).slice().reverse();
+                                const visibleHistory = showAllHistory ? history : history.slice(0, 5);
+                                return (
+                                    <>
+                                        {visibleHistory.map((h, i) => (
+                                            <div key={h.id} style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
+                                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: h.type === 'success' ? 'var(--success)' : (h.type === 'warning' || h.type === 'danger' ? 'var(--danger)' : (h.type === 'info' ? 'var(--accent-color)' : (h.type === 'note' ? '#fff' : '#444'))), marginTop: '4px', zIndex: 2 }} />
+                                                {i < visibleHistory.length - 1 && <div style={{ position: 'absolute', left: '4px', top: '15px', bottom: '-20px', width: '2px', background: 'var(--border-color)' }} />}
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem' }}>{h.title}</p>
+                                                            {['note', 'success', 'warning', 'danger'].includes(h.type) && (
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); onToggleVisibility(selectedProject.id, h.id); }}
+                                                                    title={h.isClientVisible ? "Visible to Client" : "Internal Only"}
+                                                                    style={{ 
+                                                                        background: h.isClientVisible ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255,255,255,0.05)', 
+                                                                        border: `1px solid ${h.isClientVisible ? 'var(--success)' : 'var(--border-color)'}`,
+                                                                        borderRadius: '4px', padding: '0.1rem 0.3rem', fontSize: '0.6rem', color: h.isClientVisible ? 'var(--success)' : 'var(--text-secondary)', cursor: 'pointer'
+                                                                    }}
+                                                                >
+                                                                    {h.isClientVisible ? '👁️ PUSHED' : '👁️ PUSH'}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <span style={{ fontSize: '0.6rem', color: '#444' }}>{formatDate(h.date || h.timestamp)}</span>
+                                                    </div>
+                                                    <p style={{ margin: '0.2rem 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{h.detail}</p>
+                                                </div>
                                             </div>
-                                            <span style={{ fontSize: '0.6rem', color: '#444' }}>{h.date || h.timestamp?.split('T')[0]}</span>
-                                        </div>
-                                        <p style={{ margin: '0.2rem 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{h.detail}</p>
-                                    </div>
-                                </div>
-                            ))}
+                                        ))}
+                                        {history.length > 5 && (
+                                            <button 
+                                                onClick={() => setShowAllHistory(!showAllHistory)}
+                                                style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer', alignSelf: 'center', padding: '1rem' }}
+                                            >
+                                                {showAllHistory ? 'SEE LESS ↑' : `SEE ALL ${history.length} ENTRIES ↓`}
+                                            </button>
+                                        )}
+                                    </>
+                                )
+                            })()}
                         </div>
                     </div>
                     <div className="card" style={{ background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.08) 0%, transparent 100%)', border: '1px solid var(--accent-color)' }}>
@@ -401,50 +496,6 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                     </div>
                 </div>
                 {/* PROJECT SIGN-OFF WORKFLOW */}
-                <div className="card" style={{ border: '1px solid var(--border-color)', marginTop: '2rem', marginBottom: '2rem', padding: '2rem', background: 'rgba(255,255,255,0.01)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>📜 PROJECT MANAGER SIGN-OFF</h4>
-                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Formal technical and financial closure authorization.</p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            {selectedProject.managerSignOff ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontWeight: '800', fontSize: '0.8rem' }}>
-                                    <span>✓ SIGNED OFF</span>
-                                </div>
-                            ) : (
-                                <button 
-                                    onClick={() => {
-                                        setIsSignOffModalOpen(true);
-                                        const clientTimeline = (selectedProject.history || [])
-                                            .filter(h => h.isClientVisible)
-                                            .map(h => `- ${h.date || h.timestamp?.split('T')[0]}: ${h.title} (${h.detail})`)
-                                            .join('\n');
-                                        
-                                        setSignOffEmail({
-                                            to: selectedProject.stakeholders?.join(', ') || 'project.manager@meaven.co',
-                                            subject: `Final Sign-off Request: ${selectedProject.name}`,
-                                            body: `Dear Team,\n\nPlease review and provide the final sign-off for ${selectedProject.name}.\n\nAUTHORISED SITE TIMELINE:\n${clientTimeline || 'No entries pushed to client view yet.'}\n\nRegards,\nMeaven Intelligence Hub`
-                                        });
-                                    }}
-                                    className="btn btn-outline" 
-                                    style={{ fontSize: '0.7rem', padding: '0.6rem 1.2rem', borderColor: 'var(--accent-color)', color: 'var(--accent-color)' }}
-                                >
-                                    REQUEST SIGN-OFF
-                                </button>
-                            )}
-                            <button 
-                                onClick={() => onUpdateValue(selectedProject.id, { managerSignOff: !selectedProject.managerSignOff })}
-                                style={{ 
-                                    padding: '0.5rem 1rem', background: selectedProject.managerSignOff ? 'var(--success)' : 'rgba(255,255,255,0.05)', 
-                                    border: 'none', borderRadius: '8px', color: selectedProject.managerSignOff ? '#000' : '#fff', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' 
-                                }}
-                            >
-                                {selectedProject.managerSignOff ? 'REVERSE SIGN-OFF' : 'AUTHORIZE MANUALLY'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
         ) : (
             <div className="animate-fade-in">
@@ -485,7 +536,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                                 <div key={p.id} style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
                                         <span style={{ fontWeight: '800', color: 'var(--success)', fontSize: '0.85rem' }}>+ ₹{p.amount.toLocaleString()}</span>
-                                        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{p.date}</span>
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{formatDate(p.date)}</span>
                                     </div>
                                     <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Ref: {p.ref}</span>
                                 </div>
@@ -506,7 +557,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                                     <div key={p.id} style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
                                             <span style={{ fontWeight: '800', color: 'var(--danger)', fontSize: '0.85rem' }}>- ₹{p.amount.toLocaleString()}</span>
-                                            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{p.date}</span>
+                                            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{formatDate(p.date)}</span>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                             {vendor ? (
@@ -619,7 +670,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], onSele
                         onReassignPartner(selectedProject.id, linkedVendor?.id, formData.get('vendorId'), formData.get('orderValue'))
                         setIsReassignModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <select name="vendorId" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
+                        <select name="vendorId" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
                             <option value="">Select Replacement...</option>
                             {vendors.filter(v => v.id !== linkedVendor?.id).map(v => <option key={v.id} value={v.id.toString()}>{v.name}</option>)}
                         </select>

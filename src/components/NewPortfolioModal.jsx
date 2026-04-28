@@ -44,9 +44,14 @@ const NewPortfolioModal = ({ isOpen, onClose, onCreate }) => {
         return
     }
 
+    const accessKey = data.name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(1000 + Math.random() * 9000)
+    const clientPin = Math.floor(1000 + Math.random() * 9000).toString()
+
     onCreate({
         ...data,
         id: Date.now(),
+        accessKey,
+        clientPin,
         stakeholders: [
             { name: data.pocName, email: data.pocEmail, phone: data.pocPhone, role: 'Point of Contact' },
             { name: 'Site Supervisor', email: data.supervisorEmail, role: 'Supervisor' }
@@ -63,7 +68,7 @@ const NewPortfolioModal = ({ isOpen, onClose, onCreate }) => {
       background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000 
     }}>
-      <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 500px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)', border: '1px solid var(--accent-color)' }}>
+      <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 440px)', padding: '2rem', border: '1px solid var(--accent-color)', borderRadius: '12px' }}>
         <h2 style={{ marginBottom: '0.5rem' }}>🏢 Create New Portfolio</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
           Define the organizational loop for a new client partnership.

@@ -97,6 +97,11 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                     <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: selectedVendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)', color: selectedVendor.status === 'Certified' ? 'var(--success)' : '#FF9500', fontWeight: '800', letterSpacing: '0.05em' }}>
                         {selectedVendor.status.toUpperCase()}
                     </span>
+                    {selectedVendor.isMsaSigned ? (
+                        <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: 'rgba(50, 215, 75, 0.1)', color: 'var(--success)', border: '1px solid var(--success)', fontWeight: '800' }}>✓ MSA SIGNED</span>
+                    ) : (
+                        <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: 'rgba(255, 149, 0, 0.1)', color: '#FF9500', border: '1px solid #FF9500', fontWeight: '800' }}>⚠️ MSA PENDING</span>
+                    )}
                 </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>{selectedVendor.category} Division | {selectedVendor.contact}</p>
             </div>
@@ -217,14 +222,38 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                 />
                             </div>
                         </div>
-                        <div>
-                            <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Physical Address</label>
-                            <input 
-                                value={selectedVendor.address || ''}
-                                onChange={(e) => onUpdateVendor(selectedVendor.id, { address: e.target.value })}
-                                placeholder="Full Registered Address..."
-                                style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: '#fff', fontSize: '0.8rem', padding: '0.2rem 0' }}
-                            />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                            <div>
+                                <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Physical Address</label>
+                                <input 
+                                    value={selectedVendor.address || ''}
+                                    onChange={(e) => onUpdateVendor(selectedVendor.id, { address: e.target.value })}
+                                    placeholder="Full Registered Address..."
+                                    style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: '#fff', fontSize: '0.8rem', padding: '0.2rem 0' }}
+                                />
+                            </div>
+                            <div>
+                                <label title="4-Digit Code for the Partner to log SOS issues via the Field Portal" style={{ fontSize: '0.55rem', color: 'var(--accent-color)', textTransform: 'uppercase', fontWeight: '800', cursor: 'help' }}>Field Access PIN 🔑</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input 
+                                        value={selectedVendor.accessPin || '0000'}
+                                        onChange={(e) => onUpdateVendor(selectedVendor.id, { accessPin: e.target.value.replace(/[^0-9]/g, '').slice(0,4) })}
+                                        placeholder="e.g. 1234"
+                                        maxLength="4"
+                                        style={{ flex: 1, background: 'none', border: 'none', borderBottom: '1px solid var(--accent-color)', color: 'var(--accent-color)', fontSize: '0.8rem', padding: '0.2rem 0', letterSpacing: '0.2em', fontWeight: '800' }}
+                                    />
+                                    <button 
+                                        onClick={() => {
+                                            const link = `${window.location.origin}/?view=field`
+                                            navigator.clipboard.writeText(link)
+                                            alert("Field Portal Link copied to clipboard! Share this with the Partner supervisor.")
+                                        }}
+                                        style={{ background: 'rgba(102, 178, 194, 0.1)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', fontSize: '0.55rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer' }}
+                                    >
+                                        SHARE LINK 🔗
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Mandatory Document Status */}
@@ -828,8 +857,15 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--accent-color)' }}>Manage Contracts →</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{vendor.contracts?.length || 0} Active Projects</span>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.55rem', color: vendor.isMsaSigned ? 'var(--success)' : 'var(--text-secondary)', border: `1px solid ${vendor.isMsaSigned ? 'var(--success)' : 'var(--border-color)'}`, padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                        {vendor.isMsaSigned ? 'MSA ✓' : 'MSA –'}
+                    </span>
+                    <span style={{ fontSize: '0.55rem', color: vendor.isGstVerified ? 'var(--success)' : 'var(--text-secondary)', border: `1px solid ${vendor.isGstVerified ? 'var(--success)' : 'var(--border-color)'}`, padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                        {vendor.isGstVerified ? 'GST ✓' : 'GST –'}
+                    </span>
+                </div>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{vendor.contracts?.length || 0} Projects</span>
               </div>
             </div>
           )

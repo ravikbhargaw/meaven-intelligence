@@ -13,7 +13,9 @@ import AdminPanel from './components/AdminPanel'
 import CommandCenter from './components/CommandCenter'
 import NewPortfolioModal from './components/NewPortfolioModal'
 import ExecutiveSummary from './components/ExecutiveSummary'
+import ClientPortalGate from './components/ClientPortalGate'
 import AiAssistant from './components/AiAssistant'
+import FieldPortal from './components/FieldPortal'
 import { supabase } from './supabaseClient'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
@@ -44,6 +46,12 @@ class ErrorBoundary extends React.Component {
 
 function App() {
   const { user, login, logout, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey } = useAuth()
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
   const [clientView, setClientView] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false)
@@ -55,8 +63,10 @@ function App() {
   const [portfolios, setPortfolios] = useState([])
   const [activeProjectId, setActiveProjectId] = useState(null)
   const [selectedVendorId, setSelectedVendorId] = useState(null)
+  const [isClientAuthorized, setIsClientAuthorized] = useState(false)
   const [readinessData, setReadinessData] = useState({})
   const [playbookProposals, setPlaybookProposals] = useState([])
+  const [isFieldPortalActive, setIsFieldPortalActive] = useState(false)
   const [isSyncing, setIsSyncing] = useState(true)
   const [navHistory, setNavHistory] = useState([])
   const [msaTemplate, setMsaTemplate] = useState(`
@@ -178,6 +188,12 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     window.navigateToVendorBench = (vendorId) => {
         setSelectedVendorId(vendorId)
         setActiveTab('vendors')
+    }
+
+    // Check for deep-link to Field Portal
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('view') === 'field') {
+        setIsFieldPortalActive(true)
     }
   }, [])
 
@@ -415,24 +431,24 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
   }
 
   const handleLockLocation = (projectId, coords) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, coordinates: coords, locationLocked: true } : p))
+    setProjects(prev => prev.map(p => String(p.id) === String(projectId) ? { ...p, coordinates: coords, locationLocked: true } : p))
   }
 
   const handleUpdateVendor = (id, updates) => {
-    setVendors(vendors.map(v => v.id === id ? { ...v, ...updates } : v))
+    setVendors(vendors.map(v => String(v.id) === String(id) ? { ...v, ...updates } : v))
   }
 
   const handleAddVendorPayment = (vendorId, contractId, payment) => {
-    setVendors(vendors.map(v => v.id === vendorId ? { ...v, contracts: v.contracts.map(c => c.id === contractId ? { ...c, payments: [...(c.payments || []), { ...payment, id: Date.now() }] } : c) } : v))
+    setVendors(vendors.map(v => String(v.id) === String(vendorId) ? { ...v, contracts: v.contracts.map(c => String(c.id) === String(contractId) ? { ...c, payments: [...(c.payments || []), { ...payment, id: Date.now() }] } : c) } : v))
   }
 
   const handleAddVendorContract = (vendorId, projectName, orderValue) => {
-    setVendors(vendors.map(v => v.id === vendorId ? { ...v, contracts: [...(v.contracts || []), { id: Date.now(), projectName, orderValue: parseInt(orderValue), status: 'Active', payments: [] }] } : v))
+    setVendors(vendors.map(v => String(v.id) === String(vendorId) ? { ...v, contracts: [...(v.contracts || []), { id: Date.now(), projectName, orderValue: parseInt(orderValue), status: 'Active', payments: [] }] } : v))
   }
 
   const handleVendorAddNote = (vendorId, note) => {
     setVendors(prev => prev.map(v => {
-        if (v.id === vendorId) {
+        if (String(v.id) === String(vendorId)) {
             return {
                 ...v,
                 history: [
@@ -451,11 +467,129 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     }))
   }
 
-  const handleAssignVendor = (projectId, vendor) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, assignedVendor: vendor.name } : p))
+  const handleAssignVendor = (projectId, vendorId, orderValue) => {
+    const vendor = vendors.find(v => String(v.id) === String(vendorId))
+    const project = projects.find(p => String(p.id) === String(projectId))
+
+    if (!vendor || !project) return
+
+    setProjects(prev => prev.map(p => {
+        if (String(p.id) === String(projectId)) {
+            return {
+                ...p,
+                assignedVendor: vendor.name,
+                history: [
+                    ...(p.history || []),
+                    {
+                        id: Date.now(),
+                        type: 'system',
+                        title: 'Partner Assigned',
+                        detail: `${vendor.name} assigned as primary partner.`,
+                        date: new Date().toISOString().split('T')[0]
+                    }
+                ]
+            }
+        }
+        return p
+    }))
+
+    setVendors(prev => prev.map(v => {
+        if (String(v.id) === String(vendorId)) {
+            return {
+                ...v,
+                contracts: [
+                    ...(v.contracts || []),
+                    {
+                        id: Date.now(),
+                        projectName: project.name,
+                        orderValue: parseInt(orderValue),
+                        status: 'Active',
+                        payments: []
+                    }
+                ]
+            }
+        }
+        return v
+    }))
   }
 
-  const handleReassignProject = (projectId, oldVendorId, newVendorId, orderValue) => {}
+  const handleReassignProject = (projectId, oldVendorId, newVendorId, orderValue) => {
+    const oldVendor = vendors.find(v => String(v.id) === String(oldVendorId))
+    const newVendor = vendors.find(v => String(v.id) === String(newVendorId))
+    const project = projects.find(p => String(p.id) === String(projectId))
+
+    if (!newVendor || !project) return
+
+    // 1. Update Project
+    setProjects(prev => prev.map(p => {
+        if (String(p.id) === String(projectId)) {
+            return {
+                ...p,
+                assignedVendor: newVendor.name,
+                history: [
+                    ...(p.history || []),
+                    {
+                        id: Date.now(),
+                        type: 'system',
+                        title: 'Partner Orchestration',
+                        detail: `Emergency Reassignment: ${oldVendor?.name || 'Previous Partner'} replaced by ${newVendor.name}.`,
+                        date: new Date().toISOString().split('T')[0]
+                    }
+                ]
+            }
+        }
+        return p
+    }))
+
+    // 2. Update Vendors (Terminate old, Add new)
+    setVendors(prev => prev.map(v => {
+        if (String(v.id) === String(oldVendorId)) {
+            return {
+                ...v,
+                contracts: (v.contracts || []).map(c => 
+                    c.projectName === project.name ? { ...c, status: 'Terminated' } : c
+                )
+            }
+        }
+        if (String(v.id) === String(newVendorId)) {
+            return {
+                ...v,
+                contracts: [
+                    ...(v.contracts || []),
+                    {
+                        id: Date.now(),
+                        projectName: project.name,
+                        orderValue: parseInt(orderValue),
+                        status: 'Active',
+                        payments: []
+                    }
+                ]
+            }
+        }
+        return v
+    }))
+  }
+  const handleFieldReport = (report) => {
+    setProjects(prev => prev.map(p => {
+        if (String(p.id) === String(report.projectId)) {
+            return {
+                ...p,
+                history: [
+                    ...(p.history || []),
+                    {
+                        id: Date.now(),
+                        type: 'danger',
+                        title: `FIELD SOS: ${report.issueType}`,
+                        detail: report.details,
+                        date: new Date().toISOString().split('T')[0],
+                        isClientVisible: false
+                    }
+                ]
+            }
+        }
+        return p
+    }))
+  }
   const handleApprovePlaybookUpdate = (proposalId) => {
     setPlaybookProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'approved' } : p))
   }
@@ -506,9 +640,8 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
               </div>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                 <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleNavigate('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
-                {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Project Central" />}
+                {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Operations Hub" />}
                 {!clientView && <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />}
-                {!clientView && <SidebarItem active={activeTab === 'readiness'} onClick={() => handleNavigate('readiness')} icon="📏" label="Live Audit Hub" />}
                 <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />
                 {user?.role === 'SuperAdmin' && !clientView && (
                   <>
@@ -518,33 +651,34 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 )}
               </nav>
               <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase' }}>Security Clearance</span>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: clientView ? '#34c759' : 'var(--accent-color)', boxShadow: `0 0 10px ${clientView ? '#34c759' : 'var(--accent-color)'}` }} />
-                  </div>
-                  <div onClick={() => { if (clientView) setShowPinModal(true); else { setClientView(true); setActiveTab('dashboard'); } }} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.8rem', background: 'var(--bg-primary)', borderRadius: '12px', cursor: 'pointer', border: '1px solid var(--border-color)' }}>
-                    <div style={{ width: '40px', height: '22px', background: clientView ? 'rgba(255,255,255,0.1)' : 'var(--accent-color)', borderRadius: '11px', position: 'relative' }}>
-                        <div style={{ width: '16px', height: '16px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: clientView ? '3px' : '21px', transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)' }} />
+                {/* v8.3 STEALTH TOGGLE */}
+                <div style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+                    <div 
+                        onClick={() => { if (clientView) setShowPinModal(true); else { setClientView(true); setActiveTab('dashboard'); } }} 
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                    >
+                        <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '0.1em', color: clientView ? 'var(--text-secondary)' : 'var(--accent-color)' }}>{clientView ? 'CLIENT' : 'INTERNAL'}</span>
+                        <div style={{ width: '36px', height: '18px', background: clientView ? 'rgba(52, 199, 89, 0.2)' : 'rgba(102, 178, 194, 0.2)', borderRadius: '9px', position: 'relative', border: `1px solid ${clientView ? '#34c759' : 'var(--accent-color)'}` }}>
+                            <div style={{ width: '12px', height: '12px', background: clientView ? '#34c759' : 'var(--accent-color)', borderRadius: '50%', position: 'absolute', top: '2px', left: clientView ? '2px' : '20px', transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)', boxShadow: `0 0 8px ${clientView ? '#34c759' : 'var(--accent-color)'}` }} />
+                        </div>
                     </div>
-                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: clientView ? 'var(--text-secondary)' : '#fff' }}>{clientView ? 'CLIENT MODE' : 'INTERNAL MODE'}</span>
-                  </div>
                 </div>
                 <button onClick={() => setIsNewProjectModalOpen(true)} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '0.8rem', fontWeight: '800' }}>+ INITIALIZE PROJECT LOOP</button>
-                <div style={{ padding: '1rem', background: 'var(--bg-accent)', borderRadius: '12px', marginTop: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Active Operator</p>
-                      <p style={{ fontSize: '0.8rem', fontWeight: '600' }}>{user.name}</p>
+                {/* v8.4 MICRO-IDENTITY STRIP */}
+                <div style={{ padding: '0.8rem', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0, letterSpacing: '0.1em' }}>Operator</p>
+                            <p style={{ fontSize: '0.75rem', fontWeight: '800', margin: 0 }}>{user.name}</p>
+                        </div>
+                        <button 
+                            onClick={logout} 
+                            style={{ background: 'rgba(255, 69, 58, 0.08)', border: 'none', color: '#ff453a', fontSize: '0.6rem', fontWeight: '900', cursor: 'pointer', padding: '0.2rem 0.6rem', borderRadius: '4px' }}
+                        >
+                            EXIT
+                        </button>
                     </div>
-                    <button 
-                      onClick={logout} 
-                      style={{ background: 'none', border: 'none', color: '#ff453a', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(255, 69, 58, 0.1)' }}
-                    >
-                      LOGOUT
-                    </button>
-                  </div>
-                  <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.65rem', marginTop: '0.5rem', cursor: 'pointer', padding: 0 }}>Change Client ↩</button>
+                    <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.6rem', marginTop: '0.6rem', cursor: 'pointer', padding: 0, fontWeight: '700', opacity: 0.7 }}>↩ RE-INITIALIZE CLIENT</button>
                 </div>
               </div>
             </aside>
@@ -563,9 +697,8 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     <h1 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.4rem)' }}>
                       {activeTab === 'dashboard' 
                           ? (clientView ? `Experience: ${selectedClient || activeProject?.client || 'Meaven'}` : 'Tactical Command') 
-                          : activeTab === 'projects' ? 'Financial Hub' 
+                          : activeTab === 'projects' ? 'Operations Hub' 
                           : activeTab === 'vendors' ? 'Partner Bench' 
-                          : activeTab === 'readiness' ? 'Audit Hub' 
                           : activeTab === 'calculator' ? 'Tech Calc' 
                           : activeTab === 'strategy' ? 'Executive Hub'
                           : 'Admin'}
@@ -576,31 +709,46 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     <span style={{ fontSize: '0.65rem', fontWeight: '800', color: clientView ? '#34c759' : 'var(--accent-color)' }}>{clientView ? 'SECURE PORTFOLIO' : 'INTERNAL TACTICAL'}</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}>⟳ Switch</button>
+                <div className="desktop-only" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 'auto', lineHeight: 1.2 }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '900', color: 'var(--accent-color)', letterSpacing: '0.05em', fontFamily: 'monospace' }}>
+                        {currentTime.getHours().toString().padStart(2, '0')}:{currentTime.getMinutes().toString().padStart(2, '0')}:{currentTime.getSeconds().toString().padStart(2, '0')}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-secondary)', fontFamily: 'monospace', textTransform: 'uppercase' }}>
+                        {currentTime.getDate().toString().padStart(2, '0')}-{(currentTime.getMonth()+1).toString().padStart(2, '0')}-{currentTime.getFullYear()} | {currentTime.toLocaleDateString('en-US', { weekday: 'long' })}
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                    <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); setIsClientAuthorized(false); }} className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}>⟳ Switch</button>
                 </div>
               </header>
 
               <div className="tab-content-wrapper">
                 {activeTab === 'dashboard' && (
                   clientView ? (
-                    <ClientExperienceHub 
-                      portfolioName={selectedClient || activeProject?.client} 
-                      projects={projects.filter(p => p.client === (selectedClient || activeProject?.client))} 
-                      vendors={vendors} 
-                      onViewProject={(id) => { setActiveProjectId(id); setActiveTab('dashboard'); }} 
-                    />
+                    !isClientAuthorized ? (
+                      <ClientPortalGate 
+                        portfolio={portfolios.find(p => p.name === (selectedClient || activeProject?.client)) || { 
+                          name: selectedClient || activeProject?.client, 
+                          isPortalActive: true, 
+                          clientPin: '2410' 
+                        }} 
+                        onAuthorize={() => setIsClientAuthorized(true)} 
+                      />
+                    ) : (
+                      <ClientExperienceHub 
+                        clientName={selectedClient || activeProject?.client} 
+                        projects={projects.filter(p => p.client === (selectedClient || activeProject?.client))} 
+                        vendors={vendors} 
+                        onViewProject={(id) => { setActiveProjectId(id); setActiveTab('dashboard'); }} 
+                      />
+                    )
                   ) : (
                     <CommandCenter 
                       projects={projects} 
-                      activeProjectId={activeProjectId} 
-                      setActiveProjectId={setActiveProjectId} 
                       vendors={vendors}
-                      onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }}
-                      onLockLocation={handleLockLocation}
-                      onUpdateReadiness={handleUpdateReadiness}
-                      readinessData={readinessData}
-                      onUpdateFinancials={handleUpdateProject}
+                      onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('projects'); }}
+                      onUpdateProject={handleUpdateProject}
+                      onSelectTab={setActiveTab}
                     />
                   )
                 )}
@@ -610,11 +758,14 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     projects={projects} 
                     vendors={vendors}
                     portfolios={portfolios}
-                    onSelectProject={(id) => { setActiveProjectId(id); setActiveTab('readiness'); }} 
+                    activeProjectId={activeProjectId}
+                    onSelectProject={(id) => setActiveProjectId(id)} 
                     onUpdateValue={handleUpdateProject}
                     onLogPayment={handleLogPayment}
                     onLogPayout={handleLogPayout}
                     onAddVendor={handleAddVendor}
+                    onAssignPartner={handleAssignVendor}
+                    onReassignPartner={handleReassignProject}
                     onAddNote={handleProjectAddNote}
                     onToggleVisibility={handleToggleTimelineVisibility}
                     userRole={user?.role}
@@ -649,7 +800,21 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 )}
                 {activeTab === 'calculator' && ( <TechnicalCalculator /> )}
                 {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
-                {activeTab === 'admin' && ( <AdminPanel users={users || []} proposals={playbookProposals || []} onApproveProposal={handleApprovePlaybookUpdate} onAddUser={addUser} onRemoveUser={removeUser} onResetUser={resetUser} onBack={() => setActiveTab('dashboard')} /> )}
+                {activeTab === 'admin' && ( 
+                  <AdminPanel 
+                    users={users || []} 
+                    proposals={playbookProposals || []} 
+                    portfolios={portfolios || []}
+                    msaTemplate={msaTemplate}
+                    onUpdateMsa={setMsaTemplate}
+                    onUpdatePortfolio={(id, data) => setPortfolios(prev => prev.map(p => p.id === id ? { ...p, ...data } : p))}
+                    onApproveProposal={handleApprovePlaybookUpdate} 
+                    onAddUser={addUser} 
+                    onRemoveUser={removeUser} 
+                    onResetUser={resetUser} 
+                    onBack={() => setActiveTab('dashboard')} 
+                  /> 
+                )}
               </div>
             </main>
 
@@ -680,6 +845,16 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 <span>New</span>
               </button>
             </nav>
+          </div>
+        )}
+        {isFieldPortalActive && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: '#000' }}>
+            <FieldPortal 
+              projects={projects} 
+              vendors={vendors} 
+              onSubmitReport={handleFieldReport} 
+              onExit={() => setIsFieldPortalActive(false)} 
+            />
           </div>
         )}
         <AiAssistant 

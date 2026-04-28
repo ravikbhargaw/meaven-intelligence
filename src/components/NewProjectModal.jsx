@@ -124,7 +124,7 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 4000,
       padding: '10px'
     }}>
-      <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 750px)', padding: 'clamp(1rem, 5vw, 2.5rem)', maxHeight: '95vh', overflowY: 'auto', border: '1px solid var(--accent-color)' }}>
+      <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 480px)', padding: '2rem', maxHeight: '95vh', overflowY: 'auto', border: '1px solid var(--accent-color)', borderRadius: '12px' }}>
         <h2 style={{ marginBottom: '0.5rem', fontSize: 'clamp(1.2rem, 4vw, 1.8rem)' }}>🚀 Initialize Project Loop</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
           Deploy Meaven Intelligence. Define the portfolio and execution stakeholders.
