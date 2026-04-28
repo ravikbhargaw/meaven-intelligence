@@ -8,7 +8,7 @@ const ModalOverlay = ({ children }) => (
     </div>
 )
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '---';
     const date = new Date(dateStr);
@@ -213,6 +213,12 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     </div>
                 </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Client: {selectedProject.client}</p>
+                <button 
+                    onClick={() => { if(confirm(`Flush Project ${selectedProject.name}?`)) { onRemoveProject(selectedProject.id); setSelectedProjectId(null); } }} 
+                    style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.65rem', marginTop: '1rem', cursor: 'pointer', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '800' }}
+                >
+                    🗑️ Flush Individual Loop
+                </button>
             </div>
             <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: '800', color: pl.margin > 30 ? 'var(--success)' : 'var(--accent-color)' }}>
