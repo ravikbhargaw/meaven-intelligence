@@ -1,0 +1,73 @@
+{
+  "company_name": "Meaven",
+  "last_updated": "April 2026",
+  "global_logic": {
+    "margin_tiers": { "standard": 0.55, "growth": 0.40, "scale": 0.25 },
+    "tax_gst_percent": 18,
+    "vascal_formula": "if N=1: 3; else: CEIL(N * 2.5)"
+  },
+  "raw_materials": {
+    "glass": [
+      { "type": "10MM Toughened", "brand": "Saint Gobain", "rate": 150, "unit": "sqft" },
+      { "type": "12MM Toughened", "brand": "Saint Gobain", "rate": 180, "unit": "sqft" }
+    ],
+    "profiles": [
+      { "code": "SD36-VP11", "name": "Vertical Door Profile", "rate": 1624 },
+      { "code": "SD36-HZ12B+RH13B", "name": "Horizontal Profile Combo", "rate": 1339 },
+      { "code": "GPS 45M 01", "name": "Partition Side/Top Profile", "rate": 1012 },
+      { "code": "GPS 45GH 02+03", "name": "Bottom Profile Combo", "rate": 1138 },
+      { "code": "I-Section", "name": "I-Section Divider", "rate": 1000 }
+    ],
+    "door_handle_sets": {
+      "mortise_set_black": [
+        { "item": "MH01 Mortise Handle", "rate": 643 },
+        { "item": "30x85mm Lock Body", "rate": 490 },
+        { "item": "60mm OSK Cylinder", "rate": 462 },
+        { "TOTAL_SET_RATE": 1595 }
+      ],
+      "2d_set_black": [
+        { "item": "2D Handle 18 inch", "rate": 1188 },
+        { "item": "30mm Dead Lock Body", "rate": 495 },
+        { "item": "60mm OSK Cylinder", "rate": 462 },
+        { "item": "Dead Lock Body Cap", "rate": 158 },
+        { "TOTAL_SET_RATE": 2303 }
+      ]
+    },
+    "ozone_hardware": {
+      "black_matte": [
+        { "item": "Floor Spring 85kg", "code": "OFH-6600E BM", "rate": 2603.60 },
+        { "item": "Top Patch", "code": "OPF-2E BM", "rate": 1006.02 },
+        { "item": "Bottom Patch", "code": "OPF-3E BM", "rate": 1006.02 },
+        { "item": "Bottom Corner Lock", "code": "OPL-1E BM", "rate": 1602.18 },
+        { "item": "Handle OGH-55-E", "rate": 1120.10 },
+        { "item": "Pivot", "rate": 184.00 }
+      ],
+      "chrome_ss": [
+        { "item": "Floor Spring 85kg", "rate": 2265.50 },
+        { "item": "Top Patch", "rate": 874.46 },
+        { "item": "Bottom Patch", "rate": 874.46 },
+        { "item": "D Handle 300mm", "rate": 1527.20 },
+        { "item": "H Handle 212mm", "rate": 1150.92 }
+      ]
+    },
+    "miscellaneous_hardware": [
+      { "item": "Vascal (GPS 45DF 04)", "rate": 1735 },
+      { "item": "Stile Door Assembly Bracket", "rate": 165 },
+      { "item": "SS Hinges 4 Inch Black", "rate": 166 },
+      { "item": "Pelmet Arm Closer Black", "rate": 1445 },
+      { "item": "H Handle Black (Alucraft)", "rate": 878 },
+      { "item": "Saddle Plate Black", "rate": 672 }
+    ],
+    "consumables": [
+      { "item": "Silicon Sealant", "rate": 250, "unit": "bottle" },
+      { "item": "Gasket", "rate": 25, "unit": "rm" },
+      { "item": "Gasket Door Fixed", "rate": 1200 }
+    ]
+  },
+  "labor_rates": {
+    "partition_modular": 60,
+    "stile_door": 3000,
+    "floor_spring_door": 1200,
+    "frameless_door": 2500
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "company_name": "Meaven",
+  "version": "2.1_Final_Execution",
+  "bom_anchors": {
+    "stile_door": {
+      "profiles": [
+        { "code": "SD36-VP11", "qty": 2, "rate": 1624, "desc": "Vertical Profile" },
+        { "code": "SD36-HZ12B", "qty": 1, "rate": 1119, "desc": "Horizontal Bottom" },
+        { "code": "SD36-RH13B", "qty": 1, "rate": 220, "desc": "Horizontal Cap" }
+      ],
+      "essential_hardware": [
+        { "name": "Assembly Bracket", "qty": 4, "rate": 165 },
+        { "name": "SS Hinge 4 Inch Black", "qty": 4, "rate": 166 },
+        { "name": "Saddle Plate Black", "qty": 1, "rate": 672 },
+        { "name": "Gasket (Fixed Set)", "qty": 1, "rate": 1200 },
+        { "name": "Pelmet Arm Closer", "qty": 1, "rate": 1445 }
+      ]
+    },
+    "partition_system": {
+      "base_profile": { "code": "GPS 45M 01", "rate": 1012, "length": 2500 },
+      "bottom_system": { "code": "GPS 45GH 02+03", "rate": 1138, "length": 2500 },
+      "i_section": { "code": "Divider", "rate": 1000, "length": 2500 },
+      "sealant": { "usage": "4 bottles per 500 sqft", "rate": 250 }
+    }
+  },
+  "handle_variants": {
+    "mortise": { "total_set": 1595, "parts": ["Handle", "Lock Body", "Cylinder"] },
+    "2d_pull": { "total_set": 2303, "parts": ["2D Handle", "Dead Lock", "Cylinder", "Cap"] },
+    "h_handle": { "rate": 878, "desc": "Alucraft Black 450mm" }
+  },
+  "ozone_enterprise_discounted": {
+    "discount_applied": "54% off MRP",
+    "floor_spring_kit": {
+      "machine": 2603.60,
+      "top_patch": 1006.02,
+      "bottom_patch": 1006.02,
+      "pivot": 184.00,
+      "black_handle": 1120.10
+    },
+    "glass_to_glass_connectors": {
+      "90_degree": 1450,
+      "180_degree": 1200
+    }
+  },
+  "labor_matrix": {
+    "lead": "Naveen",
+    "partition": 60,
+    "stile_door": 3000,
+    "floor_spring": 1200,
+    "frameless": 2500
+  },
+  "safety_blocks": {
+    "block_quoting": ["Annealed Glass", "Silver Closer"],
+    "mandatory_warning": "Floor Spring Doors exclude lock sets."
+  }
+}

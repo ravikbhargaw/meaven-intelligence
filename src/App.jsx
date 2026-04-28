@@ -8,7 +8,7 @@ import useAuth from './hooks/useAuth'
 import VendorScoring from './components/VendorScoring'
 import ProjectDirectory from './components/ProjectDirectory'
 import ClientExperienceHub from './components/ClientExperienceHub'
-import TechnicalCalculator from './components/TechnicalCalculator'
+import StrategicPricingEngine from './components/StrategicPricingEngine'
 import AdminPanel from './components/AdminPanel'
 import CommandCenter from './components/CommandCenter'
 import NewPortfolioModal from './components/NewPortfolioModal'
@@ -802,7 +802,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
                   />
                 )}
-                {activeTab === 'calculator' && ( <TechnicalCalculator projects={projects} onAddNote={handleProjectAddNote} /> )}
+                {activeTab === 'calculator' && ( <StrategicPricingEngine projects={projects} onAddNote={handleProjectAddNote} /> )}
                 {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
                 {activeTab === 'admin' && ( 
                   <AdminPanel 

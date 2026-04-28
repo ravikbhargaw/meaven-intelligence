@@ -1,0 +1,16 @@
+{
+  "system_constraints": {
+    "bar_lengths": {
+      "standard_profile": 2500,
+      "horizontal_door_profile": 1800
+    },
+    "mandatory_bom_additions": {
+      "stile_door_brackets": { "qty": 4, "rate": 165 },
+      "stile_door_gasket": { "type": "lump_sum", "rate": 1200 }
+    },
+    "critical_flags": {
+      "exclude_lock": ["Floor Spring Door (Chrome)", "Floor Spring Door (Black)"],
+      "block_quoting": ["Annealed Glass", "Silver Door Closer"]
+    }
+  }
+}

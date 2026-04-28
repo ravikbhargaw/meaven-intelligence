@@ -1,0 +1,56 @@
+{
+  "company_name": "Meaven",
+  "version": "3.0_Final_BOM",
+  "global_logic": {
+    "margin_tiers": { "standard": 0.55, "growth": 0.40, "scale": 0.25 },
+    "tax_gst_percent": 18,
+    "wastage_factor_profiles": "CEIL(Total_Length_MM / 2500)"
+  },
+  "fixed_partition_45mm": {
+    "profiles": [
+      { "code": "GPS 45M 01", "name": "Side & Top Profile", "rate": 1012, "length": 2500 },
+      { "code": "GPS 45GH 02", "name": "Bottom Profile Base", "rate": 1138, "length": 2500, "note": "Sold as set with 03" },
+      { "code": "GPS 45GH 03", "name": "Bottom Profile Cap", "rate": 0, "length": 2500, "note": "Included in 02 price" },
+      { "code": "I-Section", "name": "Vertical Divider", "rate": 1000, "length": 2500 }
+    ],
+    "consumables": {
+      "gasket_45mm": { "rate": 25, "unit": "rm", "calc": "Perimeter_Length * 2" },
+      "silicon_sealant": { "rate": 250, "unit": "bottle", "ratio": "4 per 500 sqft" }
+    }
+  },
+  "stile_door_system": {
+    "profiles": [
+      { "code": "SD36-VP11", "name": "Vertical Profile", "rate": 1624, "qty_per_door": 2 },
+      { "code": "SD36-HZ12B", "name": "Horizontal Bottom", "rate": 1119, "qty_per_door": 1 },
+      { "code": "SD36-RH13B", "name": "Horizontal Cap", "rate": 220, "qty_per_door": 1 }
+    ],
+    "mandatory_hardware": [
+      { "item": "Assembly Bracket", "rate": 165, "qty_per_door": 4 },
+      { "item": "SS Hinge 4 Inch Black", "rate": 166, "qty_per_door": 4 },
+      { "item": "Saddle Plate Black", "rate": 672, "qty_per_door": 1 },
+      { "item": "Gasket Set (Fixed)", "rate": 1200, "qty_per_door": 1 },
+      { "item": "Pelmet Arm Closer Black", "rate": 1445, "qty_per_door": 1 }
+    ],
+    "handle_options": {
+      "mortise_set": { "rate": 1595, "includes": ["MH01", "Lock Body", "Cylinder"] },
+      "2d_pull_set": { "rate": 2303, "includes": ["2D Handle", "Dead Lock", "Cylinder", "Cap"] }
+    }
+  },
+  "floor_spring_ozone_black": {
+    "machine": { "code": "OFH-6600E BM", "rate": 2603.60 },
+    "top_patch": { "code": "OPF-2E BM", "rate": 1006.02 },
+    "bottom_patch": { "code": "OPF-3E BM", "rate": 1006.02 },
+    "pivot": { "code": "OFS-ACC", "rate": 184.00 },
+    "handle": { "code": "OGH-55-E", "rate": 1120.10 },
+    "warning": "EXCLUDING LOCK"
+  },
+  "labor_matrix": {
+    "lead": "Naveen",
+    "rates": {
+      "partition_sqft": 60,
+      "stile_door_unit": 3000,
+      "floor_spring_unit": 1200,
+      "frameless_unit": 2500
+    }
+  }
+}

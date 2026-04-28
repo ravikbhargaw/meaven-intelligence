@@ -1,0 +1,66 @@
+{
+  "company_metadata": {
+    "name": "Meaven Designs",
+    "location": "Bengaluru",
+    "ceo": "Ravi",
+    "strategy": "Lean AI-Driven Glass Execution"
+  },
+  "pricing_tiers": {
+    "standard": { "margin": 0.55, "label": "Boutique/Startup" },
+    "growth": { "margin": 0.40, "label": "Mid-Size Office" },
+    "scale": { "margin": 0.25, "label": "Enterprise/Managed Office" }
+  },
+  "product_bom_logic": {
+    "stile_door": {
+      "profiles": [
+        { "code": "SD36-VP11", "name": "Vertical Profile", "rate": 1624, "qty": 2 },
+        { "code": "SD36-HZ12B", "name": "Horizontal Bottom", "rate": 1119, "qty": 1 },
+        { "code": "SD36-RH13B", "name": "Horizontal Cap", "rate": 220, "qty": 1 }
+      ],
+      "hardware": [
+        { "name": "Stile Door Assembly Bracket", "rate": 165, "qty": 4 },
+        { "name": "SS Hinge 4 Inch Black", "rate": 166, "qty": 4 },
+        { "name": "Saddle Plate Black", "rate": 672, "qty": 1 },
+        { "name": "Gasket Set (Fixed)", "rate": 1200, "qty": 1 },
+        { "name": "Pelmet Arm Closer Black", "rate": 1445, "qty": 1 },
+        { "name": "Vascal (GPS 45DF 04)", "rate": 1735, "logic": "if N=1: 3; else: CEIL(N*2.5)" }
+      ],
+      "handle_options": {
+        "mortise": { "total_set": 1595, "components": ["MH01", "Lock Body", "Cylinder"] },
+        "2d_pull": { "total_set": 2303, "components": ["2D Handle", "Dead Lock", "Cylinder", "Cap"] }
+      }
+    },
+    "fixed_partition_45mm": {
+      "profiles": [
+        { "code": "GPS 45M 01", "name": "Side/Top Profile", "rate": 1012, "bar_len": 2500 },
+        { "code": "GPS 45GH 02+03", "name": "Bottom Profile Set", "rate": 1138, "bar_len": 2500 },
+        { "code": "I-Section", "name": "Vertical Divider", "rate": 1000, "bar_len": 2500 }
+      ],
+      "consumables": {
+        "sealant": { "rate": 250, "ratio": "4 per 500 sqft" },
+        "gasket_linear": { "rate": 25, "calc": "Perimeter * 2" }
+      }
+    },
+    "floor_spring_system": {
+      "machine": { "code": "OFH-6600E BM", "rate": 2603.60 },
+      "patches": { "top": 1006.02, "bottom": 1006.02 },
+      "handle": { "code": "OGH-55-E", "rate": 1120.10 },
+      "pivot": 184.00,
+      "warning": "EXCLUDING LOCKS"
+    }
+  },
+  "labor_matrix": {
+    "installer": "Naveen",
+    "rates": {
+      "partition_sqft": 60,
+      "stile_door_unit": 3000,
+      "floor_spring_unit": 1200,
+      "frameless_unit": 2500
+    }
+  },
+  "raw_materials": {
+    "glass_10mm_toughened_sg": 150,
+    "glass_12mm_toughened_sg": 180,
+    "gst_percent": 18
+  }
+}

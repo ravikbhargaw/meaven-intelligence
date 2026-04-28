@@ -1,0 +1,65 @@
+{
+  "company_metadata": {
+    "name": "Meaven Designs",
+    "ceo": "Ravi",
+    "hq": "Bengaluru",
+    "operational_model": "Lean AI-Driven Execution"
+  },
+  "global_settings": {
+    "currency": "INR",
+    "gst_percent": 18,
+    "tier_logic": {
+      "standard": { "min_sqft": 0, "max_sqft": 500, "margin": 0.55 },
+      "growth": { "min_sqft": 501, "max_sqft": 2000, "margin": 0.40 },
+      "scale": { "min_sqft": 2001, "max_sqft": 99999, "margin": 0.25 }
+    }
+  },
+  "raw_materials": {
+    "glass": {
+      "10mm_toughened_sg": { "rate": 150, "unit": "sqft", "brand": "Saint Gobain" },
+      "12mm_toughened_sg": { "rate": 180, "unit": "sqft", "brand": "Saint Gobain" }
+    },
+    "profiles_modular_45mm": {
+      "gps_45m_01": { "name": "Side/Top Profile", "rate": 1012, "bar_len_mm": 2500 },
+      "gps_45gh_02_03": { "name": "Bottom Profile Set", "rate": 1138, "bar_len_mm": 2500 },
+      "i_section": { "name": "Vertical Divider", "rate": 1000, "bar_len_mm": 2500 }
+    },
+    "profiles_stile_door": {
+      "sd36_vp11": { "name": "Vertical Profile", "rate": 1624, "bar_len_mm": 2500 },
+      "sd36_hz12b": { "name": "Horizontal Bottom", "rate": 1119, "bar_len_mm": 1800 },
+      "sd36_rh13b": { "name": "Horizontal Cap", "rate": 220, "bar_len_mm": 1800 }
+    },
+    "hardware_stile_door": {
+      "assembly_bracket": { "rate": 165, "qty_required": 4 },
+      "ss_hinge_black": { "rate": 166, "qty_required": 4 },
+      "saddle_plate_black": { "rate": 672, "qty_required": 1 },
+      "gasket_set_fixed": { "rate": 1200, "qty_required": 1 },
+      "vascal_gps_45df_04": { "rate": 1735, "logic": "vascal_optimized" },
+      "pelmet_closer_black": { "rate": 1445, "qty_required": 1 }
+    },
+    "handle_sets": {
+      "mortise_black": { "total_rate": 1595, "items": ["MH01", "Lock Body", "OSK Cylinder"] },
+      "pull_2d_black": { "total_rate": 2303, "items": ["2D Handle", "Dead Lock", "Cylinder", "Cap"] },
+      "h_handle_black": { "total_rate": 878, "items": ["Alucraft H-Handle"] }
+    },
+    "ozone_floor_spring_black": {
+      "machine_ofh_6600e": 2603.60,
+      "patch_top_opf_2e": 1006.02,
+      "patch_bottom_opf_3e": 1006.02,
+      "pivot_ofs_acc": 184.00,
+      "handle_ogh_55_e": 1120.10,
+      "disclaimer": "EXCLUDING LOCKS"
+    }
+  },
+  "execution_labor": {
+    "vendor": "Naveen",
+    "partition_sqft": 60,
+    "stile_door_unit": 3000,
+    "floor_spring_unit": 1200,
+    "frameless_unit": 2500
+  },
+  "consumables": {
+    "sealant_bottle": { "rate": 250, "ratio": "4 per 500 sqft" },
+    "gasket_linear_meter": { "rate": 25, "logic": "Perimeter * 2" }
+  }
+}
