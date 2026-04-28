@@ -53,31 +53,22 @@ The platform utilizes a multi-layered defense architecture to ensure data integr
 
 ---
 
-## 📏 5. Live Audit & Site Readiness
-*Bridging the gap between the field and the dashboard.*
+## 📈 5. Live Site Monitoring & SOS Reporting
+*Bridging the gap between the field and the dashboard with secure, isolated reporting.*
 
-*   **Site Readiness Scoring**: A comprehensive 0-100% checklist covering civil, electrical, structural, and compliance checks.
-*   **Geospatial Verification**: Locks project coordinates to ensure field operators are genuinely on-site when conducting audits.
-*   **Unified View**: The live audit engine is embedded directly into the Operations Hub, so you never have to switch context.
-
----
-
-## 📞 6. B2B Client Communication & WhatsApp Strategy
-*Standardizing external communication outside of the platform.*
-
-*   **Micro-CRM Architecture**: Utilize standard WhatsApp Business labels to track your pipeline (e.g., *Lead, Awaiting Audit, Proposal, Active Execution*).
-*   **Premium Cataloging**: Display "Service Tiers" or "Signature Portfolios" in the WhatsApp Catalog rather than physical products.
-*   **Silent Authority**: Post high-quality "War Room" and site-execution videos to your WhatsApp Status. C-suite clients monitor these, establishing silent trust.
-*   **Tactical Quick Replies**: Use `/` commands to instantly send corporate profiles and standardized audit responses in seconds.
+*   **Secure Field Portal**: A dedicated, mobile-optimized terminal for site supervisors (`?view=field`).
+    *   **Vendor Siloing**: Access is restricted by **Vendor-Specific PINs**. Partners only see the projects they are currently assigned to.
+    *   **SOS Reporting Engine**: Supervisors can instantly report "Material Delays" or "Site Ready" alerts.
+*   **📡 Live Execution Feed**: A real-time stream on the Command Center that pulses with new field reports. It is **fully interactive**—clicking an alert instantly transports the administrator to that project's Operations Hub.
+*   **Site Readiness Scoring**: A 0-100% checklist covering civil, electrical, structural, and compliance checks. Projects below 40% are auto-flagged for halting.
 
 ---
 
-## ☁️ 7. Technical Foundation
-*   **Cloud Engine**: Powered by **Supabase** for real-time, global synchronization.
-*   **Offline Resilience**: Utilizes a "Local-First" approach where changes save to the browser instantly and sync in the background.
-*   **Strict Typing & Hardened IDs**: Engineered to prevent data mismatches across portfolios, ensuring a crash-free experience during complex operations like partner reassignments.
+## ☁️ 6. Technical Foundation & Infrastructure
+*   **Core Engine**: Powered by **Supabase** for real-time database synchronization and secure authentication.
+*   **Enterprise Hosting**: Migrated to **Cloudflare Pages** for unlimited bandwidth and zero-latency global delivery.
+*   **SPA Routing Guard**: Engineered with a custom `_redirects` system to handle client-side routing, ensuring the app remains stable during page refreshes and deep-links.
 
 ---
 
 **Operator Note**: Meaven Intelligence is designed to scale *revenue* without scaling *headcount*. Use the data to manage the vendors, and the platform to manage the data. The goal is relentless Operational Excellence.
-*   **Cloudflare Pages Migration:** Migrated hosting from Netlify to Cloudflare for unlimited scale and zero cost.
