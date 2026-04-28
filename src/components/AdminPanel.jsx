@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProposal, onAddUser, onRemoveUser, onResetUser, onBack, msaTemplate, onUpdateMsa, onUpdatePortfolio, onHardReset }) => {
+const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProposal, onAddUser, onRemoveUser, onResetUser, onBack, msaTemplate, onUpdateMsa, onUpdatePortfolio, onHardReset, onExportData }) => {
     const [activeSection, setActiveSection] = useState('portfolios') 
     const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Admin' })
     const [localMsa, setLocalMsa] = useState(msaTemplate)
@@ -225,20 +225,36 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                         </div>
                     )}
                     {activeSection === 'system' && (
-                        <div className="card" style={{ maxWidth: '600px', border: '1px solid var(--danger)' }}>
-                            <h3 style={{ color: 'var(--danger)' }}>Data Governance & Hard Reset</h3>
-                            <p style={{ fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '2rem' }}>
-                                Use this section to flush the Intelligence Hub of all dummy data. This will wipe all <strong>Projects</strong>, <strong>Vendors</strong>, and <strong>Portfolios</strong> from both the Cloud and Local Cache.
-                            </p>
-                            <div style={{ padding: '1.5rem', background: 'rgba(255, 69, 58, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 69, 58, 0.2)' }}>
-                                <h4 style={{ margin: '0 0 1rem 0', color: 'var(--danger)', fontSize: '0.8rem' }}>DANGER ZONE</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '600px' }}>
+                            <div className="card" style={{ border: '1px solid var(--accent-color)' }}>
+                                <h3 style={{ color: 'var(--accent-color)' }}>Data Sovereignty & Export</h3>
+                                <p style={{ fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+                                    Your data is your asset. Download a complete human-readable dump of your entire Tactical Database (Projects, Vendors, Portfolios) for backup or analysis in Excel.
+                                </p>
                                 <button 
-                                    onClick={onHardReset}
+                                    onClick={() => onExportData()}
                                     className="btn btn-primary" 
-                                    style={{ background: 'var(--danger)', borderColor: 'var(--danger)', width: '100%', justifyContent: 'center' }}
+                                    style={{ width: '100%', justifyContent: 'center' }}
                                 >
-                                    🔥 FLUSH ALL DATA & START FRESH
+                                    📥 ONE-CLICK TACTICAL EXPORT (CSV)
                                 </button>
+                            </div>
+
+                            <div className="card" style={{ border: '1px solid var(--danger)' }}>
+                                <h3 style={{ color: 'var(--danger)' }}>Data Governance & Hard Reset</h3>
+                                <p style={{ fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+                                    Use this section to flush the Intelligence Hub of all dummy data. This will wipe all <strong>Projects</strong>, <strong>Vendors</strong>, and <strong>Portfolios</strong> from both the Cloud and Local Cache.
+                                </p>
+                                <div style={{ padding: '1.5rem', background: 'rgba(255, 69, 58, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 69, 58, 0.2)' }}>
+                                    <h4 style={{ margin: '0 0 1rem 0', color: 'var(--danger)', fontSize: '0.8rem' }}>DANGER ZONE</h4>
+                                    <button 
+                                        onClick={onHardReset}
+                                        className="btn btn-primary" 
+                                        style={{ background: 'var(--danger)', borderColor: 'var(--danger)', width: '100%', justifyContent: 'center' }}
+                                    >
+                                        🔥 FLUSH ALL DATA & START FRESH
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}

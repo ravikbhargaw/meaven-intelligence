@@ -598,6 +598,39 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
   const handleRemoveVendor = (id) => setVendors(prev => prev.filter(v => v.id !== id))
   const handleRemovePortfolio = (id) => setPortfolios(prev => prev.filter(p => p.id !== id))
   
+  const handleExportData = () => {
+    // 1. Define CSV Headers & Content
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "CATEGORY,ID,NAME,CLIENT,STATUS,FINANCIALS/REMARKS\n";
+
+    // 2. Map Portfolios
+    (portfolios || []).forEach(p => {
+        csvContent += `PORTFOLIO,${p.id},"${p.name}","${p.pocName || 'N/A'}","${p.isPortalActive ? 'LIVE' : 'OFFLINE'}","POC: ${p.pocEmail || 'N/A'}"\n`;
+    });
+
+    // 3. Map Projects
+    (projects || []).forEach(p => {
+        const margin = p.margin || 0;
+        const financials = p.clientFinancials?.totalValue || 0;
+        csvContent += `PROJECT,${p.id},"${p.name}","${p.client}","${p.status}","Value: ₹${financials} | EBITDA: ${margin}%"\n`;
+    });
+
+    // 4. Map Vendors
+    (vendors || []).forEach(v => {
+        csvContent += `VENDOR,${v.id},"${v.name}","${v.pocName || 'N/A'}","${v.category}","Email: ${v.pocEmail || 'N/A'}"\n`;
+    });
+
+    // 5. Trigger Download
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `MEAVEN_TACTICAL_BACKUP_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    alert("Tactical Ledger Exported Successfully. This file can be opened in Excel or Google Sheets.");
+  }
+
   const handleHardReset = () => {
     if (confirm("🚨 WARNING: This will permanently DELETE all projects, vendors, and portfolios. This action cannot be undone. Proceed?")) {
         setProjects([])
@@ -836,6 +869,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     onRemoveVendor={handleRemoveVendor}
                     onRemovePortfolio={handleRemovePortfolio}
                     onHardReset={handleHardReset}
+                    onExportData={handleExportData}
                   /> 
                 )}
               </div>

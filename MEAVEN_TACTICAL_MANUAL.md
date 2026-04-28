@@ -86,3 +86,31 @@ The platform utilizes a multi-layered defense architecture to ensure data integr
 ---
 
 **Operator Note**: Meaven Intelligence is designed to scale *revenue* without scaling *headcount*. Use the data to manage the vendors, and the platform to manage the data. The goal is relentless Operational Excellence.
+
+---
+
+## 🛡️ 8. Crisis Response & Data Sovereignty
+
+Meaven Intelligence is built for **High-Availability**, but as a Strategic Operator, you must have a "Red Phone" protocol for data access.
+
+### 8.1 Tactical Ledger Export (Recommended)
+You can download your entire database at any time in an Excel-compatible format:
+1.  Navigate to **Governance Console** (Admin Panel).
+2.  Go to **System Maintenance** (Gear Icon).
+3.  Click **"One-Click Tactical Export (CSV)"**.
+4.  This file contains all Projects, Vendors, and Portfolios. Save this to your local drive weekly.
+
+### 8.2 Direct Cloud Access (The "Emergency Exit")
+If the website `hub.meaven.in` is ever down, your data is still secure in the **Supabase Cloud Vault**.
+1.  Log in to your [Supabase Dashboard](https://supabase.com).
+2.  Select the **Meaven Intelligence** project.
+3.  Go to **Table Editor** on the left sidebar.
+4.  Select the `projects`, `vendors`, or `portfolios` table.
+5.  Click **Export → Export as CSV** to download the raw tactical state.
+
+### 8.3 Local Cache Recovery
+If your internet is down, Meaven works **Offline**. Your browser holds a copy of the tactical state in `LocalStorage`. As long as you don't clear your browser history/cache, you can continue working and export data even without a connection.
+
+---
+**OPERATIONAL NOTE:** Data Sovereignty is a core pillar of MI v4.0. You are never "locked in." You own the data; the code is just the lens through which you view it.
+
