@@ -179,6 +179,10 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     onClick={() => setActiveSubTab('financials')}
                     style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'financials' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'financials' ? '#000' : '#fff', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                 >P&L Intel</button>
+                <button 
+                    onClick={() => { window.location.hash = '#calculator'; window.dispatchEvent(new CustomEvent('navigate', { detail: 'calculator' })); }}
+                    style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid var(--accent-color)', background: 'none', color: 'var(--accent-color)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                >🧮 TECH CALC</button>
             </div>
         </div>
 

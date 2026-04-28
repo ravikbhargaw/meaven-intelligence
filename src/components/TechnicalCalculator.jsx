@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
-const TechnicalCalculator = () => {
+const TechnicalCalculator = ({ projects = [], onAddNote }) => {
+    const [selectedProjectId, setSelectedProjectId] = useState('')
     const [dim, setDim] = useState({ length: 1000, height: 2100, thickness: 12, type: 'Toughened' })
     const [wind, setWind] = useState({ height: 5, zone: 2 }) // height in meters
     const [result, setResult] = useState({ weight: 0, status: 'Safe', recommendation: '' })
@@ -39,8 +40,44 @@ const TechnicalCalculator = () => {
         setResult({ weight: weight.toFixed(2), status, recommendation: rec })
     }, [dim, wind])
 
+    const handlePushToTimeline = () => {
+        if (!selectedProjectId) {
+            alert('Please select a project first to log this calculation.');
+            return;
+        }
+
+        const project = projects.find(p => String(p.id) === String(selectedProjectId));
+        const logDetail = `TECHNICAL SPECIFICATION LOG:\n- Dimensions: ${dim.length}x${dim.height}mm (${dim.thickness}mm)\n- Calculated Weight: ${result.weight}kg\n- Status: ${result.status}\n- Recommendation: ${result.recommendation}`;
+        
+        onAddNote(selectedProjectId, logDetail);
+        alert(`Specification pushed to ${project.name} timeline.`);
+    }
+
     return (
         <div className="tech-calculator animate-fade-in" style={{ padding: '1rem 0' }}>
+            {/* PROJECT CONTEXT SELECTOR */}
+            <div className="card" style={{ marginBottom: '2rem', background: 'rgba(102, 178, 194, 0.05)', border: '1px solid rgba(102, 178, 194, 0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
+                <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.65rem', color: 'var(--accent-color)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block', fontWeight: '800' }}>Active Project Loop</label>
+                    <select 
+                        value={selectedProjectId} 
+                        onChange={(e) => setSelectedProjectId(e.target.value)}
+                        style={{ width: '100%', maxWidth: '400px', padding: '0.8rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff', fontSize: '0.9rem' }}
+                    >
+                        <option value="">Select project to link calculation...</option>
+                        {projects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.client})</option>)}
+                    </select>
+                </div>
+                <button 
+                    onClick={handlePushToTimeline}
+                    disabled={!selectedProjectId}
+                    className="btn btn-primary"
+                    style={{ padding: '0.8rem 2rem', opacity: selectedProjectId ? 1 : 0.5 }}
+                >
+                    PUSH TO TIMELINE ⬆
+                </button>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
                 
                 {/* INPUT SECTION */}

@@ -190,12 +190,16 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
         setActiveTab('vendors')
     }
 
-    // Check for deep-link to Field Portal
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('view') === 'field') {
-        setIsFieldPortalActive(true)
+    // Listen for global navigation requests (e.g., from deep-link buttons)
+    const handleGlobalNav = (e) => {
+        if (e.detail) handleNavigate(e.detail)
     }
-  }, [])
+    window.addEventListener('navigate', handleGlobalNav)
+    
+    return () => {
+        window.removeEventListener('navigate', handleGlobalNav)
+    }
+  }, [activeTab])
 
   // 🔄 GLOBAL FINANCIAL RECONCILIATION ENGINE
   // Ensures legacy data (payouts logged before the sync update) are mirrored in Vendor Bench
@@ -798,7 +802,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
                   />
                 )}
-                {activeTab === 'calculator' && ( <TechnicalCalculator /> )}
+                {activeTab === 'calculator' && ( <TechnicalCalculator projects={projects} onAddNote={handleProjectAddNote} /> )}
                 {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
                 {activeTab === 'admin' && ( 
                   <AdminPanel 
