@@ -594,6 +594,21 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
         return p
     }))
   }
+  const handleRemoveProject = (id) => setProjects(prev => prev.filter(p => p.id !== id))
+  const handleRemoveVendor = (id) => setVendors(prev => prev.filter(v => v.id !== id))
+  const handleRemovePortfolio = (id) => setPortfolios(prev => prev.filter(p => p.id !== id))
+  
+  const handleHardReset = () => {
+    if (confirm("🚨 WARNING: This will permanently DELETE all projects, vendors, and portfolios. This action cannot be undone. Proceed?")) {
+        setProjects([])
+        setVendors([])
+        setPortfolios([])
+        setReadinessData({})
+        localStorage.clear()
+        window.location.reload()
+    }
+  }
+
   const handleApprovePlaybookUpdate = (proposalId) => {
     setPlaybookProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'approved' } : p))
   }
@@ -817,6 +832,10 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     onRemoveUser={removeUser} 
                     onResetUser={resetUser} 
                     onBack={() => setActiveTab('dashboard')} 
+                    onRemoveProject={handleRemoveProject}
+                    onRemoveVendor={handleRemoveVendor}
+                    onRemovePortfolio={handleRemovePortfolio}
+                    onHardReset={handleHardReset}
                   /> 
                 )}
               </div>
