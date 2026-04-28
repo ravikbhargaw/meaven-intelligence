@@ -64,7 +64,21 @@ The platform utilizes a multi-layered defense architecture to ensure data integr
 
 ---
 
-## ☁️ 6. Technical Foundation & Infrastructure
+## 💎 6. Strategic Pricing Engine (The Source of Truth)
+*The high-precision intelligence engine for quote generation and vendor procurement audit.*
+
+*   **BOM Structural Integrity**: Enforces absolute material requirements (e.g., SD-36 Stile Doors MUST include specific horizontal caps, saddle plates, and gasket sets).
+*   **Bin-Packing & Wastage Logic**: Automatically calculates profile requirements based on fixed bar lengths (2500mm/1800mm), ensuring physical ordering precision.
+*   **Tactical Bento Dashboard**: A high-density, 3-column view designed for rapid data entry and negotiation.
+*   **Vendor Audit Console (The "Hand-Twister")**: 
+    *   **Audit Mode**: Reverse-engineers vendor quotes against raw technical floor costs.
+    *   **Markup Detection**: Flags effective vendor markups above 20%.
+    *   **Negotiation Playbook**: Generates automated talking points based on wastage discrepancies and BOM padding.
+*   **Exclusive Pricing Standard**: All calculations are performed **Exclusive of GST**, aligning with industry-standard B2B procurement and comparison.
+
+---
+
+## ☁️ 7. Technical Foundation & Infrastructure
 *   **Core Engine**: Powered by **Supabase** for real-time database synchronization and secure authentication.
 *   **Enterprise Hosting**: Migrated to **Cloudflare Pages** for unlimited bandwidth and zero-latency global delivery.
 *   **SPA Routing Guard**: Engineered with a custom `_redirects` system to handle client-side routing, ensuring the app remains stable during page refreshes and deep-links.
