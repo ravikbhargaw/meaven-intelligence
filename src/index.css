@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
+  /* DARK THEME (DEFAULT) */
   --bg-primary: #000000;
   --bg-secondary: #0A0A0A;
   --bg-accent: #1C1C1E;
@@ -22,11 +23,44 @@
   --success: #32D74B;
   
   --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --transition-premium: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-premium: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   --shadow-premium: 0 20px 40px rgba(0,0,0,0.4);
   --radius-premium: 20px;
   --radius-standard: 12px;
-  --radius-small: 6px;
+  --logo-filter: none;
+}
+
+[data-theme='light'] {
+  --bg-primary: #FBFBFD;
+  --bg-secondary: #FFFFFF;
+  --bg-accent: #F5F5F7;
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  --bg-glass-heavy: rgba(255, 255, 255, 0.85);
+  
+  --text-primary: #1D1D1F;
+  --text-secondary: #86868B;
+  --text-accent: #0071E3; /* Apple Blue */
+  
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-accent: rgba(0, 113, 227, 0.2);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  
+  --accent-color: #0071E3;
+  --accent-hover: #0077ED;
+  --accent-glow: rgba(0, 113, 227, 0.2);
+  
+  --shadow-premium: 0 20px 40px rgba(0,0,0,0.06);
+  --logo-filter: invert(1);
+}
+
+::selection {
+  background: var(--accent-color);
+  color: #fff;
+}
+
+[data-theme='light'] ::selection {
+  background: rgba(0, 113, 227, 0.15);
+  color: var(--accent-color);
 }
 
 * {
@@ -34,6 +68,12 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease;
+}
+
+select option {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 body {

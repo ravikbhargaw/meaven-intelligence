@@ -89,7 +89,7 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
           {(projects || []).map(p => (
-            <div key={p.id} className="card cinematic-hover" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)' }}>
+            <div key={p.id} className="card cinematic-hover" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                   <span style={{ fontSize: '0.65rem', background: 'rgba(102, 178, 194, 0.1)', color: 'var(--accent-color)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: '800' }}>#{p.id}</span>
@@ -183,7 +183,7 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {(items || []).map(item => (
-                  <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.2rem', padding: '1.2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                  <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.2rem', padding: '1.2rem', background: 'var(--bg-accent)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                       <button 
                         onClick={() => isEditingChecklist && toggleStatus(item.id)}
                         style={{ 
@@ -199,7 +199,7 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
                         {item.status === 'passed' ? '✓' : (item.status === 'failed' ? '✗' : '–')}
                       </button>
                       <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '600', color: '#fff', fontSize: '1rem' }}>{item.label}</div>
+                          <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '1rem' }}>{item.label}</div>
                           
                           {/* Persistent Notes Display */}
                           {(item.notes || isEditingChecklist) && (
@@ -210,7 +210,7 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
                                   value={item.notes || ''} 
                                   onChange={(e) => handleNoteChange(item.id, e.target.value)}
                                   placeholder="Add technical notes..."
-                                  style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: 'none', borderBottom: '1px solid var(--accent-color)', color: 'var(--text-secondary)', fontSize: '0.85rem', padding: '0.3rem 0', outline: 'none' }}
+                                  style={{ width: '100%', background: 'var(--bg-accent)', border: 'none', borderBottom: '1px solid var(--accent-color)', color: 'var(--text-primary)', fontSize: '0.85rem', padding: '0.3rem 0', outline: 'none' }}
                                 />
                               ) : (
                                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', opacity: 0.8 }}>
@@ -240,7 +240,7 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
                   }}
                   readOnly={isReadOnly}
                   placeholder="Record critical structural deviations, site accessibility issues, or technical blockers..."
-                  style={{ width: '100%', minHeight: '150px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem', color: '#fff', fontSize: '0.9rem', lineHeight: '1.6', outline: 'none' }}
+                  style={{ width: '100%', minHeight: '150px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem', color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.6', outline: 'none' }}
               />
           </div>
 

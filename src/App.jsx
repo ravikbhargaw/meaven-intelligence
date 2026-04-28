@@ -16,6 +16,7 @@ import ExecutiveSummary from './components/ExecutiveSummary'
 import ClientPortalGate from './components/ClientPortalGate'
 import AiAssistant from './components/AiAssistant'
 import FieldPortal from './components/FieldPortal'
+import IntelligenceReports from './components/IntelligenceReports'
 import { supabase } from './supabaseClient'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
@@ -69,6 +70,14 @@ function App() {
   const [isFieldPortalActive, setIsFieldPortalActive] = useState(false)
   const [isSyncing, setIsSyncing] = useState(true)
   const [navHistory, setNavHistory] = useState([])
+  const [theme, setTheme] = useState(() => localStorage.getItem('meaven_theme') || 'dark')
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('meaven_theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark')
   const [msaTemplate, setMsaTemplate] = useState(`
 MASTER SERVICE AGREEMENT
 
@@ -202,9 +211,11 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
   }, [activeTab])
 
   // 🔄 GLOBAL FINANCIAL RECONCILIATION ENGINE
-  // Ensures legacy data (payouts logged before the sync update) are mirrored in Vendor Bench
+  // Optimized to run only when critical data changes to prevent lag
   useEffect(() => {
-    if (projects.length > 0 && vendors.length > 0) {
+    if (projects.length === 0 || vendors.length === 0 || isSyncing) return;
+
+    const timeoutId = setTimeout(() => {
         setVendors(prevVendors => {
             let hasChanges = false;
             const updatedVendors = prevVendors.map(vendor => {
@@ -244,8 +255,10 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
 
             return hasChanges ? updatedVendors : prevVendors;
         });
-    }
-  }, [projects.length]); // Run when project count changes or on mount
+    }, 1000); // Debounce to prevent 2G-like lag during heavy edits
+
+    return () => clearTimeout(timeoutId);
+  }, [projects.length, isSyncing]); // Run when project count changes or on mount
 
   useEffect(() => { localStorage.setItem('readinessData', JSON.stringify(readinessData)) }, [readinessData])
   useEffect(() => { localStorage.setItem('playbookProposals', JSON.stringify(playbookProposals)) }, [playbookProposals])
@@ -447,7 +460,31 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
   }
 
   const handleAddVendorContract = (vendorId, projectName, orderValue) => {
+    const vendor = vendors.find(v => String(v.id) === String(vendorId))
+    if (!vendor) return
+
     setVendors(vendors.map(v => String(v.id) === String(vendorId) ? { ...v, contracts: [...(v.contracts || []), { id: Date.now(), projectName, orderValue: parseInt(orderValue), status: 'Active', payments: [] }] } : v))
+    
+    // TWO-WAY SYNC: Also update the project record
+    setProjects(prev => prev.map(p => {
+        if (p.name === projectName) {
+            return {
+                ...p,
+                assignedVendor: vendor.name,
+                history: [
+                    ...(p.history || []),
+                    {
+                        id: Date.now(),
+                        type: 'system',
+                        title: 'Partner Linked',
+                        detail: `${vendor.name} linked as primary partner via Vendor Bench.`,
+                        date: new Date().toISOString().split('T')[0]
+                    }
+                ]
+            }
+        }
+        return p
+    }))
   }
 
   const handleVendorAddNote = (vendorId, note) => {
@@ -662,7 +699,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
         {!isProjectSelected ? (
           <div className="landing-gate animate-fade-in" style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(102, 178, 194, 0.05) 0%, transparent 70%)' }}>
               <div className="logo-container" style={{ marginBottom: '4rem', textAlign: 'center' }}>
-                  <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '48px', marginBottom: '1rem' }} />
+                  <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '48px', marginBottom: '1rem', filter: 'var(--logo-filter)', transition: 'filter 0.5s ease' }} />
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '0.5em', fontWeight: '500', textTransform: 'uppercase' }}>INTELLIGENCE HUB</p>
               </div>
               <div className="card animate-slide-up" style={{ width: '100%', maxWidth: '520px', padding: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-premium)' }}>
@@ -671,9 +708,9 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                       <div style={{ textAlign: 'left' }}>
                           <label style={{ fontSize: '0.65rem', color: 'var(--accent-color)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Select Portfolio (By Client)</label>
-                          <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} style={{ width: '100%', padding: '1rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-premium)', color: '#fff', fontSize: '1.1rem' }}>
-                              <option value="">Choose Client Portfolio...</option>
-                              {uniqueClients.map(c => <option key={c} value={c}>{c}</option>)}
+                          <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} style={{ width: '100%', padding: '1rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-premium)', color: 'var(--text-primary)', fontSize: '1.1rem' }}>
+                              <option value="" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>Choose Client Portfolio...</option>
+                              {uniqueClients.map(c => <option key={c} value={c} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>{c}</option>)}
                           </select>
                       </div>
                       <div style={{ display: 'flex', gap: '1rem' }}>
@@ -687,24 +724,42 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
           <div className="dashboard-container">
             <aside className="sidebar">
               <div className="logo-container" style={{ marginBottom: '3rem', textAlign: 'left' }}>
-                <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '32px', marginBottom: '0.5rem' }} />
+                <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '32px', marginBottom: '0.5rem', filter: 'var(--logo-filter)', transition: 'filter 0.5s ease' }} />
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.4em', fontWeight: '500', textTransform: 'uppercase', margin: 0 }}>INTELLIGENCE</p>
               </div>
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                 <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleNavigate('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
                 {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Operations Hub" />}
                 {!clientView && <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />}
-                <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />
+                {!clientView && <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />}
                 {user?.role === 'SuperAdmin' && !clientView && (
                   <>
                     <SidebarItem active={activeTab === 'strategy'} onClick={() => handleNavigate('strategy')} icon="🧠" label="Executive Strategy" />
+                    <SidebarItem active={activeTab === 'reports'} onClick={() => handleNavigate('reports')} icon="📈" label="Intelligence Reports" />
                     <SidebarItem active={activeTab === 'admin'} onClick={() => handleNavigate('admin')} icon="⚙️" label="Governance Console" />
                   </>
                 )}
               </nav>
               <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {/* v8.3 STEALTH TOGGLE */}
-                <div style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+                <div style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '0.8rem' }}>
+                    <div 
+                        onClick={toggleTheme} 
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                            <span style={{ fontSize: '1rem' }}>{theme === 'dark' ? '🌙' : '☀️'}</span>
+                            <span style={{ fontSize: '0.65rem', fontWeight: '700', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+                                {theme === 'dark' ? 'NIGHT MODE' : 'APPLE DAY MODE'}
+                            </span>
+                        </div>
+                        <div style={{ width: '32px', height: '18px', background: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'var(--accent-color)', borderRadius: '10px', position: 'relative', transition: 'all 0.3s ease' }}>
+                            <div style={{ width: '14px', height: '14px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: theme === 'dark' ? '2px' : '16px', transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)' }} />
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ padding: '0.8rem', background: 'var(--bg-accent)', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
                     <div 
                         onClick={() => { if (clientView) setShowPinModal(true); else { setClientView(true); setActiveTab('dashboard'); } }} 
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
@@ -717,7 +772,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 </div>
                 <button onClick={() => setIsNewProjectModalOpen(true)} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '0.8rem', fontWeight: '800' }}>+ INITIALIZE PROJECT LOOP</button>
                 {/* v8.4 MICRO-IDENTITY STRIP */}
-                <div style={{ padding: '0.8rem', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.5rem' }}>
+                <div style={{ padding: '0.8rem', borderTop: '1px solid var(--border-color)', marginTop: '0.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0, letterSpacing: '0.1em' }}>Operator</p>
@@ -741,7 +796,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     {navHistory.length > 0 && (
                       <button 
                         onClick={handleBack}
-                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--accent-color)', padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800' }}
+                        style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: 'var(--accent-color)', padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800' }}
                       >
                         ← BACK
                       </button>
@@ -753,6 +808,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                           : activeTab === 'vendors' ? 'Partner Bench' 
                           : activeTab === 'calculator' ? 'Tech Calc' 
                           : activeTab === 'strategy' ? 'Executive Hub'
+                          : activeTab === 'reports' ? 'Intel Reports'
                           : 'Admin'}
                     </h1>
                   </div>
@@ -838,6 +894,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     onAddNote={handleVendorAddNote}
                     onAssignVendor={handleAssignVendor}
                     onReassign={handleReassignProject}
+                    userRole={user?.role}
                   />
                 )}
 
@@ -850,8 +907,9 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
                   />
                 )}
-                {activeTab === 'calculator' && ( <StrategicPricingEngine projects={projects} onAddNote={handleProjectAddNote} /> )}
+                {activeTab === 'calculator' && !clientView && ( <StrategicPricingEngine projects={projects} onAddNote={handleProjectAddNote} /> )}
                 {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
+                {activeTab === 'reports' && ( <IntelligenceReports projects={projects} vendors={vendors} portfolios={portfolios} /> )}
                 {activeTab === 'admin' && ( 
                   <AdminPanel 
                     users={users || []} 

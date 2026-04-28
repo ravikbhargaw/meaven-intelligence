@@ -67,7 +67,7 @@ const ExecutiveSummary = ({ projects = [], vendors = [], onNavigate }) => {
                     </div>
                     <div>
                         <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Active Loops</div>
-                        <div style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: '900', color: '#fff' }}>{stats.projectCount}</div>
+                        <div style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: '900', color: 'var(--text-primary)' }}>{stats.projectCount}</div>
                     </div>
                 </div>
             </div>
@@ -115,7 +115,7 @@ const ExecutiveSummary = ({ projects = [], vendors = [], onNavigate }) => {
                 gap: '2rem' 
             }}>
                 {/* Vendor Concentration & Risk */}
-                <div className="card" style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem)', background: 'rgba(255,255,255,0.01)' }}>
+                <div className="card" style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem)', background: 'var(--bg-secondary)' }}>
                     <h4 style={{ marginBottom: '2.5rem', fontSize: '0.8rem', letterSpacing: '0.2em', color: 'var(--accent-color)' }}>🛡️ VENDOR CONCENTRATION RISK</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         {vendorRisk.map(v => (
@@ -138,7 +138,7 @@ const ExecutiveSummary = ({ projects = [], vendors = [], onNavigate }) => {
                 </div>
 
                 {/* Pipeline Velocity */}
-                <div className="card" style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem)', background: 'rgba(255,255,255,0.01)' }}>
+                <div className="card" style={{ padding: 'clamp(1.5rem, 4vw, 2.5rem)', background: 'var(--bg-secondary)' }}>
                     <h4 style={{ marginBottom: '2.5rem', fontSize: '0.8rem', letterSpacing: '0.2em', color: 'var(--accent-color)' }}>📈 PIPELINE VELOCITY</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {Object.entries(statusPipeline).map(([status, count]) => (
@@ -146,7 +146,7 @@ const ExecutiveSummary = ({ projects = [], vendors = [], onNavigate }) => {
                                 key={status} 
                                 onClick={() => onNavigate('projects')}
                                 className="cinematic-hover"
-                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem', background: 'var(--bg-accent)', borderRadius: '12px', border: '1px solid var(--border-color)', cursor: 'pointer' }}
                             >
                                 <span style={{ fontSize: '0.8rem', fontWeight: '800' }}>{status.toUpperCase()}</span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -165,10 +165,10 @@ const MetricCard = ({ label, value, subtext, color, onClick }) => (
     <div 
         className="glass-card cinematic-hover" 
         onClick={onClick}
-        style={{ padding: '2rem', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)', background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%)' }}
+        style={{ padding: '2rem', cursor: 'pointer', border: '1px solid var(--border-color)', background: 'var(--bg-glass)' }}
     >
         <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem', fontWeight: '800' }}>{label}</p>
-        <div style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: '900', color: '#fff', marginBottom: '0.5rem' }}>{value}</div>
+        <div style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{value}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ width: '6px', height: '6px', background: color, borderRadius: '50%' }}></span>
             <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '600' }}>{subtext}</p>

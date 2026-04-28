@@ -101,15 +101,15 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.8rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                    <input type="text" placeholder="Name" value={data.name} onChange={(e) => setProjectData({...projectData, [role]: {...data, name: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.name ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.8rem' }} />
+                    <input type="text" placeholder="Name" value={data.name} onChange={(e) => setProjectData({...projectData, [role]: {...data, name: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.name ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
                     {roleErrors.name && <span style={{ fontSize: '0.6rem', color: '#ff453a' }}>{roleErrors.name}</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                    <input type="email" placeholder="Email" value={data.email} onChange={(e) => setProjectData({...projectData, [role]: {...data, email: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.email ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.8rem' }} />
+                    <input type="email" placeholder="Email" value={data.email} onChange={(e) => setProjectData({...projectData, [role]: {...data, email: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.email ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
                     {roleErrors.email && <span style={{ fontSize: '0.6rem', color: '#ff453a' }}>{roleErrors.email}</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                    <input type="tel" placeholder="10-digit Phone" value={data.phone} onChange={(e) => setProjectData({...projectData, [role]: {...data, phone: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.phone ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: '#fff', fontSize: '0.8rem' }} />
+                    <input type="tel" placeholder="10-digit Phone" value={data.phone} onChange={(e) => setProjectData({...projectData, [role]: {...data, phone: e.target.value}})} style={{ background: 'var(--bg-accent)', border: roleErrors.phone ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
                     {roleErrors.phone && <span style={{ fontSize: '0.6rem', color: '#ff453a' }}>{roleErrors.phone}</span>}
                 </div>
             </div>
@@ -120,11 +120,11 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
   return (
     <div style={{ 
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-      background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+      background: 'var(--bg-glass-heavy)', backdropFilter: 'blur(10px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 4000,
       padding: '10px'
     }}>
-      <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 480px)', padding: '2rem', maxHeight: '95vh', overflowY: 'auto', border: '1px solid var(--accent-color)', borderRadius: '12px' }}>
+      <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 480px)', padding: '2rem', maxHeight: '95vh', overflowY: 'auto', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
         <h2 style={{ marginBottom: '0.5rem', fontSize: 'clamp(1.2rem, 4vw, 1.8rem)' }}>🚀 Initialize Project Loop</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
           Deploy Meaven Intelligence. Define the portfolio and execution stakeholders.
@@ -134,7 +134,7 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Project Name</label>
-              <input type="text" placeholder="e.g. Galaxy Tech Park" value={projectData.name} onChange={(e) => setProjectData({...projectData, name: e.target.value})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff', fontSize: '0.9rem' }} required />
+              <input type="text" placeholder="e.g. Galaxy Tech Park" value={projectData.name} onChange={(e) => setProjectData({...projectData, name: e.target.value})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: 'var(--text-primary)', fontSize: '0.9rem' }} required />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -153,13 +153,13 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
                     placeholder="Enter Client Name" 
                     value={newPortfolioName} 
                     onChange={(e) => setNewPortfolioName(e.target.value)} 
-                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff', fontSize: '0.9rem' }} 
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', borderRadius: '8px', padding: '0.75rem', color: 'var(--text-primary)', fontSize: '0.9rem' }} 
                     required 
                   />
               ) : (
-                  <select value={projectData.portfolioId} onChange={(e) => setProjectData({...projectData, portfolioId: e.target.value})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff', fontSize: '0.9rem' }} required>
-                    <option value="">Select Portfolio...</option>
-                    {portfolios.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  <select value={projectData.portfolioId} onChange={(e) => setProjectData({...projectData, portfolioId: e.target.value})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: 'var(--text-primary)', fontSize: '0.9rem' }} required>
+                    <option value="" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>Select Portfolio...</option>
+                    {portfolios.map(p => <option key={p.id} value={p.id} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>{p.name}</option>)}
                   </select>
               )}
             </div>
@@ -167,7 +167,7 @@ const NewProjectModal = ({ isOpen, onClose, onCreate, portfolios = [] }) => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Project Location</label>
-            <input type="text" placeholder="e.g. Bangalore, Whitefield" value={projectData.location} onChange={(e) => setProjectData({...projectData, location: e.target.value})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff', fontSize: '0.9rem' }} required />
+            <input type="text" placeholder="e.g. Bangalore, Whitefield" value={projectData.location} onChange={(e) => setProjectData({...projectData, location: e.target.value})} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: 'var(--text-primary)', fontSize: '0.9rem' }} required />
           </div>
 
           <hr style={{ border: 'none', borderBottom: '1px solid var(--border-color)', margin: '0.2rem 0' }} />

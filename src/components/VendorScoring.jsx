@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: selectedVendorIdProp, msaTemplate, onSelectVendor, onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly }) => {
+const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: selectedVendorIdProp, msaTemplate, onSelectVendor, onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly, userRole }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isContractModalOpen, setIsContractModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
@@ -157,11 +157,11 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                 style={{ 
                                     padding: '1rem', 
                                     borderRadius: 'var(--radius-standard)', 
-                                    background: activeContractId === c.id ? 'var(--accent-color)' : 'rgba(255,255,255,0.03)',
-                                    color: activeContractId === c.id ? '#000' : '#fff',
+                                    background: activeContractId === c.id ? 'var(--accent-color)' : 'var(--bg-accent)',
+                                    color: activeContractId === c.id ? '#fff' : 'var(--text-primary)',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease',
-                                    border: '1px solid ' + (activeContractId === c.id ? 'var(--accent-color)' : 'transparent')
+                                    border: '1px solid ' + (activeContractId === c.id ? 'var(--accent-color)' : 'var(--border-color)')
                                 }}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -175,7 +175,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                                 style={{ 
                                                     fontSize: '0.5rem', padding: '0.2rem 0.5rem', borderRadius: '4px', 
                                                     background: status === 'Completed' ? 'var(--success)' : (status === 'On Hold' ? 'var(--danger)' : (status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)')),
-                                                    color: status === 'Final Closure' ? '#fff' : '#000', fontWeight: '800', cursor: 'help'
+                                                    color: '#fff', fontWeight: '800', cursor: 'help'
                                                 }}
                                             >
                                                 {status.toUpperCase()}
@@ -209,7 +209,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                     value={selectedVendor.phone || ''}
                                     onChange={(e) => onUpdateVendor(selectedVendor.id, { phone: e.target.value })}
                                     placeholder="Add phone..."
-                                    style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: '#fff', fontSize: '0.8rem', padding: '0.2rem 0' }}
+                                    style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem', padding: '0.2rem 0' }}
                                 />
                             </div>
                             <div>
@@ -218,7 +218,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                     value={selectedVendor.pan || ''}
                                     onChange={(e) => onUpdateVendor(selectedVendor.id, { pan: e.target.value })}
                                     placeholder="Add PAN..."
-                                    style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: '#fff', fontSize: '0.8rem', padding: '0.2rem 0' }}
+                                    style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem', padding: '0.2rem 0' }}
                                 />
                             </div>
                         </div>
@@ -229,7 +229,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                     value={selectedVendor.address || ''}
                                     onChange={(e) => onUpdateVendor(selectedVendor.id, { address: e.target.value })}
                                     placeholder="Full Registered Address..."
-                                    style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: '#fff', fontSize: '0.8rem', padding: '0.2rem 0' }}
+                                    style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem', padding: '0.2rem 0' }}
                                 />
                             </div>
                             <div>
@@ -256,6 +256,58 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                             </div>
                         </div>
 
+                        {/* Bank Details Section */}
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <label style={{ fontSize: '0.6rem', color: 'var(--accent-color)', textTransform: 'uppercase', margin: 0, fontWeight: '800' }}>🏦 Settlement Bank Details</label>
+                                {selectedVendor.accountNumber && userRole !== 'SuperAdmin' && (
+                                    <span style={{ fontSize: '0.5rem', color: 'var(--danger)', fontWeight: '800' }}>🔒 LOCKED (SUPERADMIN ONLY)</span>
+                                )}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Account Name</label>
+                                    <input 
+                                        readOnly={(selectedVendor.accountName && userRole !== 'SuperAdmin') || isReadOnly}
+                                        value={selectedVendor.accountName || ''}
+                                        onChange={(e) => onUpdateVendor(selectedVendor.id, { accountName: e.target.value })}
+                                        placeholder="Beneficiary Name"
+                                        style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem', padding: '0.2rem 0', opacity: (selectedVendor.accountName && userRole !== 'SuperAdmin') ? 0.6 : 1 }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Bank Name</label>
+                                    <input 
+                                        readOnly={(selectedVendor.bankName && userRole !== 'SuperAdmin') || isReadOnly}
+                                        value={selectedVendor.bankName || ''}
+                                        onChange={(e) => onUpdateVendor(selectedVendor.id, { bankName: e.target.value })}
+                                        placeholder="e.g. HDFC Bank"
+                                        style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem', padding: '0.2rem 0', opacity: (selectedVendor.bankName && userRole !== 'SuperAdmin') ? 0.6 : 1 }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Account Number</label>
+                                    <input 
+                                        readOnly={(selectedVendor.accountNumber && userRole !== 'SuperAdmin') || isReadOnly}
+                                        value={selectedVendor.accountNumber || ''}
+                                        onChange={(e) => onUpdateVendor(selectedVendor.id, { accountNumber: e.target.value })}
+                                        placeholder="Full A/C Number"
+                                        style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem', padding: '0.2rem 0', opacity: (selectedVendor.accountNumber && userRole !== 'SuperAdmin') ? 0.6 : 1 }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>IFSC Code</label>
+                                    <input 
+                                        readOnly={(selectedVendor.ifscCode && userRole !== 'SuperAdmin') || isReadOnly}
+                                        value={selectedVendor.ifscCode || ''}
+                                        onChange={(e) => onUpdateVendor(selectedVendor.id, { ifscCode: e.target.value.toUpperCase() })}
+                                        placeholder="11-digit IFSC"
+                                        style={{ width: '100%', background: 'none', border: 'none', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem', padding: '0.2rem 0', opacity: (selectedVendor.ifscCode && userRole !== 'SuperAdmin') ? 0.6 : 1 }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Mandatory Document Status */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.5rem' }}>
                             {[
@@ -278,11 +330,12 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                         const hasPhone = !!selectedVendor.phone;
                         const hasAddress = !!selectedVendor.address;
                         const hasPan = !!selectedVendor.pan;
+                        const hasBank = !!selectedVendor.accountNumber && !!selectedVendor.ifscCode;
                         const hasGstDoc = (selectedVendor.documents || []).some(d => d.tag === 'GST');
                         const hasPanDoc = (selectedVendor.documents || []).some(d => d.tag === 'PAN');
                         const hasChequeDoc = (selectedVendor.documents || []).some(d => d.tag === 'Cheque');
                         
-                        const isEligible = hasPhone && hasAddress && hasPan && hasGstDoc && hasPanDoc && hasChequeDoc;
+                        const isEligible = hasPhone && hasAddress && hasPan && hasBank && hasGstDoc && hasPanDoc && hasChequeDoc;
 
                         return (
                             <div style={{ marginTop: '1.5rem' }}>
@@ -302,7 +355,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                         </button>
                                         {!isEligible && (
                                             <p style={{ fontSize: '0.55rem', color: 'var(--danger)', marginTop: '0.5rem', textAlign: 'center' }}>
-                                                Checklist: {!hasPhone && 'Phone, '}{!hasAddress && 'Address, '}{!hasPan && 'PAN, '}{(!hasGstDoc || !hasPanDoc || !hasChequeDoc) && 'Compliance Docs'} missing.
+                                                Checklist: {!hasPhone && 'Phone, '}{!hasAddress && 'Address, '}{!hasPan && 'PAN, '}{!hasBank && 'Bank Details, '}{(!hasGstDoc || !hasPanDoc || !hasChequeDoc) && 'Compliance Docs'} missing.
                                             </p>
                                         )}
                                     </div>
@@ -406,7 +459,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                             value={noteText}
                             onChange={(e) => setNoteText(e.target.value)}
                             placeholder="Add a global behavior note, warning, or execution tip..."
-                            style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1rem', color: '#fff', fontSize: '0.9rem' }}
+                            style={{ flex: 1, background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1rem', color: 'var(--text-primary)', fontSize: '0.9rem' }}
                         />
                         <button 
                             disabled={!noteText.trim() || isReadOnly}
@@ -423,7 +476,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                 <div style={{ flex: 1 }}>
                                     <p style={{ margin: 0, fontWeight: '700', fontSize: '0.95rem' }}>{h.title}</p>
                                     <p style={{ margin: '0.3rem 0', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{h.detail}</p>
-                                    <p style={{ margin: 0, fontSize: '0.7rem', color: '#444' }}>{h.date}</p>
+                                    <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{h.date}</p>
                                 </div>
                             </div>
                         ))}
@@ -434,11 +487,11 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
 
         {/* INTEGRATED PROJECT LINK/CREATE MODAL */}
         {isContractModalOpen && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000 }}>
-                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--bg-glass-heavy)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000 }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-                        <button onClick={() => setLinkMode('existing')} style={{ flex: 1, padding: '0.5rem', background: linkMode === 'existing' ? 'var(--accent-color)' : 'none', color: linkMode === 'existing' ? '#000' : 'var(--text-secondary)', border: 'none', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>Choose Existing</button>
-                        <button onClick={() => setLinkMode('new')} style={{ flex: 1, padding: '0.5rem', background: linkMode === 'new' ? 'var(--accent-color)' : 'none', color: linkMode === 'new' ? '#000' : 'var(--text-secondary)', border: 'none', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>+ Create New Site</button>
+                        <button onClick={() => setLinkMode('existing')} style={{ flex: 1, padding: '0.5rem', background: linkMode === 'existing' ? 'var(--accent-color)' : 'none', color: linkMode === 'existing' ? '#fff' : 'var(--text-secondary)', border: 'none', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>Choose Existing</button>
+                        <button onClick={() => setLinkMode('new')} style={{ flex: 1, padding: '0.5rem', background: linkMode === 'new' ? 'var(--accent-color)' : 'none', color: linkMode === 'new' ? '#fff' : 'var(--text-secondary)', border: 'none', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>+ Create New Site</button>
                     </div>
 
                     <form onSubmit={(e) => {
@@ -472,30 +525,30 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                         {linkMode === 'existing' ? (
                             <div>
                                 <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>SELECT ACTIVE PROJECT</label>
-                                <select name="projectName" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}>
-                                    {projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                                <select name="projectName" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }}>
+                                    {projects.map(p => <option key={p.id} value={p.name} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>{p.name}</option>)}
                                 </select>
                             </div>
                         ) : (
                             <>
                                 <div>
                                     <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>NEW PROJECT NAME</label>
-                                    <input name="newProjectName" required placeholder="e.g. Nexus Innovation Hub" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                    <input name="newProjectName" required placeholder="e.g. Nexus Innovation Hub" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
                                 </div>
                                 <div>
                                     <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>CLIENT NAME</label>
-                                    <input name="client" required placeholder="Company Name" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                    <input name="client" required placeholder="Company Name" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
                                 </div>
                                 <div>
                                     <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>PROJECT MANAGER EMAIL</label>
-                                    <input name="pmEmail" type="email" placeholder="pm@client.com" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                                    <input name="pmEmail" type="email" placeholder="pm@client.com" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
                                 </div>
                             </>
                         )}
 
                         <div>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>TOTAL CONTRACT ORDER (INR)</label>
-                            <input name="orderValue" type="number" required placeholder="Project-specific order value" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            <input name="orderValue" type="number" required placeholder="Project-specific order value" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
                         </div>
 
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
@@ -509,9 +562,9 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
 
         {/* PAYMENT MODAL (Existing logic) */}
         {isPaymentModalOpen && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000 }}>
-                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
-                    <h3 style={{ marginBottom: '1.5rem' }}>Log Payment for {selectedContract.projectName}</h3>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--bg-glass-heavy)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000 }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                    <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Log Payment for {selectedContract.projectName}</h3>
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.target)
@@ -538,15 +591,15 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                         <div>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>AMOUNT (INR)</label>
-                            <input name="amount" type="number" required placeholder="Amount for this specific project" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            <input name="amount" type="number" required placeholder="Amount for this specific project" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
                         </div>
                         <div>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>DATE OF PAYMENT</label>
-                            <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
                         </div>
                         <div>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>TRANSACTION REF</label>
-                            <input name="ref" required placeholder="UTR / Ref Number" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+                            <input name="ref" required placeholder="UTR / Ref Number" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
                         </div>
                         <div>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>PAYMENT SCREENSHOT</label>
@@ -563,11 +616,11 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
         )}
         {/* DOCUMENT VAULT MODAL */}
         {isVaultModalOpen && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 6000 }}>
-                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 650px)', padding: '2.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--bg-glass-heavy)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 6000 }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 650px)', padding: '2.5rem', maxHeight: '90vh', overflowY: 'auto', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ margin: 0 }}>🗄️ Partner Document Vault</h3>
-                        <button onClick={() => setIsVaultModalOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                        <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>🗄️ Partner Document Vault</h3>
+                        <button onClick={() => setIsVaultModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
                     </div>
 
                     <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
@@ -619,13 +672,13 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                             );
                                             onUpdateVendor(selectedVendor.id, { documents: updatedDocs });
                                         }}
-                                        style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: doc.tag ? 'var(--success)' : '#fff', fontSize: '0.7rem', padding: '0.3rem', borderRadius: '4px' }}
+                                        style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: doc.tag ? 'var(--success)' : 'var(--text-primary)', fontSize: '0.7rem', padding: '0.3rem', borderRadius: '4px' }}
                                     >
-                                        <option value="">No Tag</option>
-                                        <option value="GST">GST Cert</option>
-                                        <option value="PAN">PAN Card</option>
-                                        <option value="Cheque">Cancelled Cheque</option>
-                                        <option value="Other">Other</option>
+                                        <option value="" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>No Tag</option>
+                                        <option value="GST" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>GST Cert</option>
+                                        <option value="PAN" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>PAN Card</option>
+                                        <option value="Cheque" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Cancelled Cheque</option>
+                                        <option value="Other" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Other</option>
                                     </select>
                                     <a href={doc.url} download={doc.name} style={{ textDecoration: 'none', fontSize: '1.2rem' }} title="Download">📥</a>
                                     <button 
@@ -648,11 +701,11 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
         )}
         {/* MSA CONTRACT MODAL / ESIGN PORTAL */}
         {isMsaModalOpen && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(30px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 7000 }}>
-                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 800px)', padding: '0', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ padding: '1.5rem 2rem', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--bg-glass-heavy)', backdropFilter: 'blur(30px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 7000 }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 800px)', padding: '0', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ padding: '1.5rem 2rem', background: 'var(--bg-accent)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={{ margin: 0, color: 'var(--accent-color)' }}>{isEsignMode ? '✍️ Digital Signature Portal' : '📜 MSA Contract Generation'}</h3>
-                        <button onClick={() => { setIsMsaModalOpen(false); setIsEsignMode(false); }} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                        <button onClick={() => { setIsMsaModalOpen(false); setIsEsignMode(false); }} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
                     </div>
 
                     <div style={{ flex: 1, overflowY: 'auto', padding: '3rem', background: '#fff', color: '#333', fontFamily: 'serif' }}>
@@ -714,7 +767,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                             value={signerName}
                                             onChange={(e) => setSignerName(e.target.value)}
                                             placeholder="John Doe"
-                                            style={{ width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--accent-color)', borderRadius: '8px', padding: '1rem', color: '#fff', fontSize: '1.1rem', fontFamily: '"Great Vibes", cursive' }}
+                                            style={{ width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--accent-color)', borderRadius: '8px', padding: '1rem', color: 'var(--text-primary)', fontSize: '1.1rem', fontFamily: '"Great Vibes", cursive' }}
                                         />
                                     </div>
                                     <button 
@@ -890,6 +943,10 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                     gst: formData.get('gst'),
                     address: formData.get('address') || '',
                     pan: formData.get('pan') || '',
+                    bankName: formData.get('bankName') || '',
+                    accountName: formData.get('accountName') || '',
+                    accountNumber: formData.get('accountNumber') || '',
+                    ifscCode: formData.get('ifscCode') || '',
                     status: 'Vetting',
                     isGstVerified: false,
                     isCertVerified: false,
@@ -909,13 +966,22 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                 onAddVendor(newVendorData)
                 setIsAddModalOpen(false)
             }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-              <input name="name" required placeholder="Company Name" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
-              <select name="category" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }}>
+              <input name="name" required placeholder="Company Name" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
+              <select name="category" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }}>
                 {categories.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input name="contact" required placeholder="Primary Contact Person" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
-              <input name="phone" required placeholder="Phone Number" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
-              <input name="gst" required placeholder="GST Number" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: '#fff' }} />
+              <input name="contact" required placeholder="Primary Contact Person" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
+              <input name="phone" required placeholder="Phone Number" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
+              <input name="gst" required placeholder="GST Number" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }} />
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                  <input name="bankName" placeholder="Bank Name (Optional)" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
+                  <input name="ifscCode" placeholder="IFSC Code (Optional)" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                  <input name="accountName" placeholder="A/C Name (Optional)" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
+                  <input name="accountNumber" placeholder="A/C Number (Optional)" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
+              </div>
               
               <div style={{ border: '1px dashed var(--border-color)', borderRadius: '8px', padding: '1rem', textAlign: 'center' }}>
                   <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Onboarding Attachments (Max 5: PDF, PNG, JPG)</p>

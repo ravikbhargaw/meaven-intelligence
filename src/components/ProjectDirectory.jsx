@@ -3,7 +3,7 @@ import SiteReadiness from './SiteReadiness'
 
 // MOVE OUTSIDE to prevent re-mounting on every state change (which causes focus loss)
 const ModalOverlay = ({ children }) => (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'var(--bg-glass-heavy)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
         {children}
     </div>
 )
@@ -166,18 +166,18 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                 >
                     ← Back
                 </button>
-                <div style={{ padding: '0.3rem 0.8rem', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.6rem', fontWeight: '800', letterSpacing: '0.1em' }}>
+                <div style={{ padding: '0.3rem 0.8rem', borderRadius: '20px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.6rem', fontWeight: '800', letterSpacing: '0.1em' }}>
                     💎 FINANCIAL DEEP-DIVE
                 </div>
             </div>
             <div style={{ display: 'flex', background: 'var(--bg-accent)', padding: '0.3rem', borderRadius: '8px', gap: '0.3rem', flexWrap: 'wrap' }}>
                 <button 
                     onClick={() => setActiveSubTab('overview')}
-                    style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'overview' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'overview' ? '#000' : '#fff', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                    style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'overview' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'overview' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                 >Overview</button>
                 <button 
                     onClick={() => setActiveSubTab('financials')}
-                    style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'financials' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'financials' ? '#000' : '#fff', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                    style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'financials' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'financials' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                 >P&L Intel</button>
                 <button 
                     onClick={() => { window.location.hash = '#calculator'; window.dispatchEvent(new CustomEvent('navigate', { detail: 'calculator' })); }}
@@ -196,7 +196,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             onChange={(e) => handleStatusChange(e.target.value)}
                             style={{ 
                                 background: (selectedProject.status === 'Completed' ? 'var(--success)' : (selectedProject.status === 'On Hold' ? 'var(--danger)' : (selectedProject.status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)'))),
-                                color: selectedProject.status === 'Final Closure' ? '#fff' : '#000', border: 'none', borderRadius: '20px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer'
+                                color: '#fff', border: 'none', borderRadius: '20px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer'
                             }}
                         >
                             <option value="Active">ACTIVE</option>
@@ -231,7 +231,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
         {activeSubTab === 'overview' ? (
             <div className="animate-fade-in">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '3rem' }}>
-                    <div className="card" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <div className="card" style={{ background: 'var(--bg-accent)' }}>
                         <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Contract Value</p>
                         {isEditingValue ? (
                             <input 
@@ -260,11 +260,11 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                         setIsEditingValue(false); 
                                     }
                                 }}
-                                style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', borderRadius: '4px', padding: '0.4rem', color: '#fff', fontSize: '1rem', width: '100%' }}
+                                style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', borderRadius: '4px', padding: '0.4rem', color: 'var(--text-primary)', fontSize: '1rem', width: '100%' }}
                             />
                         ) : (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                <p style={{ fontSize: '1.3rem', fontWeight: '800', margin: 0 }}>₹{(pl.revenue / 100000).toFixed(2)}L</p>
+                                <p style={{ fontSize: '1.3rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>₹{(pl.revenue / 100000).toFixed(2)}L</p>
                                 {(pl.revenue === 0 || userRole === 'SuperAdmin') ? (
                                     <button 
                                         onClick={() => setIsEditingValue(true)} 
@@ -326,14 +326,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         </div>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-accent)', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>Vendor → Meaven</label>
                                     <input 
                                         type="date" 
                                         value={selectedProject.vendorEndDate || ''}
                                         onChange={(e) => onUpdateValue(selectedProject.id, { vendorEndDate: e.target.value })}
-                                        style={{ background: 'none', border: 'none', color: '#fff', fontSize: '0.75rem', width: '100%', outline: 'none' }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '0.75rem', width: '100%', outline: 'none' }}
                                     />
                                 </div>
                                 {selectedProject.vendorEndDate && (
@@ -347,14 +347,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                 )}
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-accent)', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>Meaven → Client</label>
                                     <input 
                                         type="date" 
                                         value={selectedProject.endDate || ''}
                                         onChange={(e) => onUpdateValue(selectedProject.id, { endDate: e.target.value })}
-                                        style={{ background: 'none', border: 'none', color: '#fff', fontSize: '0.75rem', width: '100%', outline: 'none' }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '0.75rem', width: '100%', outline: 'none' }}
                                     />
                                 </div>
                                 {selectedProject.endDate && (
@@ -407,7 +407,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
                             {recommendations.map(rec => (
-                                <div key={rec.id} className="card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                <div key={rec.id} className="card" style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                     <div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
                                             <span style={{ fontSize: '0.55rem', background: 'var(--accent-color)', color: '#000', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}># {rec.rank} SUGGESTION</span>
@@ -437,7 +437,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                 value={noteText}
                                 onChange={(e) => setNoteText(e.target.value)}
                                 placeholder="Add a tactical note, site update, or risk warning..."
-                                style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1rem', color: '#fff', fontSize: '0.85rem', minHeight: '80px' }}
+                                style={{ flex: 1, background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1rem', color: 'var(--text-primary)', fontSize: '0.85rem', minHeight: '80px' }}
                             />
                             <button 
                                 disabled={!noteText.trim()}
@@ -455,18 +455,18 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                     <>
                                         {visibleHistory.map((h, i) => (
                                             <div key={h.id} style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
-                                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: h.type === 'success' ? 'var(--success)' : (h.type === 'warning' || h.type === 'danger' ? 'var(--danger)' : (h.type === 'info' ? 'var(--accent-color)' : (h.type === 'note' ? '#fff' : '#444'))), marginTop: '4px', zIndex: 2 }} />
+                                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: h.type === 'success' ? 'var(--success)' : (h.type === 'warning' || h.type === 'danger' ? 'var(--danger)' : (h.type === 'info' ? 'var(--accent-color)' : (h.type === 'note' ? 'var(--text-primary)' : 'var(--text-secondary)'))), marginTop: '4px', zIndex: 2 }} />
                                                 {i < visibleHistory.length - 1 && <div style={{ position: 'absolute', left: '4px', top: '15px', bottom: '-20px', width: '2px', background: 'var(--border-color)' }} />}
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem' }}>{h.title}</p>
+                                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '0.85rem', color: 'var(--text-primary)' }}>{h.title}</p>
                                                             {['note', 'success', 'warning', 'danger'].includes(h.type) && (
                                                                 <button 
                                                                     onClick={(e) => { e.stopPropagation(); onToggleVisibility(selectedProject.id, h.id); }}
                                                                     title={h.isClientVisible ? "Visible to Client" : "Internal Only"}
                                                                     style={{ 
-                                                                        background: h.isClientVisible ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255,255,255,0.05)', 
+                                                                        background: h.isClientVisible ? 'rgba(50, 215, 75, 0.1)' : 'var(--bg-accent)', 
                                                                         border: `1px solid ${h.isClientVisible ? 'var(--success)' : 'var(--border-color)'}`,
                                                                         borderRadius: '4px', padding: '0.1rem 0.3rem', fontSize: '0.6rem', color: h.isClientVisible ? 'var(--success)' : 'var(--text-secondary)', cursor: 'pointer'
                                                                     }}
@@ -475,7 +475,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                                 </button>
                                                             )}
                                                         </div>
-                                                        <span style={{ fontSize: '0.6rem', color: '#444' }}>{formatDate(h.date || h.timestamp)}</span>
+                                                        <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>{formatDate(h.date || h.timestamp)}</span>
                                                     </div>
                                                     <p style={{ margin: '0.2rem 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{h.detail}</p>
                                                 </div>
@@ -510,7 +510,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
         ) : (
             <div className="animate-fade-in">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                    <div className="card" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)' }}>
+                    <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Project Financial Ledger</h3>
                             <div style={{ padding: '0.3rem 0.8rem', background: 'rgba(50, 215, 75, 0.1)', borderRadius: '20px', color: 'var(--success)', fontSize: '0.6rem', fontWeight: '800' }}>AUDIT READY</div>
@@ -543,7 +543,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                             {(selectedProject.clientFinancials?.received || []).map(p => (
-                                <div key={p.id} style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div key={p.id} style={{ padding: '0.8rem', background: 'var(--bg-accent)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
                                         <span style={{ fontWeight: '800', color: 'var(--success)', fontSize: '0.85rem' }}>+ ₹{p.amount.toLocaleString()}</span>
                                         <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{formatDate(p.date)}</span>
@@ -564,7 +564,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             {(selectedProject.payouts || []).map(p => {
                                 const vendor = vendors.find(v => String(v.id) === String(p.vendorId))
                                 return (
-                                    <div key={p.id} style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div key={p.id} style={{ padding: '0.8rem', background: 'var(--bg-accent)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
                                             <span style={{ fontWeight: '800', color: 'var(--danger)', fontSize: '0.85rem' }}>- ₹{p.amount.toLocaleString()}</span>
                                             <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{formatDate(p.date)}</span>
@@ -595,9 +595,9 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
         {/* MODALS */}
         {isAssignModalOpen && (
             <ModalOverlay>
-                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)' }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Assign Partner</h3>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Assign Partner</h3>
                         <button 
                             onClick={() => setIsRegisteringNew(!isRegisteringNew)}
                             style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer' }}
@@ -630,16 +630,16 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         setAssignOrderValue('')
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {!isRegisteringNew ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Certified Bench</label>
+                            <div>
+                                <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>SELECT PARTNER</label>
                                 <select 
-                                    value={selectedVendorId} 
-                                    onChange={(e) => setSelectedVendorId(e.target.value)} 
-                                    required 
-                                    style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}
+                                    value={selectedVendorId}
+                                    onChange={(e) => setSelectedVendorId(e.target.value)}
+                                    required
+                                    style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }}
                                 >
-                                    <option value="">Choose partner...</option>
-                                    {vendors.map(v => <option key={v.id} value={v.id.toString()}>{v.name} ({v.category})</option>)}
+                                    <option value="" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Choose from bench...</option>
+                                    {vendors.map(v => <option key={v.id} value={v.id.toString()} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>{v.name} ({v.category})</option>)}
                                 </select>
                             </div>
                         ) : (

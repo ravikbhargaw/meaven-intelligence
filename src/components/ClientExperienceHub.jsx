@@ -46,8 +46,8 @@ const ProjectCompactCard = ({ project, onSelectProject }) => {
     return (
         <div className="card cinematic-hover" style={{ 
             padding: '1.5rem', 
-            background: 'rgba(255,255,255,0.01)', 
-            border: '1px solid rgba(255,255,255,0.05)',
+            background: 'var(--bg-secondary)', 
+            border: '1px solid var(--border-color)',
             display: 'flex',
             flexDirection: 'column',
             gap: '1.2rem'
@@ -59,7 +59,7 @@ const ProjectCompactCard = ({ project, onSelectProject }) => {
                     <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Status: <span style={{ color: isCompleted ? 'var(--success)' : 'var(--accent-color)', fontWeight: '700' }}>{project.status.toUpperCase()}</span></p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: '900', color: '#fff' }}>{readiness}%</div>
+                    <div style={{ fontSize: '1rem', fontWeight: '900', color: 'var(--text-primary)' }}>{readiness}%</div>
                     <div style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Readiness</div>
                 </div>
             </div>
@@ -73,14 +73,14 @@ const ProjectCompactCard = ({ project, onSelectProject }) => {
             </div>
 
             {/* DATA STRIP (Side-by-side info) */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.8rem', borderRadius: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'var(--bg-accent)', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                 <div>
                     <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: '0 0 0.3rem 0' }}>🛡️ Partner Bench</p>
-                    <p style={{ fontSize: '0.8rem', fontWeight: '700', margin: 0 }}>{project.linkedVendor || 'Certified Partner'}</p>
+                    <p style={{ fontSize: '0.8rem', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>{project.linkedVendor || 'Certified Partner'}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: '0 0 0.3rem 0' }}>🗓️ Next Milestone</p>
-                    <p style={{ fontSize: '0.8rem', fontWeight: '700', margin: 0 }}>29th April 2026</p>
+                    <p style={{ fontSize: '0.8rem', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>29th April 2026</p>
                 </div>
             </div>
 

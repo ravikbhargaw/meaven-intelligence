@@ -64,8 +64,8 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
         setExecutionFeed(feed)
     }, [projects, proposals, vendors])
 
-    const matrixBorder = '1px solid rgba(102, 178, 194, 0.25)'
-    const matrixBg = 'rgba(15, 15, 15, 0.6)'
+    const matrixBorder = '1px solid var(--border-color)'
+    const matrixBg = 'var(--bg-secondary)'
 
     const groupedPortfolios = projects.reduce((acc, p) => {
         const client = p.client || 'General Portfolio'
@@ -94,7 +94,7 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                         }).filter(Boolean))]
                                         const vendorText = uniqueVendors.length === 0 ? 'PARTNER PENDING' : uniqueVendors.length === 1 ? `PARTNER: ${uniqueVendors[0].toUpperCase()}` : 'MULTIPLE PARTNERS'
                                         return (
-                                            <span style={{ fontSize: '0.6rem', color: uniqueVendors.length === 0 ? 'var(--danger)' : 'var(--text-secondary)', background: 'rgba(255,255,255,0.03)', padding: '0.2rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: '800' }}>
+                                            <span style={{ fontSize: '0.6rem', color: uniqueVendors.length === 0 ? 'var(--danger)' : 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', fontWeight: '800' }}>
                                                 {vendorText}
                                             </span>
                                         )
@@ -121,14 +121,14 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                             style={{ 
                                                 display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr 180px', gap: '1rem', padding: '1rem', 
                                                 borderRadius: '6px', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                border: '1px solid rgba(102, 178, 194, 0.12)', marginBottom: '0.4rem', alignItems: 'center'
+                                                border: matrixBorder, marginBottom: '0.4rem', alignItems: 'center'
                                             }}
                                         >
                                             {/* SECTION 1: IDENTITY */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', borderRight: '1px solid rgba(255,255,255,0.05)', paddingRight: '1rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', borderRight: matrixBorder, paddingRight: '1rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.status === 'Active' ? 'var(--success)' : 'var(--danger)', boxShadow: `0 0 5px ${p.status === 'Active' ? 'var(--success)' : 'var(--danger)'}` }} />
-                                                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</h4>
+                                                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</h4>
                                                 </div>
                                                 <p style={{ margin: 0, fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                                     {p.location} // {formatDate(p.startDate)}
@@ -136,7 +136,7 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                             </div>
 
                                             {/* SECTION 2: FINANCIALS */}
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', borderRight: '1px solid rgba(255,255,255,0.05)', paddingRight: '1rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', borderRight: matrixBorder, paddingRight: '1rem' }}>
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                                                         <span style={{ color: 'var(--text-secondary)' }}>REV:</span>
@@ -154,7 +154,7 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                             </div>
 
                                             {/* SECTION 3: TIMELINES */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', borderRight: '1px solid rgba(255,255,255,0.05)', paddingRight: '1rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', borderRight: matrixBorder, paddingRight: '1rem' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.65rem' }}>
                                                     <span style={{ color: 'var(--accent-color)', fontSize: '0.55rem' }}>MEA➜CLT:</span>
                                                     <span style={{ fontWeight: '700', color: 'var(--accent-color)' }}>{formatDate(p.endDate)}</span>
@@ -173,7 +173,7 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                                 </div>
                                                 <div style={{ textAlign: 'right', minWidth: '45px' }}>
                                                     <div style={{ fontSize: '0.85rem', fontWeight: '900', color: p.readiness < 40 ? 'var(--danger)' : 'var(--success)' }}>{p.readiness}%</div>
-                                                    <div style={{ height: '2px', width: '30px', background: 'rgba(255,255,255,0.1)', borderRadius: '1px', marginLeft: 'auto', overflow: 'hidden' }}>
+                                                    <div style={{ height: '2px', width: '30px', background: 'var(--bg-accent)', borderRadius: '1px', marginLeft: 'auto', overflow: 'hidden' }}>
                                                         <div style={{ height: '100%', width: `${p.readiness}%`, background: p.readiness < 40 ? 'var(--danger)' : 'var(--success)' }} />
                                                     </div>
                                                 </div>
@@ -194,12 +194,12 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                             {alerts.length > 0 ? alerts.map(alert => (
                                 <div key={alert.id} style={{ 
                                     padding: '1rem', 
-                                    background: alert.type === 'emergency' ? 'rgba(255, 69, 58, 0.1)' : 'rgba(102, 178, 194, 0.05)', 
+                                    background: 'var(--bg-accent)', 
                                     borderLeft: `3px solid ${alert.type === 'emergency' ? 'var(--danger)' : 'var(--accent-color)'}`,
                                     borderRadius: '4px'
                                 }}>
                                     <div style={{ fontSize: '0.6rem', fontWeight: '900', color: alert.type === 'emergency' ? 'var(--danger)' : 'var(--accent-color)', marginBottom: '0.3rem' }}>{alert.title.toUpperCase()}</div>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#fff' }}>{alert.detail}</div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-primary)' }}>{alert.detail}</div>
                                 </div>
                             )) : (
                                 <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
@@ -235,7 +235,7 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                         <span style={{ fontSize: '0.6rem', fontWeight: '900', color: '#FF9500' }}>{item.projectName.toUpperCase()}</span>
                                         <span style={{ fontSize: '0.55rem', color: 'var(--text-secondary)' }}>{formatDate(item.date)}</span>
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#fff', marginBottom: '0.2rem' }}>{item.title}</div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>{item.title}</div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{item.detail}</div>
                                 </div>
                             )) : (
@@ -246,18 +246,19 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                         </div>
                     </div>
 
-                    <div style={{ background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.1) 0%, transparent 100%)', border: matrixBorder, padding: '1.5rem', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ background: 'var(--bg-accent)', border: matrixBorder, padding: '1.5rem', borderRadius: '4px', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.5rem' }}>
                             <div className="pulse-dot" style={{ width: '8px', height: '8px', background: 'var(--accent-color)', borderRadius: '2px' }} />
                             <h4 style={{ margin: 0, fontSize: '0.65rem', color: 'var(--accent-color)', fontWeight: '900', letterSpacing: '0.2em' }}>TACTICAL AI BRAIN</h4>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {aiInsights.map((insight, i) => (
-                                <p key={i} style={{ fontSize: '0.8rem', color: '#fff', lineHeight: '1.6', margin: 0, borderBottom: '1px solid rgba(102,178,194,0.1)', paddingBottom: '0.8rem' }}>
-                                    {insight}
-                                </p>
-                            ))}
-                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                        {aiInsights.map((insight, idx) => (
+                            <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', padding: '1rem', background: matrixBg, borderRadius: '8px', border: matrixBorder }}>
+                                <span style={{ color: 'var(--accent-color)', fontSize: '1rem' }}>⚡</span>
+                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-primary)', lineHeight: '1.4' }}>{insight}</p>
+                            </div>
+                        ))}
+                    </div>
                         <button onClick={() => onSelectTab('admin')} className="btn btn-outline" style={{ width: '100%', justifyContent: 'center', borderColor: 'var(--accent-color)', color: 'var(--accent-color)', fontWeight: '800', marginTop: '1rem' }}>GOVERNANCE PANEL</button>
                     </div>
                 </div>

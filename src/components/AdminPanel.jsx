@@ -97,12 +97,12 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                                         </div>
                                     </div>
                                     
-                                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid var(--border-color)' }}>
+                                    <div style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid var(--border-color)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                             <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Magic Link</span>
                                             <span style={{ fontSize: '0.6rem', color: 'var(--accent-color)', fontWeight: '800' }}>PIN: {p.clientPin || '2410'}</span>
                                         </div>
-                                        <div style={{ color: '#fff', fontSize: '0.8rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        <div style={{ color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             meaven.in/track/{p.accessKey || p.id}
                                         </div>
                                     </div>
@@ -170,11 +170,11 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                             <div className="card" style={{ alignSelf: 'start' }}>
                                 <h3>Invite New Operator</h3>
                                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                                    <input type="text" placeholder="Full Name" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} className="form-input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', padding: '0.8rem', borderRadius: '8px', color: '#fff' }} />
-                                    <input type="email" placeholder="Email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} className="form-input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', padding: '0.8rem', borderRadius: '8px', color: '#fff' }} />
-                                    <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="form-input" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', padding: '0.8rem', borderRadius: '8px', color: '#fff' }}>
-                                        <option value="Admin">Admin</option>
-                                        <option value="Editor">Project Editor</option>
+                                    <input type="text" placeholder="Full Name" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} className="form-input" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.8rem', borderRadius: '8px', color: 'var(--text-primary)' }} />
+                                    <input type="email" placeholder="Email" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} className="form-input" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.8rem', borderRadius: '8px', color: 'var(--text-primary)' }} />
+                                    <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="form-input" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.8rem', borderRadius: '8px', color: 'var(--text-primary)' }}>
+                                        <option value="Admin" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Admin</option>
+                                        <option value="Editor" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Project Editor</option>
                                     </select>
                                     <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Deploy Authorization</button>
                                 </form>
@@ -199,7 +199,7 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                             <textarea 
                                 value={localMsa} 
                                 onChange={e => setLocalMsa(e.target.value)}
-                                style={{ width: '100%', height: '500px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.5rem', color: '#fff', fontSize: '0.9rem', lineHeight: '1.7', fontFamily: 'monospace' }}
+                                style={{ width: '100%', height: '500px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.5rem', color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.7', fontFamily: 'monospace' }}
                             />
                         </div>
                     )}

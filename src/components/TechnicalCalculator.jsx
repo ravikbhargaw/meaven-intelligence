@@ -62,10 +62,10 @@ const TechnicalCalculator = ({ projects = [], onAddNote }) => {
                     <select 
                         value={selectedProjectId} 
                         onChange={(e) => setSelectedProjectId(e.target.value)}
-                        style={{ width: '100%', maxWidth: '400px', padding: '0.8rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff', fontSize: '0.9rem' }}
+                        style={{ width: '100%', maxWidth: '400px', padding: '0.8rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.9rem' }}
                     >
                         <option value="">Select project to link calculation...</option>
-                        {projects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.client})</option>)}
+                        {projects.map(p => <option key={p.id} value={p.id} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>{p.name} ({p.client})</option>)}
                     </select>
                 </div>
                 <button 
@@ -82,7 +82,7 @@ const TechnicalCalculator = ({ projects = [], onAddNote }) => {
                 
                 {/* INPUT SECTION */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div className="card" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <div className="card" style={{ background: 'var(--bg-secondary)' }}>
                         <h4 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Glass Geometry</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                             <div>
@@ -101,14 +101,14 @@ const TechnicalCalculator = ({ projects = [], onAddNote }) => {
                             </div>
                             <div>
                                 <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Glass Thickness (mm)</label>
-                                <select value={dim.thickness} onChange={(e) => setDim({...dim, thickness: Number(e.target.value)})} style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}>
-                                    {[6, 8, 10, 12, 15, 19, 24].map(t => <option key={t} value={t}>{t} mm</option>)}
+                                <select value={dim.thickness} onChange={(e) => setDim({...dim, thickness: Number(e.target.value)})} style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }}>
+                                    {[6, 8, 10, 12, 15, 19, 24].map(t => <option key={t} value={t} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>{t} mm</option>)}
                                 </select>
                             </div>
                         </div>
                     </div>
 
-                    <div className="card" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                         <h4 style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Environmental Load</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                             <div>
@@ -120,12 +120,12 @@ const TechnicalCalculator = ({ projects = [], onAddNote }) => {
                             </div>
                             <div>
                                 <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Wind Zone</label>
-                                <select value={wind.zone} onChange={(e) => setWind({...wind, zone: Number(e.target.value)})} style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}>
-                                    <option value="1">Zone 1 (Low Speed)</option>
-                                    <option value="2">Zone 2 (Moderate)</option>
-                                    <option value="3">Zone 3 (High Speed)</option>
-                                    <option value="4">Zone 4 (Cyclonic Potential)</option>
-                                    <option value="5">Zone 5 (Extreme)</option>
+                                <select value={wind.zone} onChange={(e) => setWind({...wind, zone: Number(e.target.value)})} style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }}>
+                                    <option value="1" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Zone 1 (Low Speed)</option>
+                                    <option value="2" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Zone 2 (Moderate)</option>
+                                    <option value="3" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Zone 3 (High Speed)</option>
+                                    <option value="4" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Zone 4 (Cyclonic Potential)</option>
+                                    <option value="5" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Zone 5 (Extreme)</option>
                                 </select>
                             </div>
                         </div>
@@ -134,7 +134,7 @@ const TechnicalCalculator = ({ projects = [], onAddNote }) => {
 
                 {/* RESULT SECTION */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div className="card" style={{ background: 'rgba(102, 178, 194, 0.05)', border: '1px solid var(--accent-color)', padding: '2.5rem' }}>
+                    <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--accent-color)', padding: '2.5rem' }}>
                         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Calculated Dead Load</p>
                             <h2 style={{ fontSize: '4rem', margin: '1rem 0', fontWeight: '800', color: 'var(--accent-color)' }}>{result.weight} <span style={{ fontSize: '1.5rem' }}>kg</span></h2>
