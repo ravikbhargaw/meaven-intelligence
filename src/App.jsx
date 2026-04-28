@@ -884,6 +884,8 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
           activeTab={activeTab} 
           clientView={clientView} 
           userName={user?.name || 'Operator'} 
+          projects={projects}
+          vendors={vendors}
         />
       </div>
     </ErrorBoundary>

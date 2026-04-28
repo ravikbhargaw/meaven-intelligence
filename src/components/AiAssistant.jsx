@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const AiAssistant = ({ activeTab, clientView, userName }) => {
+const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -22,11 +22,11 @@ const AiAssistant = ({ activeTab, clientView, userName }) => {
       setMessages([
         { 
           role: 'system', 
-          content: `Welcome back, ${userName}. I am Meaven Intelligence. I've analyzed the ${activeTab} data and I'm ready to assist.` 
+          content: `Welcome back, ${userName}. I am Meaven Intelligence. I've synthesized your tactical data (${projects.length} active projects) and I'm ready to assist.` 
         }
       ]);
     }
-  }, [userName, activeTab]);
+  }, [userName, activeTab, projects.length]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -42,37 +42,36 @@ const AiAssistant = ({ activeTab, clientView, userName }) => {
     setInput('');
     setIsTyping(true);
 
-    // Context-Aware Intelligence Engine
     setTimeout(() => {
       setIsTyping(false);
       let aiResponse = "";
-      
       const query = content.toLowerCase();
-      const activeProj = window.lastActiveProject;
-
-      if (query.includes('status')) {
-        if (activeProj) {
+      
+      // REAL DATA SYNTHESIS
+      if (query.includes('health') || query.includes('portfolio')) {
+        const totalValue = projects.reduce((s, p) => s + (p.clientFinancials?.totalValue || 0), 0);
+        const collected = projects.reduce((s, p) => s + (p.clientFinancials?.received || []).reduce((sum, r) => sum + r.amount, 0), 0);
+        const avgReadiness = projects.length > 0 ? (projects.reduce((s, p) => s + (p.readiness || 0), 0) / projects.length).toFixed(0) : 0;
+        aiResponse = `PORTFOLIO HEALTH: You have ${projects.length} active sites. Total Contract Value: ₹${(totalValue / 100000).toFixed(2)}L. Collection Rate: ${((collected/totalValue)*100).toFixed(1)}%. Average Site Readiness: ${avgReadiness}%. Action suggested for projects below 40%.`;
+      } 
+      else if (query.includes('vendor') || query.includes('partner')) {
+        const activeVendors = vendors.filter(v => (v.contracts || []).some(c => c.status === 'Active'));
+        aiResponse = `PARTNER AUDIT: ${activeVendors.length} vendors are currently operational. Top capacity is currently held by ${activeVendors[0]?.name || 'unassigned'}. Use the Partner Bench to view individual quality scores.`;
+      }
+      else if (query.includes('status') || query.includes('summary')) {
+          const activeProj = window.lastActiveProject || projects[0];
+          if (activeProj) {
             const collected = (activeProj.clientFinancials?.received || []).reduce((s, r) => s + r.amount, 0);
-            aiResponse = `Analyzing ${activeProj.name} (${activeProj.status}): Technical readiness is at ${activeProj.readiness || 0}%. Financials: ₹${(activeProj.clientFinancials?.totalValue / 100000).toFixed(2)}L contract, with ₹${(collected / 100000).toFixed(2)}L collected. Partner assigned: ${activeProj.linkedVendor || 'Unassigned'}.`;
-        } else {
-            aiResponse = "I am ready to analyze any project site. Please select a project in Project Central or Audit Hub to initialize a context-aware summary.";
-        }
-      } else if (query.includes('payout') || query.includes('money') || query.includes('revenue')) {
-        if (activeProj) {
-            const payouts = (activeProj.payouts || []).reduce((s, p) => s + p.amount, 0);
-            aiResponse = `Project ${activeProj.name} Financial Audit: Total Payouts to date is ₹${(payouts / 100000).toFixed(2)}L. The projected margin remains healthy.`;
-        } else {
-            aiResponse = "Please select a project to view specific financial intelligence.";
-        }
-      } else {
-        aiResponse = `Analyzing "${content}"... Based on current Tactical Data, I recommend checking the ${selectedTabLabel()} for active loops.`;
+            aiResponse = `Analyzing ${activeProj.name}: Technical readiness at ${activeProj.readiness || 0}%. ₹${(collected / 100000).toFixed(2)}L collected vs ₹${(activeProj.clientFinancials?.totalValue / 100000).toFixed(2)}L total. Status: ${activeProj.status}.`;
+          } else {
+            aiResponse = "No active project data found. Please select a project in the Hub for a technical breakdown.";
+          }
+      }
+      else {
+        aiResponse = `Analyzing "${content}"... Based on current Tactical Data, I recommend checking the ${selectedTabLabel()} for active loops. I am monitoring ${projects.length} sites for you.`;
       }
 
-      const systemMsg = { 
-        role: 'system', 
-        content: aiResponse 
-      };
-      setMessages(prev => [...prev, systemMsg]);
+      setMessages(prev => [...prev, { role: 'system', content: aiResponse }]);
     }, 1200);
   };
 
