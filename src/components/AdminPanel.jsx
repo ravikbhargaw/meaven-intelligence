@@ -223,6 +223,7 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                                 </div>
                             )}
                         </div>
+                    )}
                     {activeSection === 'system' && (
                         <div className="card" style={{ maxWidth: '600px', border: '1px solid var(--danger)' }}>
                             <h3 style={{ color: 'var(--danger)' }}>Data Governance & Hard Reset</h3>

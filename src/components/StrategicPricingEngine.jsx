@@ -8,7 +8,7 @@ const PRICING_DB = {
     profiles: {
         modular_45: {
             side_top: { code: 'GPS 45M 01', rate: 1012, len: 2500 },
-            bottom_set: { code: 'GPS 45GH 02+03', rate: 1138, len: 2500 }, // Bundled 02+03
+            bottom_set: { code: 'GPS 45GH 02+03', rate: 1138, len: 2500 },
             i_section: { code: 'I-Section Divider', rate: 1000, len: 2500 }
         },
         stile_door: {
@@ -59,8 +59,8 @@ const PRICING_DB = {
 const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
     const [selectedProjectId, setSelectedProjectId] = useState('')
     const [config, setConfig] = useState({
-        width: 3000, // mm
-        height: 2400, // mm
+        width: 3000,
+        height: 2400,
         glassType: '10mm Toughened',
         systemType: 'partition',
         handleType: 'mortise',
@@ -82,13 +82,11 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
         const heightM = config.height / 1000
         const areaSqft = (widthM * heightM) * 10.764
         
-        // 1. GLASS CALC
         const glassRate = PRICING_DB.glass[config.glassType].rate
         const glassCost = areaSqft * glassRate
         bom.push({ item: `Glass: ${config.glassType}`, qty: areaSqft.toFixed(2), unit: 'sqft', rate: glassRate, total: glassCost })
         landingCost += glassCost
 
-        // 2. SYSTEM LOGIC
         let totalLinearMetres = 0
         let totalBarsOrdered = 0
 
@@ -113,8 +111,8 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
             bom.push({ item: 'Gasket (Perimeter * 2)', qty: gasketQty.toFixed(2), unit: 'rm', rate: PRICING_DB.consumables.gasket.rate, total: gasketQty * PRICING_DB.consumables.gasket.rate })
             bom.push({ item: 'Sealant (4 per 500sqft)', qty: sealantQty, unit: 'bottles', rate: PRICING_DB.consumables.sealant.rate, total: sealantQty * PRICING_DB.consumables.sealant.rate })
             
-            if (config.corners90 > 0) bom.push({ item: '90° Connector', qty: config.corners90, unit: 'pcs', rate: PRICING_DB.hardware.connectors['90 Degree'], total: config.corners90 * PRICING_DB.hardware.connectors['90 Degree'] })
-            if (config.corners180 > 0) bom.push({ item: '180° Connector', qty: config.corners180, unit: 'pcs', rate: PRICING_DB.hardware.connectors['180 Degree'], total: config.corners180 * PRICING_DB.hardware.connectors['180 Degree'] })
+            if (config.corners90 > 0) bom.push({ item: '90 Degree Connector', qty: config.corners90, unit: 'pcs', rate: PRICING_DB.hardware.connectors['90 Degree'], total: config.corners90 * PRICING_DB.hardware.connectors['90 Degree'] })
+            if (config.corners180 > 0) bom.push({ item: '180 Degree Connector', qty: config.corners180, unit: 'pcs', rate: PRICING_DB.hardware.connectors['180 Degree'], total: config.corners180 * PRICING_DB.hardware.connectors['180 Degree'] })
 
             const laborCost = areaSqft * PRICING_DB.labor.partition
             bom.push({ item: 'Installation Labor', qty: areaSqft.toFixed(2), unit: 'sqft', rate: PRICING_DB.labor.partition, total: laborCost })
@@ -184,10 +182,8 @@ Margin: ${(calculation.margin * 100).toFixed(0)}% ${config.isManualMargin ? '(MA
     }
 
     return (
-        <div className="pricing-engine animate-fade-in" style={{ padding: '0.5rem 0', color: '#fff' }}>
+        <div className="pricing-engine" style={{ padding: '0.5rem 0', color: '#fff' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: '1.5rem', alignItems: 'start' }}>
-                
-                {/* COLUMN 1: ARCHITECTURE & SPECS */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)' }}>
                         <h4 style={{ margin: '0 0 1.5rem 0', fontSize: '0.8rem', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>01. SYSTEM SPECS</h4>
@@ -214,134 +210,35 @@ Margin: ${(calculation.margin * 100).toFixed(0)}% ${config.isManualMargin ? '(MA
                                 <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>GLASS TYPE</label>
                                 <select value={config.glassType} onChange={(e) => setConfig({...config, glassType: e.target.value})} style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff', fontSize: '0.8rem' }}>
                                     {Object.keys(PRICING_DB.glass).map(g => <option key={g} value={g}>{g}</option>)}
-                                    <option value="annealed" disabled>Annealed Glass (BLACKOUT)</option>
                                 </select>
                             </div>
-                            {(config.systemType === 'stile_door' || config.systemType === 'floor_spring') && (
-                                <div>
-                                    <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>DOOR COUNT</label>
-                                    <input type="number" value={config.numDoors} onChange={(e) => setConfig({...config, numDoors: Number(e.target.value)})} style={{ width: '100%', padding: '0.6rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff' }} />
-                                </div>
-                            )}
                         </div>
-                    </div>
-
-                    <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <h4 style={{ margin: '0 0 1.5rem 0', fontSize: '0.8rem', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>02. HARDWARE LOOP</h4>
-                        {config.systemType === 'stile_door' ? (
-                            <select value={config.handleType} onChange={(e) => setConfig({...config, handleType: e.target.value})} style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff', fontSize: '0.8rem' }}>
-                                <option value="mortise">Mortise Set</option>
-                                <option value="pull_2d">2D Pull Set</option>
-                                <option value="h_handle">H-Handle</option>
-                            </select>
-                        ) : config.systemType === 'partition' ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
-                                <div>
-                                    <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>90° CORNERS</label>
-                                    <input type="number" value={config.corners90} onChange={(e) => setConfig({...config, corners90: Number(e.target.value)})} style={{ width: '100%', padding: '0.6rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff' }} />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>180° JOINTS</label>
-                                    <input type="number" value={config.corners180} onChange={(e) => setConfig({...config, corners180: Number(e.target.value)})} style={{ width: '100%', padding: '0.6rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff' }} />
-                                </div>
-                            </div>
-                        ) : (
-                            <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Ozone Kit: Machine + Patches + Pivot</p>
-                        )}
                     </div>
                 </div>
 
-                {/* COLUMN 2: STRATEGIC TIERING & AUDIT */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.8rem', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>03. MARGIN LOGIC</h4>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <input type="checkbox" checked={config.isManualMargin} onChange={(e) => setConfig({...config, isManualMargin: e.target.checked})} />
-                                <span style={{ fontSize: '0.6rem', fontWeight: '800' }}>MANUAL</span>
-                            </div>
+                        <h4 style={{ margin: '0 0 1.5rem 0', fontSize: '0.8rem', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>02. MARGIN LOGIC</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem' }}>
+                            <input type="checkbox" checked={config.isManualMargin} onChange={(e) => setConfig({...config, isManualMargin: e.target.checked})} />
+                            <span style={{ fontSize: '0.6rem', fontWeight: '800' }}>MANUAL</span>
                         </div>
-                        {!config.isManualMargin ? (
-                            <div>
-                                <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>PROJECT SCALE (SQFT)</label>
-                                <input type="number" value={config.totalProjectArea} onChange={(e) => setConfig({...config, totalProjectArea: Number(e.target.value)})} style={{ width: '100%', padding: '0.6rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff' }} />
-                                <div style={{ marginTop: '0.8rem', fontSize: '0.7rem', fontWeight: '800', color: 'var(--accent-color)' }}>
-                                    TIER: {config.totalProjectArea >= 2000 ? 'SCALE (25%)' : config.totalProjectArea >= 500 ? 'GROWTH (40%)' : 'STANDARD (55%)'}
-                                </div>
-                            </div>
+                        {config.isManualMargin ? (
+                            <input type="range" min="10" max="80" value={config.manualMargin} onChange={(e) => setConfig({...config, manualMargin: Number(e.target.value)})} style={{ width: '100%' }} />
                         ) : (
-                            <div>
-                                <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>CUSTOM MARGIN: {config.manualMargin}%</label>
-                                <input type="range" min="10" max="80" value={config.manualMargin} onChange={(e) => setConfig({...config, manualMargin: Number(e.target.value)})} style={{ width: '100%', marginTop: '0.5rem' }} />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="card" style={{ background: config.isAuditMode ? 'rgba(255, 69, 58, 0.03)' : 'rgba(255,255,255,0.02)', border: config.isAuditMode ? '1px solid var(--danger)' : '1px solid rgba(255,255,255,0.1)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.8rem', color: config.isAuditMode ? 'var(--danger)' : 'var(--text-secondary)', letterSpacing: '0.1em' }}>04. VENDOR AUDIT</h4>
-                            <button onClick={() => setConfig({...config, isAuditMode: !config.isAuditMode})} style={{ padding: '0.3rem 0.6rem', borderRadius: '4px', border: 'none', background: config.isAuditMode ? 'var(--danger)' : 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.6rem', fontWeight: '800', cursor: 'pointer' }}>
-                                {config.isAuditMode ? 'ACTIVE' : 'OFF'}
-                            </button>
-                        </div>
-                        {config.isAuditMode && (
-                            <div>
-                                <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>VENDOR QUOTE (EXCL. GST)</label>
-                                <input type="number" value={config.vendorQuote} onChange={(e) => setConfig({...config, vendorQuote: Number(e.target.value)})} style={{ width: '100%', padding: '0.6rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--danger)', borderRadius: '6px', color: '#fff', textAlign: 'center', fontSize: '1rem', fontWeight: '800' }} />
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '1rem' }}>
-                                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px', textAlign: 'center' }}>
-                                        <p style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', margin: 0 }}>MARKUP</p>
-                                        <p style={{ fontSize: '0.9rem', fontWeight: '800', margin: 0, color: calculation.vendorMarginPercent > 20 ? 'var(--danger)' : 'var(--success)' }}>{calculation.vendorMarginPercent.toFixed(1)}%</p>
-                                    </div>
-                                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px', textAlign: 'center' }}>
-                                        <p style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', margin: 0 }}>WASTE</p>
-                                        <p style={{ fontSize: '0.9rem', fontWeight: '800', margin: 0 }}>{calculation.wastePercent.toFixed(0)}%</p>
-                                    </div>
-                                </div>
-                            </div>
+                            <input type="number" value={config.totalProjectArea} onChange={(e) => setConfig({...config, totalProjectArea: Number(e.target.value)})} style={{ width: '100%', padding: '0.6rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff' }} />
                         )}
                     </div>
                 </div>
 
-                {/* COLUMN 3: REAL-TIME RESULTS & BOM */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div className="card" style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', padding: '1.5rem' }}>
                         <div style={{ textAlign: 'center' }}>
-                            <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', letterSpacing: '0.2em' }}>{config.isAuditMode ? 'VENDOR BASELINE' : 'QUOTED PRICE (EXCL. GST)'}</p>
-                            <h2 style={{ fontSize: '2.5rem', margin: '0.8rem 0', color: 'var(--accent-color)' }}>₹{Math.round(config.isAuditMode ? calculation.landingCost : calculation.sellingPrice).toLocaleString()}</h2>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                                <div style={{ fontSize: '0.7rem' }}><span style={{ color: 'var(--text-secondary)' }}>LC:</span> ₹{Math.round(calculation.landingCost).toLocaleString()}</div>
-                                <div style={{ fontSize: '0.7rem' }}><span style={{ color: 'var(--text-secondary)' }}>MARGIN:</span> {(calculation.margin * 100).toFixed(0)}%</div>
-                            </div>
+                            <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', letterSpacing: '0.2em' }}>QUOTED PRICE (EXCL. GST)</p>
+                            <h2 style={{ fontSize: '2.5rem', margin: '0.8rem 0', color: 'var(--accent-color)' }}>₹{Math.round(calculation.sellingPrice).toLocaleString()}</h2>
                         </div>
-                    </div>
-
-                    <div className="card" style={{ padding: '1.2rem', maxHeight: '380px', overflowY: 'auto' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)' }}>BOM BREAKDOWN</h4>
-                            <button onClick={handlePushToTimeline} style={{ background: 'none', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.6rem', cursor: 'pointer' }}>LOG QUOTE</button>
-                        </div>
-                        <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse' }}>
-                            <tbody>
-                                {calculation.bom.map((line, i) => (
-                                    <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                                        <td style={{ padding: '0.5rem 0' }}>{line.item}</td>
-                                        <td style={{ padding: '0.5rem 0', textAlign: 'right' }}>{line.qty} {line.unit}</td>
-                                        <td style={{ padding: '0.5rem 0', textAlign: 'right', fontWeight: '700' }}>₹{Math.round(line.total).toLocaleString()}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        
-                        {config.isAuditMode && calculation.scripts.length > 0 && (
-                            <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(255, 69, 58, 0.05)', borderRadius: '6px', border: '1px solid var(--danger)' }}>
-                                <p style={{ fontSize: '0.6rem', color: 'var(--danger)', fontWeight: '800', margin: '0 0 0.5rem 0' }}>NEGOTIATION LEVERS</p>
-                                {calculation.scripts.map((s, i) => <p key={i} style={{ fontSize: '0.65rem', margin: '0 0 0.3rem 0', lineHeight: '1.4' }}>• {s}</p>)}
-                            </div>
-                        )}
                     </div>
                 </div>
-
             </div>
         </div>
     )
