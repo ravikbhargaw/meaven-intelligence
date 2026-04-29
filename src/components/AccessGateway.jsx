@@ -38,7 +38,7 @@ const AccessGateway = ({ onLogin, onClientLogin, onVerifyMasterKey }) => {
     }
   }
 
-  const bgImage = 'C:/Users/admin/.gemini/antigravity/brain/14799db3-4aba-43fa-9858-2577f5b4e1b3/meaven_hub_bg_1777454967211.png'
+  const bgImage = '/hub_bg.png'
 
   return (
     <div style={{ ...containerStyle, backgroundImage: `url(${bgImage})` }}>
@@ -162,8 +162,8 @@ const grainStyle = { position: 'absolute', inset: 0, backgroundImage: 'url("http
 const glowTopStyle = { position: 'absolute', width: '600px', height: '600px', background: 'var(--accent-color)', opacity: 0.07, filter: 'blur(100px)', borderRadius: '50%', top: '-200px', left: '-200px', zIndex: 3 }
 const glowBottomStyle = { position: 'absolute', width: '400px', height: '400px', background: 'var(--accent-color)', opacity: 0.05, filter: 'blur(80px)', borderRadius: '50%', bottom: '-100px', right: '-100px', zIndex: 3 }
 
-const loginCardStyle = { width: 'clamp(320px, 95%, 480px)', padding: '4rem 3.5rem', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '32px', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.6)', position: 'relative' }
-const backButtonStyle = { position: 'absolute', top: '2rem', left: '2rem', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', transition: 'color 0.2s' }
+const loginCardStyle = { width: 'clamp(320px, 95%, 480px)', padding: '4rem 3.5rem', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(40px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '32px', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.8)', position: 'relative' }
+const backButtonStyle = { position: 'absolute', top: '2rem', left: '2rem', background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', transition: 'color 0.2s' }
 const formStyle = { display: 'flex', flexDirection: 'column', gap: '2rem' }
 const fieldGroupStyle = { display: 'flex', flexDirection: 'column', gap: '0.8rem' }
 const labelStyle = { fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '700' }
@@ -173,9 +173,9 @@ const errorBoxStyle = { color: 'var(--danger)', fontSize: '0.8rem', textAlign: '
 const submitButtonStyle = { justifyContent: 'center', padding: '1.4rem', fontSize: '1rem', fontWeight: '900', letterSpacing: '0.05em' }
 const masterInputStyle = { background: 'rgba(255,255,255,0.03)', border: '1px solid var(--accent-color)', borderRadius: '16px', padding: '1.5rem', color: '#fff', fontSize: '2.5rem', textAlign: 'center', letterSpacing: '0.4em', fontWeight: '900', boxShadow: '0 0 30px rgba(102, 178, 194, 0.1)' }
 
-const pinInputStyle = (error) => ({ width: '100%', padding: '1.8rem', background: 'rgba(255,255,255,0.03)', border: error ? '2px solid var(--danger)' : '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', color: '#fff', fontSize: '3rem', textAlign: 'center', letterSpacing: '0.5em', fontWeight: '900', transition: 'all 0.3s', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' })
-const clientButtonStyle = { width: '100%', padding: '1.4rem', justifyContent: 'center', fontSize: '1.1rem', fontWeight: '900', background: '#32D74B', border: 'none', boxShadow: '0 10px 40px rgba(50, 215, 75, 0.2)', color: '#000', borderRadius: '16px' }
-const stealthStyle = { marginTop: '2.5rem', fontSize: '0.55rem', color: 'rgba(255,255,255,0.03)', cursor: 'default', userSelect: 'none', letterSpacing: '0.2em' }
+const pinInputStyle = (error) => ({ width: '100%', padding: '1.8rem', background: 'rgba(0,0,0,0.4)', border: error ? '2px solid var(--danger)' : '1px solid rgba(255,255,255,0.2)', borderRadius: '24px', color: '#fff', fontSize: '3rem', textAlign: 'center', letterSpacing: '0.5em', fontWeight: '900', transition: 'all 0.3s', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' })
+const clientButtonStyle = { width: '100%', padding: '1.4rem', justifyContent: 'center', fontSize: '1.1rem', fontWeight: '900', background: '#32D74B', border: 'none', boxShadow: '0 10px 40px rgba(50, 215, 75, 0.3)', color: '#000', borderRadius: '16px', cursor: 'pointer' }
+const stealthStyle = { marginTop: '2.5rem', fontSize: '0.55rem', color: 'rgba(255,255,255,0.1)', cursor: 'pointer', userSelect: 'none', letterSpacing: '0.2em' }
 
 const selectionCardStyle = { padding: '5rem 3.5rem', textAlign: 'center', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '40px', backdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }
 const iconBoxStyle = { width: '90px', height: '90px', borderRadius: '28px', background: 'rgba(102, 178, 194, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', marginBottom: '2.5rem', color: 'var(--accent-color)', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }
