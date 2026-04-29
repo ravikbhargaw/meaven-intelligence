@@ -7,7 +7,8 @@ const NewPortfolioModal = ({ isOpen, onClose, onCreate }) => {
     pocName: '',
     pocEmail: '',
     pocPhone: '',
-    supervisorEmail: ''
+    supervisorEmail: '',
+    customPin: ''
   })
 
   if (!isOpen) return null
@@ -45,7 +46,7 @@ const NewPortfolioModal = ({ isOpen, onClose, onCreate }) => {
     }
 
     const accessKey = data.name.toLowerCase().replace(/\s+/g, '-') + '-' + Math.floor(1000 + Math.random() * 9000)
-    const clientPin = Math.floor(1000 + Math.random() * 9000).toString()
+    const clientPin = data.customPin && data.customPin.length === 4 ? data.customPin : Math.floor(1000 + Math.random() * 9000).toString()
 
     onCreate({
         ...data,
@@ -58,7 +59,7 @@ const NewPortfolioModal = ({ isOpen, onClose, onCreate }) => {
         ]
     })
     onClose()
-    setData({ name: '', pocName: '', pocEmail: '', pocPhone: '', supervisorEmail: '' })
+    setData({ name: '', pocName: '', pocEmail: '', pocPhone: '', supervisorEmail: '', customPin: '' })
     setErrors({})
   }
 
@@ -135,6 +136,19 @@ const NewPortfolioModal = ({ isOpen, onClose, onCreate }) => {
                 style={{ background: 'var(--bg-accent)', border: errors.supervisorEmail ? '1px solid #ff453a' : '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff' }} 
             />
             {errors.supervisorEmail && <span style={{ fontSize: '0.65rem', color: '#ff453a' }}>{errors.supervisorEmail}</span>}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Custom Security PIN (Optional)</label>
+            <input 
+                type="text" 
+                placeholder="4-digit PIN (e.g. 1234)" 
+                maxLength="4"
+                value={data.customPin} 
+                onChange={(e) => setData({...data, customPin: e.target.value.replace(/\D/g, '')})} 
+                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff', fontSize: '1.2rem', letterSpacing: '0.2em' }} 
+            />
+            <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>Leave blank to auto-generate.</p>
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>

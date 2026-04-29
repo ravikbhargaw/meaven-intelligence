@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import SiteReadiness from './components/SiteReadiness'
-import Login from './components/Login'
+import AccessGateway from './components/AccessGateway'
 import SecuritySetup from './components/SecuritySetup'
 import PinModal from './components/PinModal'
 import NewProjectModal from './components/NewProjectModal'
@@ -46,14 +46,57 @@ class ErrorBoundary extends React.Component {
 }
 
 function App() {
-  const { user, login, logout, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey } = useAuth()
+  const { user, login, loginAsClient, logout, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey } = useAuth()
   const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
-  const [clientView, setClientView] = useState(true)
+
+  // --- AUTOMATED ACCESS (PIN CAPTURE) ---
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const pinParam = params.get('pin')
+    if (pinParam && !user) {
+        // Debounce slightly to allow cloud auth to initialize
+        const timer = setTimeout(() => handleClientLogin(pinParam), 1000)
+        return () => clearTimeout(timer)
+    }
+  }, [user])
+
+  const handleClientLogin = async (pin) => {
+    try {
+        const { data: cloudPortfolios } = await supabase.from('portfolios').select('*')
+        const portfolio = cloudPortfolios?.find(p => p.data.clientPin === pin)
+        
+        if (portfolio) {
+            loginAsClient(portfolio.data)
+            setSelectedClient(portfolio.data.name)
+            setIsProjectSelected(true)
+            setIsClientAuthorized(portfolio.data.isPortalActive === true)
+            setClientView(true)
+            
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname)
+            return true
+        }
+    } catch (e) {
+        console.error("Client PIN Sync Failed:", e)
+    }
+    return false
+  }
+   const [clientView, setClientView] = useState(false)
+  useEffect(() => {
+    if (user) {
+        if (user.role === 'Client') {
+            setClientView(true)
+        } else if (user.role === 'SuperAdmin' || user.role === 'Admin') {
+            setClientView(false)
+        }
+    }
+  }, [user])
+
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false)
   const [isNewPortfolioModalOpen, setIsNewPortfolioModalOpen] = useState(false)
@@ -287,7 +330,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
 
   if (!user) return (
     <div className="dashboard-app-root">
-      <Login onLogin={login} onVerifyMasterKey={verifyMasterKey} />
+      <AccessGateway onLogin={login} onClientLogin={handleClientLogin} onVerifyMasterKey={verifyMasterKey} />
       <AiAssistant activeTab="dashboard" clientView={true} userName="Guest" />
     </div>
   )
@@ -717,6 +760,14 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                           <button onClick={() => { if (selectedClient) { setIsProjectSelected(true); setActiveTab('dashboard'); } else { setIsNewProjectModalOpen(true); } }} className="btn btn-primary" style={{ flex: 1, padding: '1.2rem', justifyContent: 'center', fontSize: '1.1rem' }}>{selectedClient ? 'Initialize Portfolio' : 'Start First Project'}</button>
                           <button onClick={() => setIsNewPortfolioModalOpen(true)} className="btn btn-outline" style={{ flex: 1, padding: '1.2rem', justifyContent: 'center', fontSize: '1.1rem' }}>+ Create New Portfolio</button>
                       </div>
+                      {(user?.role === 'SuperAdmin' || user?.email === 'ravi.bhargaw@meaven.in') && (
+                          <button 
+                            onClick={() => { setIsProjectSelected(true); setActiveTab('admin'); }}
+                            style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', marginTop: '1rem', textDecoration: 'underline' }}
+                          >
+                            Bypass to Governance Console →
+                          </button>
+                      )}
                   </div>
               </div>
           </div>
@@ -732,7 +783,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 {!clientView && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Operations Hub" />}
                 {!clientView && <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />}
                 {!clientView && <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />}
-                {user?.role === 'SuperAdmin' && !clientView && (
+                {(user?.role === 'SuperAdmin' || user?.email === 'ravi.bhargaw@meaven.in') && !clientView && (
                   <>
                     <SidebarItem active={activeTab === 'strategy'} onClick={() => handleNavigate('strategy')} icon="🧠" label="Executive Strategy" />
                     <SidebarItem active={activeTab === 'reports'} onClick={() => handleNavigate('reports')} icon="📈" label="Intelligence Reports" />

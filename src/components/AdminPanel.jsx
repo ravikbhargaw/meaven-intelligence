@@ -24,6 +24,15 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
         window.location.href = mailto;
     }
 
+    const handleUpdatePin = (p) => {
+        const newPin = prompt(`Enter new 4-digit PIN for ${p.name}:`, p.clientPin || '2410');
+        if (newPin && newPin.length === 4 && /^\d+$/.test(newPin)) {
+            onUpdatePortfolio(p.id, { ...p, clientPin: newPin });
+        } else if (newPin !== null) {
+            alert("Invalid PIN. Please enter exactly 4 digits.");
+        }
+    }
+
     const sections = [
         { id: 'portfolios', label: 'Portfolio Access', icon: '🏢' },
         { id: 'team', label: 'Team Control', icon: '📡' },
@@ -100,7 +109,10 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                                     <div style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid var(--border-color)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                             <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Magic Link</span>
-                                            <span style={{ fontSize: '0.6rem', color: 'var(--accent-color)', fontWeight: '800' }}>PIN: {p.clientPin || '2410'}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.6rem', color: 'var(--accent-color)', fontWeight: '800' }}>PIN: {p.clientPin || '2410'}</span>
+                                                <button onClick={() => handleUpdatePin(p)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.7rem', cursor: 'pointer', padding: 0 }}>✎</button>
+                                            </div>
                                         </div>
                                         <div style={{ color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             meaven.in/track/{p.accessKey || p.id}

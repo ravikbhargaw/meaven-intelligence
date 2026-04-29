@@ -56,7 +56,7 @@ const ProjectCompactCard = ({ project, onSelectProject }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800' }}>{project.name}</h3>
-                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Status: <span style={{ color: isCompleted ? 'var(--success)' : 'var(--accent-color)', fontWeight: '700' }}>{project.status.toUpperCase()}</span></p>
+                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Status: <span style={{ color: isCompleted ? 'var(--success)' : 'var(--accent-color)', fontWeight: '700' }}>{(project.status || 'Active').toUpperCase()}</span></p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '1rem', fontWeight: '900', color: 'var(--text-primary)' }}>{readiness}%</div>

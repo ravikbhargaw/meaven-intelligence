@@ -112,12 +112,24 @@ const useAuth = () => {
     return false
   }
 
+  const loginAsClient = (portfolio) => {
+    const virtualUser = {
+      name: portfolio.name,
+      email: `client.${portfolio.id}@meaven.in`,
+      role: 'Client',
+      isVirtual: true,
+      portfolioId: portfolio.id
+    }
+    setUser(virtualUser)
+    return true
+  }
+
   const logout = () => {
     setUser(null)
     localStorage.removeItem('mi_current_user')
   }
 
-  return { user, login, logout, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey }
+  return { user, login, loginAsClient, logout, isFirstLogin, updateSecurity, verifyPin, showPinModal, setShowPinModal, users, addUser, removeUser, resetUser, verifyMasterKey }
 }
 
 export default useAuth
