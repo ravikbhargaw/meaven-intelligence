@@ -38,7 +38,7 @@ const AccessGateway = ({ onLogin, onClientLogin, onVerifyMasterKey }) => {
     }
   }
 
-  const bgImage = '/hub_bg.png'
+  const bgImage = '/hub_bg_v2.png'
 
   return (
     <div style={{ ...containerStyle, backgroundImage: `url(${bgImage})` }}>
