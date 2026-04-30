@@ -1010,6 +1010,10 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 <span style={{ color: 'var(--accent-color)' }}>➕</span>
                 <span>New</span>
               </button>
+              <button className="bottom-nav-item" onClick={logout} style={{ color: 'var(--danger)' }}>
+                <span>🚪</span>
+                <span>Exit</span>
+              </button>
             </nav>
           </div>
         )}

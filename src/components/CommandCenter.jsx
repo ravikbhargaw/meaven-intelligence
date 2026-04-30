@@ -76,10 +76,9 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
 
     return (
         <div className="command-center animate-fade-in" style={{ padding: '0.5rem 0' }}>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '2rem' }}>
+            <div className="stack-on-mobile" style={{ gap: '2rem' }}>
                 {/* MODULE 2: SITE INTELLIGENCE MATRIX */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     {Object.entries(groupedPortfolios).map(([client, projs]) => (
                         <div key={client} style={{ background: matrixBg, border: matrixBorder, borderRadius: '4px', overflow: 'hidden' }}>
                             <div style={{ padding: '1rem 1.5rem', background: 'rgba(102, 178, 194, 0.08)', borderBottom: matrixBorder, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -117,15 +116,15 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                         <div 
                                             key={p.id} 
                                             onClick={() => onSelectProject(p.id)}
-                                            className="matrix-row glass-module"
+                                            className="matrix-row glass-module stack-on-mobile"
                                             style={{ 
-                                                display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr 180px', gap: '1rem', padding: '1rem', 
+                                                gap: '1rem', padding: '1.2rem', 
                                                 borderRadius: '6px', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                border: matrixBorder, marginBottom: '0.4rem', alignItems: 'center'
+                                                border: matrixBorder, marginBottom: '0.8rem', alignItems: 'stretch'
                                             }}
                                         >
                                             {/* SECTION 1: IDENTITY */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', borderRight: matrixBorder, paddingRight: '1rem' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', paddingRight: '1rem', flex: 1.2 }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.status === 'Active' ? 'var(--success)' : 'var(--danger)', boxShadow: `0 0 5px ${p.status === 'Active' ? 'var(--success)' : 'var(--danger)'}` }} />
                                                     <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</h4>
@@ -136,9 +135,9 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                             </div>
 
                                             {/* SECTION 2: FINANCIALS */}
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', borderRight: matrixBorder, paddingRight: '1rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', paddingRight: '1rem', flex: 1 }}>
                                                 <div style={{ flex: 1 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
+                                                    <div className="hide-on-mobile" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                                                         <span style={{ color: 'var(--text-secondary)' }}>REV:</span>
                                                         <span style={{ fontWeight: '800' }}>₹{(orderValue / 100000).toFixed(1)}L</span>
                                                     </div>
@@ -154,7 +153,7 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                             </div>
 
                                             {/* SECTION 3: TIMELINES */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', borderRight: matrixBorder, paddingRight: '1rem' }}>
+                                            <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', paddingRight: '1rem', flex: 1.2 }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.65rem' }}>
                                                     <span style={{ color: 'var(--accent-color)', fontSize: '0.55rem' }}>MEA➜CLT:</span>
                                                     <span style={{ fontWeight: '700', color: 'var(--accent-color)' }}>{formatDate(p.endDate)}</span>
@@ -166,7 +165,7 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                             </div>
 
                                             {/* SECTION 4: PARTNER & READINESS */}
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flex: 1 }}>
                                                 <div style={{ flex: 1, minWidth: 0 }}>
                                                     <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: '800', color: 'var(--accent-color)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.assignedVendor || 'UNASSIGNED'}</p>
                                                     <p style={{ margin: 0, fontSize: '0.5rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>{p.createdBy || 'ADMIN'}</p>
@@ -187,7 +186,7 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                 </div>
 
                 {/* MODULE 3: TACTICAL ACTION CENTER & AI BRAIN */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: '1', minWidth: 'min(400px, 100%)' }}>
                     <div style={{ background: matrixBg, border: matrixBorder, padding: '1.5rem', borderRadius: '4px' }}>
                         <h4 style={{ margin: '0 0 1.5rem 0', fontSize: '0.65rem', color: 'var(--accent-color)', fontWeight: '900', letterSpacing: '0.2em' }}>⚡ TACTICAL ACTION CENTER</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

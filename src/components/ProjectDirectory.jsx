@@ -158,19 +158,19 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
 
     return (
       <div className="project-detail-view animate-fade-in" style={{ paddingBottom: '5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 <button 
                     onClick={() => { setSelectedProjectId(null); setActiveSubTab('overview'); setIsEditingValue(false); }} 
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--accent-color)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
                 >
-                    ← Back
+                    ← BACK
                 </button>
-                <div style={{ padding: '0.3rem 0.8rem', borderRadius: '20px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.6rem', fontWeight: '800', letterSpacing: '0.1em' }}>
+                <div style={{ padding: '0.3rem 0.8rem', borderRadius: '20px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.55rem', fontWeight: '900', letterSpacing: '0.15em' }}>
                     💎 FINANCIAL DEEP-DIVE
                 </div>
             </div>
-            <div style={{ display: 'flex', background: 'var(--bg-accent)', padding: '0.3rem', borderRadius: '8px', gap: '0.3rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '0.4rem', borderRadius: '12px', gap: '0.4rem', border: '1px solid var(--border-color)', width: '100%', maxWidth: '400px' }}>
                 <button 
                     onClick={() => setActiveSubTab('overview')}
                     style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'overview' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'overview' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
@@ -186,17 +186,17 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
             </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="stack-on-mobile" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem', gap: '2rem' }}>
             <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)' }}>{selectedProject.name}</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', fontWeight: '900' }}>{selectedProject.name}</h1>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                         <select 
                             value={selectedProject.status || 'Active'}
                             onChange={(e) => handleStatusChange(e.target.value)}
                             style={{ 
                                 background: (selectedProject.status === 'Completed' ? 'var(--success)' : (selectedProject.status === 'On Hold' ? 'var(--danger)' : (selectedProject.status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)'))),
-                                color: '#fff', border: 'none', borderRadius: '20px', padding: '0.3rem 0.8rem', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer'
+                                color: '#000', border: 'none', borderRadius: '20px', padding: '0.4rem 1rem', fontSize: '0.65rem', fontWeight: '900', cursor: 'pointer'
                             }}
                         >
                             <option value="Active">ACTIVE</option>
@@ -205,32 +205,29 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             <option value="Final Closure">FINAL CLOSURE</option>
                         </select>
                         {selectedProject.isSignOffRequested && !selectedProject.managerSignOff && (
-                            <span style={{ fontSize: '0.6rem', color: '#FF9500', fontWeight: '800', letterSpacing: '0.05em' }}>(AWAITING HANDOVER SIGN-OFF)</span>
-                        )}
-                        {selectedProject.managerSignOff && (
-                            <span style={{ fontSize: '0.6rem', color: 'var(--success)', fontWeight: '800', letterSpacing: '0.05em' }}>(HANDOVER COMPLETE ✓)</span>
+                            <span style={{ fontSize: '0.55rem', color: '#FF9500', fontWeight: '900', letterSpacing: '0.05em' }}>(AWAITING SIGN-OFF)</span>
                         )}
                     </div>
                 </div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Client: {selectedProject.client}</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem', fontWeight: '500' }}>CLIENT PORTFOLIO: {selectedProject.client}</p>
                 <button 
                     onClick={() => { if(confirm(`Flush Project ${selectedProject.name}?`)) { onRemoveProject(selectedProject.id); setSelectedProjectId(null); } }} 
-                    style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.65rem', marginTop: '1rem', cursor: 'pointer', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '800' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.6rem', marginTop: '1.2rem', cursor: 'pointer', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}
                 >
                     🗑️ Flush Individual Loop
                 </button>
             </div>
             <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: '800', color: pl.margin > 30 ? 'var(--success)' : 'var(--accent-color)' }}>
+                <div style={{ fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: '900', color: pl.margin > 30 ? 'var(--success)' : 'var(--accent-color)', lineHeight: 1 }}>
                     {pl.margin.toFixed(1)}%
                 </div>
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>EBITDA Margin</span>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: '800' }}>Project EBITDA</span>
             </div>
         </div>
 
         {activeSubTab === 'overview' ? (
             <div className="animate-fade-in">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '3rem' }}>
+                <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', marginBottom: '3rem' }}>
                     <div className="card" style={{ background: 'var(--bg-accent)' }}>
                         <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Contract Value</p>
                         {isEditingValue ? (
@@ -428,8 +425,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     </div>
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-                    <div className="card">
+                <div className="stack-on-mobile" style={{ gap: '2rem' }}>
+                    <div className="card" style={{ flex: 1 }}>
                         <h4 style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>🔍 Project Intelligence Timeline</h4>
                         
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem' }}>
@@ -509,8 +506,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
             </div>
         ) : (
             <div className="animate-fade-in">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                    <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginBottom: '2rem' }}>
+                    <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', gridColumn: '1 / -1' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                             <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Project Financial Ledger</h3>
                             <div style={{ padding: '0.3rem 0.8rem', background: 'rgba(50, 215, 75, 0.1)', borderRadius: '20px', color: 'var(--success)', fontSize: '0.6rem', fontWeight: '800' }}>AUDIT READY</div>
@@ -827,12 +824,12 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
 
   return (
     <div className="project-directory-module animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+      <div className="stack-on-mobile" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', gap: '1.5rem' }}>
         <div>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Execution Financial Hub</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Full lifecycle P&L visibility of all active Meaven sites.</p>
+          <h2 style={{ fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', fontWeight: '900', marginBottom: '0.5rem' }}>Execution Financial Hub</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Full lifecycle P&L visibility of all active Meaven sites.</p>
         </div>
-        <div style={{ padding: '0.5rem 1.2rem', borderRadius: '20px', background: 'rgba(102, 178, 194, 0.1)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', fontSize: '0.7rem', fontWeight: '900', letterSpacing: '0.2em' }}>
+        <div style={{ padding: '0.5rem 1.2rem', borderRadius: '20px', background: 'rgba(102, 178, 194, 0.1)', border: '1px solid var(--border-color)', color: 'var(--accent-color)', fontSize: '0.6rem', fontWeight: '900', letterSpacing: '0.15em' }}>
             🏦 STRATEGIC PORTFOLIO HUB
         </div>
       </div>
@@ -845,7 +842,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
           style={{ width: '100%', maxWidth: '400px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff' }}
         />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+      <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
         {(filteredProjects || []).map(p => {
           const pl = getPL(p)
           return (

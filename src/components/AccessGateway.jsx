@@ -48,24 +48,24 @@ const AccessGateway = ({ onLogin, onClientLogin, onVerifyMasterKey }) => {
       <div style={glowTopStyle}></div>
       <div style={glowBottomStyle}></div>
       
-      <div className="animate-fade-in" style={{ zIndex: 10, width: '100%', display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+      <div className="animate-fade-in" style={{ zIndex: 10, width: '100%', display: 'flex', justifyContent: 'center', padding: '1rem' }}>
         {mode === 'select' ? (
           <div style={{ textAlign: 'center', width: '100%', maxWidth: '900px' }}>
-            <div style={{ marginBottom: '5rem' }}>
-              <img src="/images/logo.png" alt="Logo" style={{ height: '70px', marginBottom: '1.5rem', filter: 'drop-shadow(0 0 20px var(--accent-color))' }} />
-              <h2 style={{ fontSize: '1.1rem', letterSpacing: '0.8em', color: 'var(--accent-color)', fontWeight: '900', textTransform: 'uppercase', margin: 0, opacity: 0.9 }}>INTELLIGENCE HUB</h2>
+            <div style={{ marginBottom: 'clamp(2rem, 10vh, 5rem)' }}>
+              <img src="/images/logo.png" alt="Logo" style={{ height: 'clamp(40px, 8vw, 70px)', marginBottom: '1.5rem', filter: 'drop-shadow(0 0 20px var(--accent-color))' }} />
+              <h2 style={{ fontSize: 'clamp(0.7rem, 2vw, 1.1rem)', letterSpacing: 'clamp(0.3em, 4vw, 0.8em)', color: 'var(--accent-color)', fontWeight: '900', textTransform: 'uppercase', margin: 0, opacity: 0.9 }}>INTELLIGENCE HUB</h2>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem' }}>
-              <div className="glass-card cinematic-hover" onClick={() => setMode('internal')} style={selectionCardStyle}>
+            <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+              <div className="glass-card cinematic-hover" onClick={() => setMode('internal')} style={{ ...selectionCardStyle, padding: 'clamp(2rem, 8vw, 5rem) clamp(1.5rem, 5vw, 3.5rem)' }}>
                 <div style={iconBoxStyle}>🏢</div>
                 <h3 style={cardTitleStyle}>Strategic Operations</h3>
                 <p style={cardDescStyle}>Authorized access for Meaven team members, operators, and executive leadership.</p>
                 <div style={cardFooterStyle}>ENTER COMMAND CENTER →</div>
               </div>
 
-              <div className="glass-card cinematic-hover" onClick={() => setMode('client')} style={{ ...selectionCardStyle, borderColor: 'rgba(50, 215, 75, 0.3)' }}>
-                <div style={{ ...iconBoxStyle, background: 'rgba(50, 215, 75, 0.1)', color: '#32D74B' }}>💎</div>
+              <div className="glass-card cinematic-hover" onClick={() => setMode('client')} style={{ ...selectionCardStyle, padding: 'clamp(2rem, 8vw, 5rem) clamp(1.5rem, 5vw, 3.5rem)', borderColor: 'rgba(50, 215, 75, 0.3)' }}>
+                <div style={{ ...iconBoxStyle, width: 'clamp(60px, 12vw, 90px)', height: 'clamp(60px, 12vw, 90px)', fontSize: 'clamp(2rem, 4vw, 3rem)', background: 'rgba(50, 215, 75, 0.1)', color: '#32D74B' }}>💎</div>
                 <h3 style={cardTitleStyle}>Client Experience</h3>
                 <p style={cardDescStyle}>Secure portal for project partners and stakeholders to monitor live site loops.</p>
                 <div style={{ ...cardFooterStyle, color: '#32D74B' }}>ACCESS PORTFOLIO →</div>
@@ -100,14 +100,14 @@ const AccessGateway = ({ onLogin, onClientLogin, onVerifyMasterKey }) => {
                 <form onSubmit={handleInternalSubmit} style={formStyle}>
                   <div style={fieldGroupStyle}>
                     <label style={labelStyle}>Secure Identifier</label>
-                    <input type="email" placeholder="email@meaven.in" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} required />
+                    <input type="email" placeholder="email@meaven.in" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} required autoCapitalize="none" autoCorrect="off" spellCheck="false" />
                   </div>
                   <div style={fieldGroupStyle}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <label style={labelStyle}>Access Key</label>
                       <button type="button" onClick={() => setShowRecovery(true)} style={recoveryLinkStyle}>Recovery Mode</button>
                     </div>
-                    <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} required />
+                    <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} required autoCapitalize="none" />
                   </div>
                   {error && <p style={errorBoxStyle}>{error}</p>}
                   <button type="submit" className="btn btn-primary" style={submitButtonStyle}>INITIATE SECURE SESSION</button>
@@ -118,7 +118,7 @@ const AccessGateway = ({ onLogin, onClientLogin, onVerifyMasterKey }) => {
                     <p style={{ fontWeight: '900', color: 'var(--accent-color)', letterSpacing: '0.2em' }}>MASTER RECOVERY</p>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>Biometric verification required for administrative override.</p>
                   </div>
-                  <input type="password" placeholder="0 0 0 0 0 0" maxLength="6" value={masterKey} onChange={(e) => setMasterKey(e.target.value)} style={masterInputStyle} required />
+                  <input type="password" placeholder="0 0 0 0 0 0" maxLength="6" value={masterKey} onChange={(e) => setMasterKey(e.target.value)} style={masterInputStyle} required autoCapitalize="none" />
                   {error && <p style={errorBoxStyle}>{error}</p>}
                   <button type="submit" className="btn btn-primary" style={submitButtonStyle}>EXECUTE MASTER BYPASS</button>
                   <button type="button" onClick={() => setShowRecovery(false)} style={recoveryLinkStyle}>Return to Standard Login</button>
@@ -137,7 +137,7 @@ const AccessGateway = ({ onLogin, onClientLogin, onVerifyMasterKey }) => {
                     type="password" maxLength="4" value={pin} 
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} 
                     placeholder="• • • •"
-                    style={pinInputStyle(error)} autoFocus required 
+                    style={{ ...pinInputStyle(error), padding: 'clamp(1rem, 5vw, 1.8rem)', fontSize: 'clamp(1.5rem, 8vw, 3rem)' }} autoFocus required 
                   />
                   {error && <p style={{ ...errorBoxStyle, marginTop: '1.5rem' }}>{error}</p>}
                 </div>
@@ -162,7 +162,7 @@ const grainStyle = { position: 'absolute', inset: 0, backgroundImage: 'url("http
 const glowTopStyle = { position: 'absolute', width: '600px', height: '600px', background: 'var(--accent-color)', opacity: 0.07, filter: 'blur(100px)', borderRadius: '50%', top: '-200px', left: '-200px', zIndex: 3 }
 const glowBottomStyle = { position: 'absolute', width: '400px', height: '400px', background: 'var(--accent-color)', opacity: 0.05, filter: 'blur(80px)', borderRadius: '50%', bottom: '-100px', right: '-100px', zIndex: 3 }
 
-const loginCardStyle = { width: 'clamp(320px, 95%, 480px)', padding: '4rem 3.5rem', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(40px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '32px', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.8)', position: 'relative' }
+const loginCardStyle = { width: 'clamp(320px, 95%, 480px)', padding: 'clamp(2rem, 8vw, 4rem) clamp(1.5rem, 6vw, 3.5rem)', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(40px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '32px', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.8)', position: 'relative' }
 const backButtonStyle = { position: 'absolute', top: '2rem', left: '2rem', background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', transition: 'color 0.2s' }
 const formStyle = { display: 'flex', flexDirection: 'column', gap: '2rem' }
 const fieldGroupStyle = { display: 'flex', flexDirection: 'column', gap: '0.8rem' }

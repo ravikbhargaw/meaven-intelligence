@@ -44,8 +44,8 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
     return (
         <div className="admin-panel animate-fade-in" style={{ padding: '1rem 0' }}>
             {/* HEADER GOVERNANCE SNAPSHOT */}
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <header className="stack-on-mobile" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                     <button 
                         onClick={onBack} 
                         style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--accent-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}
@@ -53,42 +53,45 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                         ←
                     </button>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '900' }}>Governance Console <span style={{ color: 'var(--accent-color)', fontSize: '0.9rem', fontWeight: '500', marginLeft: '0.5rem' }}>v2.0</span></h2>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Institutional Command & Data Integrity Suite</p>
+                        <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 4vw, 1.8rem)', fontWeight: '900' }}>Governance Console <span className="hide-on-mobile" style={{ color: 'var(--accent-color)', fontSize: '0.9rem', fontWeight: '500', marginLeft: '0.5rem' }}>v2.0</span></h2>
+                        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Institutional Command & Data Integrity Suite</p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <StatBox label="Live Portals" value={portfolios.filter(p => p.isPortalActive).length} color="#34c759" />
                     <StatBox label="Active Team" value={users.length} color="var(--accent-color)" />
                     <StatBox label="AI Proposals" value={proposals.filter(p => p.status === 'pending').length} color="#ff9500" />
                 </div>
             </header>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '3rem', minHeight: '70vh' }}>
+            <div className="stack-on-mobile" style={{ gap: '2rem', minHeight: '70vh' }}>
                 {/* NAV SIDEBAR */}
-                <aside style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {sections.map(s => (
-                        <button 
-                            key={s.id}
-                            onClick={() => setActiveSection(s.id)}
-                            style={{ 
-                                display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.2rem', borderRadius: '12px', border: '1px solid transparent',
-                                background: activeSection === s.id ? 'rgba(102, 178, 194, 0.1)' : 'transparent',
-                                borderColor: activeSection === s.id ? 'var(--accent-color)' : 'transparent',
-                                color: activeSection === s.id ? 'var(--accent-color)' : 'var(--text-secondary)',
-                                cursor: 'pointer', textAlign: 'left', fontWeight: '700', fontSize: '0.9rem', transition: 'all 0.3s'
-                            }}
-                        >
-                            <span style={{ fontSize: '1.2rem' }}>{s.icon}</span>
-                            {s.label}
-                        </button>
-                    ))}
+                <aside style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: '0 0 240px', overflowX: 'auto', paddingBottom: '0.5rem' }} className="mobile-horizontal-scroll">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }} className="stack-on-mobile">
+                        {sections.map(s => (
+                            <button 
+                                key={s.id}
+                                onClick={() => setActiveSection(s.id)}
+                                style={{ 
+                                    display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '1rem', borderRadius: '10px', border: '1px solid transparent',
+                                    background: activeSection === s.id ? 'rgba(102, 178, 194, 0.1)' : 'transparent',
+                                    borderColor: activeSection === s.id ? 'var(--accent-color)' : 'transparent',
+                                    color: activeSection === s.id ? 'var(--accent-color)' : 'var(--text-secondary)',
+                                    cursor: 'pointer', textAlign: 'left', fontWeight: '800', fontSize: '0.8rem', transition: 'all 0.3s',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                <span style={{ fontSize: '1.1rem' }}>{s.icon}</span>
+                                {s.label}
+                            </button>
+                        ))}
+                    </div>
                 </aside>
 
                 {/* CONTENT AREA */}
-                <div className="admin-section-content animate-slide-up" key={activeSection}>
+                <div className="admin-section-content animate-slide-up" key={activeSection} style={{ flex: 1, minWidth: 0 }}>
                     {activeSection === 'portfolios' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
+                        <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
                             {portfolios.map(p => (
                                 <div key={p.id} className="card" style={{ padding: '2rem', border: `1px solid ${p.isPortalActive ? 'var(--success)' : 'var(--border-color)'}` }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
@@ -143,7 +146,7 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                     )}
 
                     {activeSection === 'team' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
+                        <div className="stack-on-mobile" style={{ gap: '2rem' }}>
                             <div className="card">
                                 <h3 style={{ marginBottom: '1.5rem' }}>Team Access Matrix</h3>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

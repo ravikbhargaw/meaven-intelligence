@@ -195,8 +195,8 @@ Margin: ${(calculation.margin * 100).toFixed(0)}% ${config.isManualMargin ? '(MA
 
     return (
         <div className="pricing-engine animate-fade-in" style={{ padding: '0.5rem 0', color: 'var(--text-primary)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: '1.5rem', alignItems: 'start', marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="stack-on-mobile" style={{ gap: '1.5rem', alignItems: 'start', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1, minWidth: '320px' }} className="mobile-full-width">
                     <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                         <h4 style={{ margin: '0 0 1.5rem 0', fontSize: '0.8rem', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>01. SYSTEM SPECS</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -278,7 +278,7 @@ Margin: ${(calculation.margin * 100).toFixed(0)}% ${config.isManualMargin ? '(MA
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1, minWidth: '320px' }} className="mobile-full-width">
                     <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                         <h4 style={{ margin: '0 0 1.5rem 0', fontSize: '0.8rem', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>02. MARGIN LOGIC</h4>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
@@ -325,24 +325,24 @@ Margin: ${(calculation.margin * 100).toFixed(0)}% ${config.isManualMargin ? '(MA
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div className="card" style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1.2, minWidth: '320px' }} className="mobile-full-width">
+                    <div className="card" style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', padding: 'clamp(1rem, 5vw, 1.5rem)', position: 'relative', overflow: 'hidden' }}>
                         <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--accent-color)' }} />
                         <div style={{ textAlign: 'center' }}>
                             <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
                                 {config.systemType === 'partition' ? 'Estimated Rate (Rs/Sqft)' : 'Estimated Price (Per Unit)'}
                             </p>
-                            <h2 style={{ fontSize: '2.5rem', margin: '0.8rem 0', color: 'var(--accent-color)', fontWeight: '900' }}>
+                            <h2 style={{ fontSize: 'clamp(1.5rem, 8vw, 2.5rem)', margin: '0.8rem 0', color: 'var(--accent-color)', fontWeight: '900' }}>
                                 ₹{Math.round(calculation.unitRate).toLocaleString()}
                             </h2>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '1rem', borderTop: '1px solid rgba(102, 178, 194, 0.2)', paddingTop: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(0.5rem, 4vw, 1.5rem)', marginTop: '1rem', borderTop: '1px solid rgba(102, 178, 194, 0.2)', paddingTop: '1rem' }}>
                                 <div>
                                     <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', margin: 0 }}>TOTAL QUOTE</p>
-                                    <p style={{ fontSize: '0.9rem', fontWeight: '800', margin: 0 }}>₹{Math.round(calculation.sellingPrice).toLocaleString()}</p>
+                                    <p style={{ fontSize: '0.8rem', fontWeight: '800', margin: 0 }}>₹{Math.round(calculation.sellingPrice).toLocaleString()}</p>
                                 </div>
                                 <div>
                                     <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', margin: 0 }}>GP MARGIN</p>
-                                    <p style={{ fontSize: '0.9rem', fontWeight: '800', margin: 0 }}>₹{Math.round(calculation.sellingPrice - calculation.landingCost).toLocaleString()}</p>
+                                    <p style={{ fontSize: '0.8rem', fontWeight: '800', margin: 0 }}>₹{Math.round(calculation.sellingPrice - calculation.landingCost).toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>

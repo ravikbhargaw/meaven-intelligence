@@ -15,21 +15,21 @@ const ClientExperienceHub = ({ clientName, projects = [], onSelectProject, onBac
     return (
         <div className="client-experience-hub animate-fade-in" style={{ padding: '0.5rem 0' }}>
             {/* COMPACT TOP BAR */}
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <header className="stack-on-mobile" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem' }}>
                 <div>
-                    <h2 style={{ fontSize: '1.8rem', fontWeight: '900', margin: 0 }}>{clientName} Hub</h2>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Live Site Intelligence Feed</p>
+                    <h2 style={{ fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', fontWeight: '900', margin: 0 }}>{clientName} Hub</h2>
+                    <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Live Site Intelligence Feed</p>
                 </div>
-                <div style={{ display: 'flex', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <CompactStat label="Portfolio Health" value={`${stats.avgReadiness}%`} color="var(--success)" />
                     <CompactStat label="Active Sites" value={stats.activeSites} color="var(--accent-color)" />
-                    <div style={{ width: '1px', background: 'var(--border-color)', height: '30px' }} />
-                    <button onClick={onBack} className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}>← Exit Portal</button>
+                    <div className="hide-on-mobile" style={{ width: '1px', background: 'var(--border-color)', height: '30px' }} />
+                    <button onClick={onBack} className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }}>← Exit Portal</button>
                 </div>
             </header>
 
             {/* HIGH-DENSITY GRID */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: '1.2rem' }}>
+            <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))' }}>
                 {projects.map(p => (
                     <ProjectCompactCard key={p.id} project={p} onSelectProject={onSelectProject} />
                 ))}

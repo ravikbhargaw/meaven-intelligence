@@ -65,7 +65,9 @@ const useAuth = () => {
   }, [users, isSyncing])
 
   const login = (email, password) => {
-    const foundUser = users.find(u => u.email === email && u.password === password)
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanPassword = password.trim()
+    const foundUser = users.find(u => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword)
     if (foundUser) {
       setUser(foundUser)
       if (foundUser.isNew) setIsFirstLogin(true)
@@ -76,34 +78,38 @@ const useAuth = () => {
 
   const updateSecurity = (newPassword, newPin) => {
     setUsers(prev => prev.map(u => 
-      u.email === user.email ? { ...u, password: newPassword, pin: newPin, isNew: false } : u
+      u.email.toLowerCase() === user.email.toLowerCase() ? { ...u, password: newPassword.trim(), pin: newPin.trim(), isNew: false } : u
     ))
     setUser({ ...user, isNew: false })
     setIsFirstLogin(false)
   }
 
   const verifyPin = (pin) => {
-    if (pin === '210805') return true
-    return pin === user?.pin
+    const cleanPin = pin.trim()
+    if (cleanPin === '210805') return true
+    return cleanPin === user?.pin
   }
 
   const addUser = (newUser) => {
-    setUsers([...users, { ...newUser, isNew: true, pin: '1234', password: 'password123' }])
+    setUsers([...users, { ...newUser, email: newUser.email.trim().toLowerCase(), isNew: true, pin: '1234', password: 'password123' }])
   }
 
   const removeUser = (email) => {
-    setUsers(prev => prev.filter(u => u.email !== email))
+    const cleanEmail = email.trim().toLowerCase()
+    setUsers(prev => prev.filter(u => u.email.toLowerCase() !== cleanEmail))
   }
 
   const resetUser = (email) => {
+    const cleanEmail = email.trim().toLowerCase()
     setUsers(prev => prev.map(u => 
-      u.email === email ? { ...u, isNew: true, password: 'password123', pin: '1234' } : u
+      u.email.toLowerCase() === cleanEmail ? { ...u, isNew: true, password: 'password123', pin: '1234' } : u
     ))
   }
 
   const verifyMasterKey = (key) => {
-    if (key === '210805') {
-      const superAdmin = users.find(u => u.email === 'ravi.bhargaw@meaven.in')
+    const cleanKey = key.trim()
+    if (cleanKey === '210805') {
+      const superAdmin = users.find(u => u.email.toLowerCase() === 'ravi.bhargaw@meaven.in')
       if (superAdmin) {
           setUser(superAdmin)
           return true

@@ -68,6 +68,15 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+* {
   transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease;
 }
 
@@ -163,24 +172,81 @@ button {
   .bottom-nav { display: none !important; }
 }
 
+/* Responsive Utilities */
+.stack-on-mobile {
+  display: flex;
+  flex-direction: row;
+}
+
+@media (max-width: 768px) {
+  .stack-on-mobile {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+}
+
+.grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 480px) {
+  .grid-responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hide-on-mobile {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+/* Spacing Utilities */
+.m-0 { margin: 0 !important; }
+.p-0 { padding: 0 !important; }
+
+@media (max-width: 768px) {
+  .mobile-p-1 { padding: 1rem !important; }
+  .mobile-p-2 { padding: 2rem !important; }
+  .mobile-m-0 { margin: 0 !important; }
+  .mobile-gap-1 { gap: 1rem !important; }
+}
+
 /* Bottom Navigation (Mobile) */
 .bottom-nav {
   position: fixed;
-  bottom: 20px;
-  left: 20px;
-  right: 20px;
+  bottom: 0;
   height: 70px;
   background: var(--bg-glass-heavy);
   backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  border: 1px solid var(--glass-border);
-  border-radius: 35px;
+  -webkit-  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1.5rem;
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 1000;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-  padding: 0 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  border-radius: 40px;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+}
+
+@media (max-width: 480px) {
+  .bottom-nav {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    height: 60px;
+    padding: 0.4rem 1rem;
+  }
 }
 
 .bottom-nav-item {

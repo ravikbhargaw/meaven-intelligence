@@ -90,49 +90,49 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
           ← Back to Partner Directory
         </button>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
-            <div>
+        <div className="stack-on-mobile" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem', gap: '1.5rem' }}>
+            <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', filter: isReadOnly ? 'blur(8px)' : 'none' }}>{selectedVendor.name}</h1>
-                    <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: selectedVendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)', color: selectedVendor.status === 'Certified' ? 'var(--success)' : '#FF9500', fontWeight: '800', letterSpacing: '0.05em' }}>
+                    <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', filter: isReadOnly ? 'blur(8px)' : 'none', fontWeight: '900' }}>{selectedVendor.name}</h1>
+                    <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: selectedVendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)', color: selectedVendor.status === 'Certified' ? 'var(--success)' : '#FF9500', fontWeight: '900', letterSpacing: '0.05em' }}>
                         {selectedVendor.status.toUpperCase()}
                     </span>
                     {selectedVendor.isMsaSigned ? (
-                        <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: 'rgba(50, 215, 75, 0.1)', color: 'var(--success)', border: '1px solid var(--success)', fontWeight: '800' }}>✓ MSA SIGNED</span>
+                        <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: 'rgba(50, 215, 75, 0.1)', color: 'var(--success)', border: '1px solid var(--success)', fontWeight: '900' }}>✓ MSA SIGNED</span>
                     ) : (
-                        <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: 'rgba(255, 149, 0, 0.1)', color: '#FF9500', border: '1px solid #FF9500', fontWeight: '800' }}>⚠️ MSA PENDING</span>
+                        <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: 'rgba(255, 149, 0, 0.1)', color: '#FF9500', border: '1px solid #FF9500', fontWeight: '900' }}>⚠️ MSA PENDING</span>
                     )}
                 </div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>{selectedVendor.category} Division | {selectedVendor.contact}</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem', fontWeight: '500' }}>{selectedVendor.category} Division | {selectedVendor.contact}</p>
             </div>
             <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: '800', color: score > 80 ? 'var(--success)' : 'var(--accent-color)', lineHeight: 1 }}>
+                <div style={{ fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: '900', color: score > 80 ? 'var(--success)' : 'var(--accent-color)', lineHeight: 1 }}>
                     {score}
                 </div>
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Intelligence Score</span>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: '800' }}>Intelligence Score</span>
             </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem', marginBottom: '3rem' }}>
+        <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', marginBottom: '3rem' }}>
             <div className="card" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)' }}>
                 <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Portfolio</p>
-                <p style={{ fontSize: '1.3rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalOrder / 100000).toFixed(2)}L</p>
-                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>{selectedVendor.contracts?.length || 0} Active Sites</p>
+                <p style={{ fontSize: '1.3rem', fontWeight: '900', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalOrder / 100000).toFixed(2)}L</p>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.4rem', fontWeight: '600' }}>{selectedVendor.contracts?.length || 0} Active Sites</p>
             </div>
             <div className="card" style={{ background: 'rgba(50, 215, 75, 0.05)' }}>
                 <p style={{ fontSize: '0.6rem', color: 'var(--success)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Paid to Date</p>
-                <p style={{ fontSize: '1.3rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalPaid / 100000).toFixed(2)}L</p>
+                <p style={{ fontSize: '1.3rem', fontWeight: '900', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.totalPaid / 100000).toFixed(2)}L</p>
             </div>
             <div className="card" style={{ background: 'rgba(255, 69, 58, 0.05)' }}>
                 <p style={{ fontSize: '0.6rem', color: 'var(--danger)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Global Due</p>
-                <p style={{ fontSize: '1.3rem', fontWeight: '800', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.due / 100000).toFixed(2)}L</p>
+                <p style={{ fontSize: '1.3rem', fontWeight: '900', filter: isReadOnly ? 'blur(10px)' : 'none' }}>₹{(globalFin.due / 100000).toFixed(2)}L</p>
             </div>
             <div className="card" style={{ border: '1px solid var(--accent-color)', background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.08) 0%, transparent 100%)', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.7rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>AI Health Audit</h4>
+                    <h4 style={{ margin: 0, fontSize: '0.7rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}>AI Health Audit</h4>
                     <div style={{ fontSize: '0.55rem', fontWeight: '900', color: 'var(--success)' }}>OPTIMAL</div>
                 </div>
-                <p style={{ fontSize: '0.75rem', lineHeight: '1.4', margin: 0, color: 'var(--text-secondary)' }}>
+                <p style={{ fontSize: '0.75rem', lineHeight: '1.4', margin: 0, color: 'var(--text-secondary)', fontWeight: '500' }}>
                     {selectedVendor.miScore > 85 
                         ? "Partner reliability is high. AI recommends for complex structural works."
                         : "Site precision variance detected. AI suggests more frequent audits."}
@@ -140,8 +140,8 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
             </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="stack-on-mobile" style={{ gap: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1 }}>
                 <div className="card" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Project Sites</h4>
@@ -385,7 +385,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                 </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', flex: 1 }}>
                 {activeContractId ? (
                     <div className="card animate-fade-in" style={{ border: '1px solid var(--accent-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
