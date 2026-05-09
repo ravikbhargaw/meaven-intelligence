@@ -14,6 +14,14 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
   const [isMsaModalOpen, setIsMsaModalOpen] = useState(false)
   const [isEsignMode, setIsEsignMode] = useState(false)
   const [signerName, setSignerName] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const handleShareLink = () => {
+    const link = `${window.location.origin}/?view=register`
+    navigator.clipboard.writeText(link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
   
   useEffect(() => {
     if (selectedVendorIdProp !== undefined) {
@@ -826,9 +834,18 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
           <p style={{ color: 'var(--text-secondary)' }}>Centralized partner lifecycle and performance management.</p>
         </div>
         {!isReadOnly && (
-          <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
-            <span>+</span> Register New Vendor
-          </button>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button 
+              className="btn btn-outline" 
+              onClick={handleShareLink}
+              style={{ gap: '0.8rem', color: 'var(--accent-color)', borderColor: 'var(--accent-color)', fontSize: '0.8rem', fontWeight: '800' }}
+            >
+              <span>🔗</span> {copied ? 'LINK COPIED!' : 'SHARE TO ONBOARD'}
+            </button>
+            <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
+              <span>+</span> Register New Vendor
+            </button>
+          </div>
         )}
       </div>
 

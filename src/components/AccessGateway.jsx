@@ -142,8 +142,14 @@ const AccessGateway = ({ onLogin, onClientLogin, onVerifyMasterKey }) => {
                   {error && <p style={{ ...errorBoxStyle, marginTop: '1.5rem' }}>{error}</p>}
                 </div>
                 <button type="submit" className="btn btn-primary" style={clientButtonStyle}>AUTHORIZE ACCESS 🛡️</button>
-                <div style={{ marginTop: '2.5rem', textAlign: 'center' }}>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.6 }}>Lost your PIN? Contact your Relationship Manager.</p>
+                <div style={{ marginTop: '2.5rem', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem' }}>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.6, marginBottom: '1rem' }}>Lost your PIN? Contact your Relationship Manager.</p>
+                  <button 
+                    onClick={() => window.location.href = '?view=register'}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    JOIN THE NETWORK: PARTNER REGISTRATION →
+                  </button>
                   <div onClick={() => setMode('internal')} style={stealthStyle}>Operator Command Node 0.1</div>
                 </div>
               </form>

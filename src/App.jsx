@@ -18,6 +18,7 @@ import AiAssistant from './components/AiAssistant'
 import FieldPortal from './components/FieldPortal'
 import IntelligenceReports from './components/IntelligenceReports'
 import { supabase } from './supabaseClient'
+import VendorPublicRegistration from './components/VendorPublicRegistration'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
 class ErrorBoundary extends React.Component {
@@ -97,7 +98,11 @@ function App() {
     }
   }, [user])
 
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('hub_active_tab') || 'dashboard')
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'register') return 'register';
+    return localStorage.getItem('hub_active_tab') || 'dashboard';
+  })
   
   useEffect(() => {
     localStorage.setItem('hub_active_tab', activeTab);
@@ -744,7 +749,15 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
         <NewPortfolioModal isOpen={isNewPortfolioModalOpen} onClose={() => setIsNewPortfolioModalOpen(false)} onCreate={handleCreatePortfolio} />
         {showPinModal && <PinModal onVerify={handlePinVerify} onCancel={() => setShowPinModal(false)} />}
 
-        {!isProjectSelected ? (
+        {activeTab === 'register' ? (
+          <VendorPublicRegistration />
+        ) : !user && !clientView ? (
+          <AccessGateway 
+            onLogin={handleLogin} 
+            onClientLogin={handleClientLogin} 
+            onVerifyMasterKey={handleMasterKeyVerify} 
+          />
+        ) : !isProjectSelected ? (
           <div className="landing-gate animate-fade-in" style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(102, 178, 194, 0.05) 0%, transparent 70%)' }}>
               <div className="logo-container" style={{ marginBottom: '4rem', textAlign: 'center' }}>
                   <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '48px', marginBottom: '1rem', filter: 'var(--logo-filter)', transition: 'filter 0.5s ease' }} />
