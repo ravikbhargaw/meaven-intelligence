@@ -97,7 +97,12 @@ function App() {
     }
   }, [user])
 
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('hub_active_tab') || 'dashboard')
+  
+  useEffect(() => {
+    localStorage.setItem('hub_active_tab', activeTab);
+  }, [activeTab]);
+
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false)
   const [isNewPortfolioModalOpen, setIsNewPortfolioModalOpen] = useState(false)
   const [isProjectSelected, setIsProjectSelected] = useState(false)
