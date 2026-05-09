@@ -153,14 +153,14 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                             </div>
 
                                             {/* SECTION 3: TIMELINES */}
-                                            <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', paddingRight: '1rem', flex: 1.2 }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.65rem' }}>
-                                                    <span style={{ color: 'var(--accent-color)', fontSize: '0.55rem' }}>MEA➜CLT:</span>
-                                                    <span style={{ fontWeight: '700', color: 'var(--accent-color)' }}>{formatDate(p.endDate)}</span>
+                                            <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingRight: '1.5rem', flex: 1.5, minWidth: '160px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center', gap: '0.5rem', fontSize: '0.65rem' }}>
+                                                    <span style={{ color: 'var(--accent-color)', fontSize: '0.55rem', fontWeight: '900', letterSpacing: '0.05em' }}>MEA➜CLT:</span>
+                                                    <span style={{ fontWeight: '800', color: 'var(--accent-color)', textAlign: 'right', fontFamily: 'monospace' }}>{formatDate(p.endDate)}</span>
                                                 </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.65rem' }}>
-                                                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.55rem' }}>VND➜MEA:</span>
-                                                    <span style={{ fontWeight: '700' }}>{formatDate(p.vendorEndDate)}</span>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center', gap: '0.5rem', fontSize: '0.65rem' }}>
+                                                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.55rem', fontWeight: '900', letterSpacing: '0.05em' }}>VND➜MEA:</span>
+                                                    <span style={{ fontWeight: '800', textAlign: 'right', fontFamily: 'monospace' }}>{formatDate(p.vendorEndDate)}</span>
                                                 </div>
                                             </div>
 
