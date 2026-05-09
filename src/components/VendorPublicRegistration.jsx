@@ -105,7 +105,7 @@ const VendorPublicRegistration = () => {
         }}>
             <div style={{ maxWidth: '850px', margin: '0 auto' }}>
                 <div style={{ marginBottom: '4rem', textAlign: 'center' }}>
-                    <img src="/meaven-logo.png" alt="Meaven" style={{ height: '40px', marginBottom: '2rem', filter: 'var(--logo-filter)' }} />
+                    <img src="/images/logo.png" alt="Meaven" style={{ height: '40px', marginBottom: '2rem', filter: 'var(--logo-filter)' }} />
                     <h1 style={{ fontSize: '3rem', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '1rem' }}>Partner Authorization.</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem' }}>Complete your technical and financial onboarding.</p>
                 </div>
