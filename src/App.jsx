@@ -338,6 +338,12 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     }
   }, [user, isSyncing])
 
+  if (activeTab === 'register') return (
+    <div className="dashboard-app-root">
+       <VendorPublicRegistration />
+    </div>
+  )
+
   if (!user) return (
     <div className="dashboard-app-root">
       <AccessGateway onLogin={login} onClientLogin={handleClientLogin} onVerifyMasterKey={verifyMasterKey} />
@@ -749,15 +755,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
         <NewPortfolioModal isOpen={isNewPortfolioModalOpen} onClose={() => setIsNewPortfolioModalOpen(false)} onCreate={handleCreatePortfolio} />
         {showPinModal && <PinModal onVerify={handlePinVerify} onCancel={() => setShowPinModal(false)} />}
 
-        {activeTab === 'register' ? (
-          <VendorPublicRegistration />
-        ) : !user && !clientView ? (
-          <AccessGateway 
-            onLogin={handleLogin} 
-            onClientLogin={handleClientLogin} 
-            onVerifyMasterKey={handleMasterKeyVerify} 
-          />
-        ) : !isProjectSelected ? (
+        {!isProjectSelected ? (
           <div className="landing-gate animate-fade-in" style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(102, 178, 194, 0.05) 0%, transparent 70%)' }}>
               <div className="logo-container" style={{ marginBottom: '4rem', textAlign: 'center' }}>
                   <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '48px', marginBottom: '1rem', filter: 'var(--logo-filter)', transition: 'filter 0.5s ease' }} />
