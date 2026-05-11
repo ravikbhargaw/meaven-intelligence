@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import VendorIQAdmin from './VendorIQ/VendorIQAdmin'
 
 const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProposal, onAddUser, onRemoveUser, onResetUser, onBack, msaTemplate, onUpdateMsa, onUpdatePortfolio, onHardReset, onExportData }) => {
     const [activeSection, setActiveSection] = useState('portfolios') 
@@ -37,7 +36,6 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
     const sections = [
         { id: 'portfolios', label: 'Portfolio Access', icon: '🏢' },
         { id: 'team', label: 'Team Control', icon: '📡' },
-        { id: 'vendoriq', label: 'Intelligence Bench', icon: '🧠' },
         { id: 'legal', label: 'Legal Governance', icon: '📜' },
         { id: 'ai', label: 'Intelligence Ops', icon: '🤖' },
         { id: 'system', label: 'System Maintenance', icon: '⚙️' }
@@ -197,10 +195,6 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                                 </form>
                             </div>
                         </div>
-                    )}
-
-                    {activeSection === 'vendoriq' && (
-                        <VendorIQAdmin />
                     )}
 
                     {activeSection === 'legal' && (
