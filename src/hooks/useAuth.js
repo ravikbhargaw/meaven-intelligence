@@ -27,7 +27,7 @@ const useAuth = () => {
             const { data: cloudProfiles } = await supabase.from('profiles').select('*')
             
             if (!cloudProfiles || cloudProfiles.length === 0) {
-                // Initialize Cloud with Default Admin
+                // Initialize Cloud with Default Admin & Mock PM
                 const defaultUser = {
                     email: 'ravi.bhargaw@meaven.in',
                     name: 'Ravi Bhargaw',
@@ -36,8 +36,19 @@ const useAuth = () => {
                     role: 'SuperAdmin',
                     isNew: true
                 }
-                await supabase.from('profiles').upsert({ email: defaultUser.email, data: defaultUser })
-                setUsers([defaultUser])
+                const mockPM = {
+                    email: 'pm@example.com',
+                    name: 'John PM',
+                    password: 'pm123',
+                    role: 'PMSubscriber',
+                    company: 'Build-IT Fitouts',
+                    isNew: false
+                }
+                await supabase.from('profiles').upsert([
+                    { email: defaultUser.email, data: defaultUser },
+                    { email: mockPM.email, data: mockPM }
+                ])
+                setUsers([defaultUser, mockPM])
             } else {
                 setUsers(cloudProfiles.map(p => p.data))
             }

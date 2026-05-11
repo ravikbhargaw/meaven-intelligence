@@ -19,6 +19,9 @@ import FieldPortal from './components/FieldPortal'
 import IntelligenceReports from './components/IntelligenceReports'
 import { supabase } from './supabaseClient'
 import VendorPublicRegistration from './components/VendorPublicRegistration'
+import VendorIQLogin from './components/VendorIQ/VendorIQLogin'
+import VendorIQPublicRegister from './components/VendorIQ/VendorIQPublicRegister'
+import VendorIQPortal from './components/VendorIQ/VendorIQPortal'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
 class ErrorBoundary extends React.Component {
@@ -100,6 +103,10 @@ function App() {
 
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get('product') === 'vendoriq') {
+        if (params.get('view') === 'register') return 'viq_register';
+        return 'viq_login';
+    }
     if (params.get('view') === 'register') return 'register';
     return localStorage.getItem('hub_active_tab') || 'dashboard';
   })
@@ -344,12 +351,28 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     </div>
   )
 
+  if (activeTab === 'viq_register') return (
+    <div className="dashboard-app-root">
+       <VendorIQPublicRegister />
+    </div>
+  )
+
+  if (activeTab === 'viq_login' && !user) return (
+    <div className="dashboard-app-root">
+       <VendorIQLogin onLogin={login} />
+    </div>
+  )
+
   if (!user) return (
     <div className="dashboard-app-root">
       <AccessGateway onLogin={login} onClientLogin={handleClientLogin} onVerifyMasterKey={verifyMasterKey} />
       <AiAssistant activeTab="dashboard" clientView={true} userName="Guest" />
     </div>
   )
+  if (user && user.role === 'PMSubscriber') return (
+    <VendorIQPortal user={user} onLogout={logout} />
+  )
+
   if (isFirstLogin) return (
     <div className="dashboard-app-root">
       <SecuritySetup onComplete={updateSecurity} />
