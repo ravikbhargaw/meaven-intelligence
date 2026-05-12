@@ -794,13 +794,18 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                           <button onClick={() => { if (selectedClient) { setIsProjectSelected(true); setActiveTab('dashboard'); } else { setIsNewProjectModalOpen(true); } }} className="btn btn-primary" style={{ flex: 1, padding: '1.2rem', justifyContent: 'center', fontSize: '1.1rem' }}>{selectedClient ? 'Initialize Portfolio' : 'Start First Project'}</button>
                           <button onClick={() => setIsNewPortfolioModalOpen(true)} className="btn btn-outline" style={{ flex: 1, padding: '1.2rem', justifyContent: 'center', fontSize: '1.1rem' }}>+ Create New Portfolio</button>
                       </div>
-                      {(user?.role === 'SuperAdmin' || user?.email === 'ravi.bhargaw@meaven.in') && (
-                          <button 
-                            onClick={() => { setIsProjectSelected(true); setActiveTab('admin'); }}
-                            style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', marginTop: '1rem', textDecoration: 'underline' }}
-                          >
-                            Bypass to Governance Console →
-                          </button>
+                      
+                      {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.email === 'ravi.bhargaw@meaven.in') && (
+                          <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <button 
+                                onClick={() => { setIsProjectSelected(true); setActiveTab('dashboard'); }}
+                                className="btn btn-primary"
+                                style={{ width: '100%', background: 'rgba(102, 178, 194, 0.1)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', padding: '1.2rem' }}
+                            >
+                                🛰️ ENTER GLOBAL COMMAND CENTER
+                            </button>
+                            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '1rem', opacity: 0.6 }}>Admin Override: View cross-portfolio tactical data</p>
+                          </div>
                       )}
                   </div>
               </div>
