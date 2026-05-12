@@ -1016,16 +1016,18 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                   <span>Vendors</span>
                 </button>
               )}
-              {user?.role === 'SuperAdmin' && !clientView && (
-                <button className={`bottom-nav-item ${activeTab === 'strategy' ? 'active' : ''}`} onClick={() => handleNavigate('strategy')}>
-                  <span>🧠</span>
-                  <span>Strategy</span>
-                </button>
+              {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.email === 'ravi.bhargaw@meaven.in') && (
+                <>
+                  <button className={`bottom-nav-item ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => handleNavigate('admin')}>
+                    <span>⚙️</span>
+                    <span>Admin</span>
+                  </button>
+                  <button className={`bottom-nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => handleNavigate('reports')}>
+                    <span>📈</span>
+                    <span>Reports</span>
+                  </button>
+                </>
               )}
-              <button className="bottom-nav-item" onClick={() => setIsNewProjectModalOpen(true)}>
-                <span style={{ color: 'var(--accent-color)' }}>➕</span>
-                <span>New</span>
-              </button>
               <button className="bottom-nav-item" onClick={logout} style={{ color: 'var(--danger)' }}>
                 <span>🚪</span>
                 <span>Exit</span>
