@@ -760,55 +760,10 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     setPlaybookProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'approved' } : p))
   }
 
-  const uniqueClients = [...new Set([
-    ...(projects || []).map(p => p.client || 'General Portfolio'),
-    ...(portfolios || []).map(p => p.name)
-  ])].filter(Boolean)
-  const activeProject = (projects || []).find(p => Number(p.id) === Number(activeProjectId)) || (projects && projects[0]) || { id: 0, name: 'Initializing...', client: 'Meaven Intelligence' }
-
-  return (
-    <ErrorBoundary>
-      <div className="dashboard-app-root">
-        <NewProjectModal isOpen={isNewProjectModalOpen} onClose={() => setIsNewProjectModalOpen(false)} onCreate={handleCreateProject} portfolios={portfolios} />
-        <NewPortfolioModal isOpen={isNewPortfolioModalOpen} onClose={() => setIsNewPortfolioModalOpen(false)} onCreate={handleCreatePortfolio} />
-        {showPinModal && <PinModal onVerify={handlePinVerify} onCancel={() => setShowPinModal(false)} />}
-
-        {!isProjectSelected ? (
-          <div className="landing-gate animate-fade-in" style={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(102, 178, 194, 0.05) 0%, transparent 70%)' }}>
-              <div className="logo-container" style={{ marginBottom: '4rem', textAlign: 'center' }}>
-                  <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '48px', marginBottom: '1rem', filter: 'var(--logo-filter)', transition: 'filter 0.5s ease' }} />
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '0.5em', fontWeight: '500', textTransform: 'uppercase' }}>INTELLIGENCE HUB</p>
-              </div>
-              <div className="card animate-slide-up" style={{ width: '100%', maxWidth: '520px', padding: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-premium)' }}>
-                  <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>Entry Authorization</h2>
-                  <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', lineHeight: '1.6' }}>Choose the portfolio or project loop you wish to initialize.</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                      <div style={{ textAlign: 'left' }}>
-                          <label style={{ fontSize: '0.65rem', color: 'var(--accent-color)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Select Portfolio (By Client)</label>
-                          <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} style={{ width: '100%', padding: '1rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-premium)', color: 'var(--text-primary)', fontSize: '1.1rem' }}>
-                              <option value="" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>Choose Client Portfolio...</option>
-                              {uniqueClients.map(c => <option key={c} value={c} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>{c}</option>)}
-                          </select>
-                      </div>
-                      <div style={{ display: 'flex', gap: '1rem' }}>
-                          <button onClick={() => { if (selectedClient) { setIsProjectSelected(true); setActiveTab('dashboard'); } else { setIsNewProjectModalOpen(true); } }} className="btn btn-primary" style={{ flex: 1, padding: '1.2rem', justifyContent: 'center', fontSize: '1.1rem' }}>{selectedClient ? 'Initialize Portfolio' : 'Start First Project'}</button>
-                          <button onClick={() => setIsNewPortfolioModalOpen(true)} className="btn btn-outline" style={{ flex: 1, padding: '1.2rem', justifyContent: 'center', fontSize: '1.1rem' }}>+ Create New Portfolio</button>
-                      </div>
-                      
-                      {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.email === 'ravi.bhargaw@meaven.in') && (
-                          <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                            <button 
-                                onClick={() => { setIsProjectSelected(true); setActiveTab('dashboard'); }}
-                                className="btn btn-primary"
-                                style={{ width: '100%', background: 'rgba(102, 178, 194, 0.1)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', padding: '1.2rem' }}
-                            >
-                                🛰️ ENTER GLOBAL COMMAND CENTER
-                            </button>
-                            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '1rem', opacity: 0.6 }}>Admin Override: View cross-portfolio tactical data</p>
-                          </div>
-                      )}
-                  </div>
-              </div>
+        {!user ? (
+          <div className="dashboard-app-root">
+            <AccessGateway onLogin={login} onClientLogin={handleClientLogin} onVerifyMasterKey={verifyMasterKey} />
+            <AiAssistant activeTab="dashboard" clientView={true} userName="Guest" />
           </div>
         ) : (
           <div className="dashboard-container">
