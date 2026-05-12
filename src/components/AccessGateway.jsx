@@ -145,7 +145,7 @@ const AccessGateway = ({ onLogin, onClientLogin, onVerifyMasterKey }) => {
                 <div style={{ marginTop: '2.5rem', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem' }}>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', opacity: 0.6, marginBottom: '1rem' }}>Lost your PIN? Contact your Relationship Manager.</p>
                   <button 
-                    onClick={() => window.location.href = '?view=register'}
+                    onClick={() => window.location.href = 'https://vendoriq.meaven.in/?view=register'}
                     style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer', textDecoration: 'underline' }}
                   >
                     JOIN THE NETWORK: PARTNER REGISTRATION →
