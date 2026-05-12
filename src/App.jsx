@@ -838,11 +838,13 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     </div>
                 </div>
                 <button onClick={() => setIsNewProjectModalOpen(true)} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '0.8rem', fontWeight: '800' }}>+ INITIALIZE PROJECT LOOP</button>
-                {/* v8.4 MICRO-IDENTITY STRIP */}
+                {/* v8.5 IDENTITY & ROLE AUTH */}
                 <div style={{ padding: '0.8rem', borderTop: '1px solid var(--border-color)', marginTop: '0.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                            <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0, letterSpacing: '0.1em' }}>Operator</p>
+                            <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0, letterSpacing: '0.1em' }}>
+                                {user.role || 'OPERATOR'} • {user.email === 'ravi.bhargaw@meaven.in' ? 'ROOT' : 'LEVEL 1'}
+                            </p>
                             <p style={{ fontSize: '0.75rem', fontWeight: '800', margin: 0 }}>{user.name}</p>
                         </div>
                         <button 
@@ -852,7 +854,10 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                             EXIT
                         </button>
                     </div>
-                    <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.6rem', marginTop: '0.6rem', cursor: 'pointer', padding: 0, fontWeight: '700', opacity: 0.7 }}>↩ RE-INITIALIZE CLIENT</button>
+                    {(user?.email === 'ravi.bhargaw@meaven.in' || user?.role === 'SuperAdmin') && (
+                        <button onClick={() => setActiveTab('admin')} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.6rem', marginTop: '0.6rem', cursor: 'pointer', padding: 0, fontWeight: '700', opacity: 0.9 }}>⚙️ OPEN GOVERNANCE CONSOLE</button>
+                    )}
+                    <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.6rem', marginTop: '0.4rem', cursor: 'pointer', padding: 0, fontWeight: '700', opacity: 0.5, display: 'block' }}>↩ RE-INITIALIZE SESSION</button>
                 </div>
               </div>
             </aside>
