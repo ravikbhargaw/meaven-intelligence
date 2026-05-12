@@ -727,14 +727,32 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     alert("Tactical Ledger Exported Successfully. This file can be opened in Excel or Google Sheets.");
   }
 
-  const handleHardReset = () => {
-    if (confirm("🚨 WARNING: This will permanently DELETE all projects, vendors, and portfolios. This action cannot be undone. Proceed?")) {
-        setProjects([])
-        setVendors([])
-        setPortfolios([])
-        setReadinessData({})
-        localStorage.clear()
-        window.location.reload()
+  const handleHardReset = async () => {
+    if (confirm("🚨 CRITICAL WARNING: This will permanently DELETE all projects, vendors, and portfolios from the CLOUD and this device. This cannot be undone. Proceed?")) {
+        try {
+            // 1. Wipe Cloud Data (Keeping Profiles/Users intact)
+            await Promise.all([
+                supabase.from('projects').delete().neq('id', '0'),
+                supabase.from('vendors').delete().neq('id', '0'),
+                supabase.from('portfolios').delete().neq('id', '0'),
+                supabase.from('readiness_data').delete().neq('id', '0')
+            ]);
+
+            // 2. Clear Local State
+            setProjects([])
+            setVendors([])
+            setPortfolios([])
+            setReadinessData({})
+
+            // 3. Clear Local Storage
+            localStorage.clear()
+            
+            alert("Tactical Database Flushed Successfully.");
+            window.location.reload()
+        } catch (e) {
+            console.error("Hard Reset Failed:", e);
+            alert("Cloud wipe failed. Check console for details.");
+        }
     }
   }
 
