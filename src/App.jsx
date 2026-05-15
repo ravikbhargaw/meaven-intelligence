@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import SiteReadiness from './components/SiteReadiness'
+import SiteReadinessAudit from './components/SiteReadinessAudit'
 import AccessGateway from './components/AccessGateway'
 import SecuritySetup from './components/SecuritySetup'
 import PinModal from './components/PinModal'
@@ -502,6 +503,41 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     setReadinessData(prev => ({ ...prev, [projectId]: data }))
   }
 
+  const handleExecutionAuditSubmit = (payload) => {
+    const existingAudits = JSON.parse(localStorage.getItem('execution_audits')) || [];
+    existingAudits.push(payload);
+    localStorage.setItem('execution_audits', JSON.stringify(existingAudits));
+
+    if (supabase) {
+        supabase.from('site_audits').upsert([{ id: payload.auditId, data: payload }]).then(({error}) => {
+            if (error) console.error("Cloud Sync Error for Audit:", error);
+        });
+    }
+
+    const projectName = payload.projectInfo?.name;
+    if (projectName) {
+        setProjects(prev => prev.map(p => {
+            if (p.name === projectName) {
+                return {
+                    ...p,
+                    history: [
+                        ...(p.history || []),
+                        {
+                            id: Date.now(),
+                            type: payload.overallRisk === 'High Risk' ? 'danger' : 'info',
+                            title: `Execution Audit: ${payload.auditId}`,
+                            detail: `Score: ${payload.readinessScore}/100. ${payload.observations?.criticalRisks || 'Audit completed.'}`,
+                            date: new Date().toISOString().split('T')[0],
+                            isClientVisible: false
+                        }
+                    ]
+                };
+            }
+            return p;
+        }));
+    }
+  }
+
   const handleAddVendor = (newVendor) => {
     setVendors([...vendors, { ...newVendor, id: Date.now() }])
   }
@@ -759,7 +795,9 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
   const handleApprovePlaybookUpdate = (proposalId) => {
     setPlaybookProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'approved' } : p))
   }
-
+  return (
+    <ErrorBoundary>
+      <div className="app-wrapper">
         {!user ? (
           <div className="dashboard-app-root">
             <AccessGateway onLogin={login} onClientLogin={handleClientLogin} onVerifyMasterKey={verifyMasterKey} />
@@ -775,6 +813,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                 <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleNavigate('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Operations Hub" />}
+                <SidebarItem active={activeTab === 'audit'} onClick={() => handleNavigate('audit')} icon="📋" label="Execution Audit" />
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />}
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />}
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.email === 'ravi.bhargaw@meaven.in') && (
@@ -957,6 +996,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
                   />
                 )}
+                {activeTab === 'audit' && <SiteReadinessAudit projects={projects} onSubmitAudit={handleExecutionAuditSubmit} />}
                 {activeTab === 'calculator' && !clientView && ( <StrategicPricingEngine projects={projects} onAddNote={handleProjectAddNote} /> )}
                 {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
                 {activeTab === 'reports' && ( <IntelligenceReports projects={projects} vendors={vendors} portfolios={portfolios} /> )}
