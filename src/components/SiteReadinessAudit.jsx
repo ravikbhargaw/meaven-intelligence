@@ -56,6 +56,10 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
     const reportRef = useRef(null);
     const [auditId, setAuditId] = useState('');
     const [activeSection, setActiveSection] = useState('project_info');
+    const [isExporting, setIsExporting] = useState(false);
+    const [signature, setSignature] = useState(null);
+    const signatureCanvasRef = useRef(null);
+    const [isDrawing, setIsDrawing] = useState(false);
     
     // Form State
     const [projectInfo, setProjectInfo] = useState({
@@ -132,18 +136,87 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
     };
 
     const generatePDF = async () => {
-        if (!reportRef.current) return;
-        try {
-            const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, logging: false });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`${auditId}_Site_Readiness.pdf`);
-        } catch (error) {
-            console.error("PDF generation failed", error);
-            alert("Failed to generate PDF. Ensure all resources are loaded.");
+        const reportElement = document.getElementById('premium-pdf-template');
+        if (!reportElement) return;
+        
+        setIsExporting(true);
+        reportElement.style.display = 'block';
+        
+        // Wait for rendering
+        setTimeout(async () => {
+            try {
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pages = reportElement.querySelectorAll('.pdf-page');
+                
+                for (let i = 0; i < pages.length; i++) {
+                    const canvas = await html2canvas(pages[i], { 
+                        scale: 2, 
+                        useCORS: true, 
+                        logging: false,
+                        backgroundColor: '#ffffff' 
+                    });
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                    
+                    if (i > 0) pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                }
+
+                pdf.save(`${auditId}_Technical_Audit_Report.pdf`);
+            } catch (error) {
+                console.error("Premium PDF generation failed", error);
+                alert("Failed to generate Premium Report.");
+            } finally {
+                setIsExporting(false);
+                reportElement.style.display = 'none';
+            }
+        }, 800);
+    };
+
+    const startDrawing = (e) => {
+        setIsDrawing(true);
+        draw(e);
+    };
+
+    const stopDrawing = () => {
+        setIsDrawing(false);
+        if (signatureCanvasRef.current) {
+            setSignature(signatureCanvasRef.current.toDataURL());
+        }
+    };
+
+    const draw = (e) => {
+        if (!isDrawing || !signatureCanvasRef.current) return;
+        const canvas = signatureCanvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        
+        let x, y;
+        if (e.touches) {
+            x = e.touches[0].clientX - rect.left;
+            y = e.touches[0].clientY - rect.top;
+        } else {
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+        }
+        
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#66b2c2';
+        
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    };
+
+    const clearSignature = () => {
+        if (signatureCanvasRef.current) {
+            const canvas = signatureCanvasRef.current;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            setSignature(null);
         }
     };
 
@@ -155,7 +228,8 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
             checklists,
             observations,
             overallRisk,
-            readinessScore: calculateScore()
+            readinessScore: calculateScore(),
+            signature
         };
         if (onSubmitAudit) onSubmitAudit(payload);
         alert(`Audit ${auditId} Submitted Successfully! Data secured in operational database.`);
@@ -174,7 +248,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                     <span style={{ color: 'var(--accent-color)' }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
                 
-                {isOpen && (
+                {(isOpen || isExporting) && (
                     <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {items.map((item, idx) => {
                             const data = checklists[sectionKey][item];
@@ -192,13 +266,27 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                                         </label>
                                         
                                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', flex: 1 }}>
-                                            <input 
-                                                type="text" 
-                                                placeholder="Remarks..." 
-                                                value={data.remarks}
-                                                onChange={(e) => handleChecklistChange(sectionKey, item, 'remarks', e.target.value)}
-                                                style={{ flex: 2, minWidth: '150px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', padding: '0.4rem 0.6rem', borderRadius: '4px', color: 'var(--text-secondary)', fontSize: '0.8rem' }}
-                                            />
+                                            {isExporting ? (
+                                                <div style={{ flex: 2, minWidth: '150px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', padding: '0.4rem 0.6rem', borderRadius: '4px', color: 'var(--text-secondary)', fontSize: '0.8rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                    {data.remarks || '---'}
+                                                </div>
+                                            ) : (
+                                                <textarea 
+                                                    placeholder="Remarks..." 
+                                                    value={data.remarks}
+                                                    rows={1}
+                                                    onChange={(e) => {
+                                                        handleChecklistChange(sectionKey, item, 'remarks', e.target.value);
+                                                        e.target.style.height = 'auto';
+                                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                                    }}
+                                                    onFocus={(e) => {
+                                                        e.target.style.height = 'auto';
+                                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                                    }}
+                                                    style={{ flex: 2, minWidth: '150px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', padding: '0.4rem 0.6rem', borderRadius: '4px', color: 'var(--text-secondary)', fontSize: '0.8rem', resize: 'none', overflow: 'hidden' }}
+                                                />
+                                            )}
                                             <label style={{ flex: 1, minWidth: '100px', display: 'flex', alignItems: 'center', gap: '0.3rem', color: data.risk ? '#ff453a' : 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', border: data.risk ? '1px solid #ff453a' : '1px solid transparent', padding: '0.2rem 0.5rem', borderRadius: '4px', background: data.risk ? 'rgba(255, 69, 58, 0.1)' : 'transparent' }}>
                                                 <input 
                                                     type="checkbox" 
@@ -221,7 +309,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
 
     return (
         <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', padding: '2rem 1rem', color: 'var(--text-primary)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-            <div ref={reportRef} style={{ maxWidth: '900px', margin: '0 auto', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: 'clamp(1rem, 4vw, 3rem)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+            <div ref={reportRef} style={{ maxWidth: '900px', margin: '0 auto', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: 'clamp(1rem, 4vw, 3rem)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', position: 'relative' }}>
                 
                 {/* HEADER */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid var(--accent-color)', paddingBottom: '1.5rem', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -233,10 +321,6 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                     <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'right', minWidth: '150px' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Audit ID</div>
                         <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-color)', fontFamily: 'monospace' }}>{auditId}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>SCORE</div>
-                        <div style={{ fontSize: '1.8rem', fontWeight: '900', color: calculateScore() > 70 ? 'var(--success, #34c759)' : calculateScore() > 40 ? 'var(--warning, #ffcc00)' : '#ff453a' }}>
-                            {calculateScore()}
-                        </div>
                     </div>
                 </div>
 
@@ -253,7 +337,8 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                             { label: 'Inspection Date', key: 'inspectionDate', type: 'date' },
                             { label: 'Inspected By', key: 'inspectedBy', type: 'text' },
                             { label: 'Drawing Revision Ref', key: 'drawingRev', type: 'text' },
-                            { label: 'Expected Timeline', key: 'timeline', type: 'text' }
+                            { label: 'Expected Timeline', key: 'timeline', type: 'text' },
+                            { label: 'Client Contact Email', key: 'clientEmail', type: 'email' }
                         ].map((field) => (
                             <div key={field.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                                 <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>{field.label}</label>
@@ -374,17 +459,245 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                     </div>
                 </div>
 
+                {/* SIGNATURE PAD */}
+                <div style={{ marginTop: '2rem', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ textTransform: 'uppercase', fontSize: '0.9rem', color: 'var(--text-primary)', margin: 0 }}>Digital Auditor Signature</h3>
+                        <button type="button" onClick={clearSignature} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.7rem', cursor: 'pointer', textDecoration: 'underline' }}>Clear</button>
+                    </div>
+                    <div style={{ background: '#fff', borderRadius: '4px', overflow: 'hidden', height: '150px', cursor: 'crosshair' }}>
+                        <canvas 
+                            ref={signatureCanvasRef}
+                            width={800}
+                            height={150}
+                            onMouseDown={startDrawing}
+                            onMouseUp={stopDrawing}
+                            onMouseMove={draw}
+                            onTouchStart={startDrawing}
+                            onTouchEnd={stopDrawing}
+                            onTouchMove={draw}
+                            style={{ width: '100%', height: '100%' }}
+                        />
+                    </div>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Authenticated by Lead Execution Auditor</p>
+                </div>
+
                 {/* ACTION BUTTONS */}
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '3rem', flexWrap: 'wrap' }}>
                     <button type="button" onClick={() => alert('Draft Saved Securely.')} style={{ flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--text-secondary)', color: 'var(--text-primary)', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '1px' }}>
                         Save Draft
                     </button>
                     <button type="button" onClick={generatePDF} style={{ flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '1px' }}>
-                        Generate PDF
+                        Generate Premium PDF
                     </button>
                     <button type="button" onClick={submitAudit} style={{ flex: 2, background: 'var(--accent-color)', border: 'none', color: '#fff', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '2px', boxShadow: '0 4px 15px rgba(var(--accent-color-rgb), 0.4)' }}>
                         Submit Audit
                     </button>
+                </div>
+
+                {/* LEGAL DISCLAIMER */}
+                <div style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)', opacity: 0.6 }}>
+                    <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', lineHeight: '1.6', textAlign: 'justify', margin: 0 }}>
+                        <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '0.4rem' }}>CONFIDENTIALITY & INTELLECTUAL PROPERTY NOTICE:</strong>
+                        This Report and its technical findings are the exclusive intellectual property of <strong>Meaven Intelligence Hub</strong>, a core component of the <strong>Meaven.in</strong> technology ecosystem. This document contains proprietary "Execution Intelligence" data intended solely for the authorized recipient. Any unauthorized reproduction, distribution, or utilization of this data is strictly prohibited. Meaven Intelligence Hub remains a protected asset of Meaven.in.
+                    </p>
+                </div>
+
+            </div>
+
+            {/* --- PREMIUM PDF EXPORT TEMPLATE (HIDDEN FROM UI) --- */}
+            <div id="premium-pdf-template" style={{ 
+                display: 'none', 
+                width: '794px', 
+                background: '#fff', 
+                color: '#1a1a1a', 
+                fontFamily: '"Inter", "Segoe UI", sans-serif',
+                padding: '0',
+                position: 'absolute',
+                left: '-9999px',
+                top: 0
+            }}>
+                {/* PAGE 1: COVER PAGE */}
+                <div className="pdf-page" style={{ height: '1122px', position: 'relative', padding: '80px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+                    <div style={{ position: 'absolute', top: 0, right: 0, width: '400px', height: '400px', background: 'linear-gradient(135deg, #66b2c205 0%, transparent 100%)', clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }} />
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ fontSize: '20px', fontWeight: '900', color: '#66b2c2' }}>MEAVEN</div>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '10px', fontWeight: '900', letterSpacing: '2px', color: '#66b2c2' }}>INTELLIGENCE HUB</div>
+                            <div style={{ fontSize: '8px', color: '#999' }}>TECHNICAL AUDIT DIVISION</div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '100px' }}>
+                        <div style={{ height: '4px', width: '60px', background: '#66b2c2', marginBottom: '20px' }} />
+                        <h1 style={{ fontSize: '48px', fontWeight: '800', lineHeight: '1.1', margin: '0 0 10px 0', letterSpacing: '-1px' }}>Site Readiness &</h1>
+                        <h1 style={{ fontSize: '48px', fontWeight: '800', lineHeight: '1.1', margin: '0 0 30px 0', letterSpacing: '-1px', color: '#66b2c2' }}>Execution Validation</h1>
+                        <p style={{ fontSize: '14px', letterSpacing: '4px', color: '#666', textTransform: 'uppercase', fontWeight: '500' }}>Technical Execution Intelligence Report</p>
+                    </div>
+
+                    <div style={{ background: '#f8f9fa', padding: '40px', borderRadius: '4px', borderLeft: '8px solid #1a1a1a' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <tbody>
+                                {[
+                                    { l: 'Project', v: projectInfo.name },
+                                    { l: 'Client', v: projectInfo.client },
+                                    { l: 'Architect / PMC', v: projectInfo.architect },
+                                    { l: 'Audit ID', v: auditId },
+                                    { l: 'Date', v: projectInfo.inspectionDate }
+                                ].map((row, i) => (
+                                    <tr key={i}>
+                                        <td style={{ padding: '8px 0', fontSize: '10px', fontWeight: '900', color: '#999', textTransform: 'uppercase', width: '120px' }}>{row.l}</td>
+                                        <td style={{ padding: '8px 0', fontSize: '14px', fontWeight: '700', color: '#1a1a1a' }}>{row.v || '---'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontSize: '10px', color: '#999' }}>
+                        <div>
+                            <strong>MEAVEN DESIGNS</strong><br />
+                            Architectural Execution Partner<br />
+                            www.meaven.in
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            AUTHENTICATED BY<br />
+                            <strong style={{ color: '#1a1a1a' }}>MEAVEN INTEL ENGINE v8.5</strong>
+                        </div>
+                    </div>
+                </div>
+
+                {/* PAGE 2: EXECUTIVE SCORECARD */}
+                <div className="pdf-page" style={{ height: '1122px', padding: '80px', position: 'relative', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid #eee', marginBottom: '40px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: '800' }}>{projectInfo.name} | AUDIT {auditId}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ fontSize: '10px', color: '#999' }}>PAGE 02</div>
+                        </div>
+                    </div>
+
+                    <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '30px' }}>01. Executive Readiness Summary</h2>
+                    
+                    <div style={{ marginBottom: '50px', background: '#f8f9fa', padding: '40px', borderRadius: '12px', borderLeft: '8px solid #66b2c2' }}>
+                        <div style={{ fontSize: '10px', color: '#999', fontWeight: '900', marginBottom: '10px' }}>OVERALL RISK CLASSIFICATION</div>
+                        <div style={{ 
+                            display: 'inline-block', 
+                            padding: '10px 20px', 
+                            background: overallRisk === 'High Risk' ? '#ff453a15' : (overallRisk === 'Medium Risk' ? '#ffcc0015' : '#34c75915'),
+                            color: overallRisk === 'High Risk' ? '#ff453a' : (overallRisk === 'Medium Risk' ? '#b89400' : '#34c759'),
+                            borderRadius: '30px',
+                            fontSize: '16px',
+                            fontWeight: '900'
+                        }}>
+                            {overallRisk || 'PENDING CLASSIFICATION'}
+                        </div>
+                        <p style={{ fontSize: '12px', color: '#666', marginTop: '20px', lineHeight: '1.6' }}>
+                            Technical assessment conducted to evaluate site preparedness for architectural finishing and glass execution. 
+                            The following critical observations determine the risk level and necessary corrective actions.
+                        </p>
+                    </div>
+
+                    <h3 style={{ fontSize: '14px', fontWeight: '800', borderBottom: '2px solid #1a1a1a', paddingBottom: '8px', marginBottom: '20px' }}>CRITICAL OBSERVATIONS</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        {[
+                            { l: 'Execution Risks', v: observations.criticalRisks },
+                            { l: 'Drawing Deviations', v: observations.deviations },
+                            { l: 'Pending Dependencies', v: observations.dependencies },
+                            { l: 'Recommended Actions', v: observations.actions }
+                        ].map((obs, i) => (
+                            <div key={i} style={{ padding: '15px', background: '#fff', border: '1px solid #eee', borderRadius: '4px' }}>
+                                <div style={{ fontSize: '9px', fontWeight: '900', color: '#66b2c2', marginBottom: '5px' }}>{obs.l.toUpperCase()}</div>
+                                <div style={{ fontSize: '11px', lineHeight: '1.4', color: '#333' }}>{obs.v || 'No critical issues noted.'}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* PAGE 3+: TECHNICAL AUDIT DETAILS */}
+                {Object.entries(SITE_SECTIONS).map(([key, items], sectionIndex) => (
+                    <div key={key} className="pdf-page" style={{ height: '1122px', padding: '80px', position: 'relative', boxSizing: 'border-box' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid #eee', marginBottom: '40px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: '800' }}>{projectInfo.name} | TECHNICAL AUDIT</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ fontSize: '10px', color: '#999' }}>PAGE 0{sectionIndex + 3}</div>
+                            </div>
+                        </div>
+
+                        <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ color: '#66b2c2' }}>0{sectionIndex + 2}.</span> 
+                            {key.replace('_', ' ').toUpperCase()} VALIDATION
+                        </h2>
+
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+                            <thead>
+                                <tr style={{ background: '#1a1a1a', color: '#fff' }}>
+                                    <th style={{ padding: '12px', textAlign: 'left', width: '40px' }}>ST</th>
+                                    <th style={{ padding: '12px', textAlign: 'left' }}>TECHNICAL REQUIREMENT</th>
+                                    <th style={{ padding: '12px', textAlign: 'left' }}>REMARKS / OBSERVATIONS</th>
+                                    <th style={{ padding: '12px', textAlign: 'right', width: '80px' }}>RISK</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {items.map((item, i) => {
+                                    const sectionKeyMap = { DRAWING: 'drawing', CIVIL: 'civil', GLASS_RISK: 'glassRisk', HARDWARE: 'hardware', INSTALLATION: 'installation', SNAGS: 'snags' };
+                                    const stateKey = sectionKeyMap[key];
+                                    const data = checklists[stateKey]?.[item] || { checked: false, remarks: '', risk: false };
+                                    
+                                    return (
+                                        <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                                            <td style={{ padding: '12px', fontWeight: '900', color: data.checked ? '#34c759' : '#ccc' }}>
+                                                {data.checked ? '✔' : '○'}
+                                            </td>
+                                            <td style={{ padding: '12px', fontWeight: '600' }}>{item}</td>
+                                            <td style={{ padding: '12px', color: '#666', fontStyle: 'italic' }}>{data.remarks || '---'}</td>
+                                            <td style={{ padding: '12px', textAlign: 'right' }}>
+                                                {data.risk && <span style={{ color: '#ff453a', fontWeight: '900', fontSize: '8px', border: '1px solid #ff453a', padding: '2px 4px', borderRadius: '2px' }}>FLAGGED</span>}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                ))}
+
+                {/* PAGE FINAL: MEDIA & TRANSMISSION */}
+                <div className="pdf-page" style={{ height: '1122px', padding: '80px', position: 'relative', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid #eee', marginBottom: '40px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: '800' }}>{projectInfo.name} | MEDIA & SIGN-OFF</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ fontSize: '10px', color: '#999' }}>FINAL PAGE</div>
+                        </div>
+                    </div>
+
+                    <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '25px' }}>Visual Evidence & Media</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '60px' }}>
+                        {uploadedFiles.filter(f => f.type.startsWith('image')).map((f, i) => (
+                            <div key={i} style={{ border: '1px solid #eee', borderRadius: '4px', overflow: 'hidden' }}>
+                                <img src={f.url} style={{ width: '100%', height: '150px', objectFit: 'cover' }} alt="site" />
+                                <div style={{ padding: '8px', fontSize: '8px', color: '#999', textAlign: 'center' }}>IMAGE REF: 0{i+1}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginTop: '100px' }}>
+                        <div style={{ borderTop: '1px solid #1a1a1a', paddingTop: '15px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: '900' }}>LEAD AUDITOR SIGNATURE</div>
+                            {signature && (
+                                <img src={signature} style={{ height: '40px', marginTop: '10px', display: 'block' }} alt="signature" />
+                            )}
+                            <div style={{ fontSize: '11px', marginTop: '5px', fontWeight: '700' }}>{projectInfo.inspectedBy || 'Lead Technical Auditor'}</div>
+                            <div style={{ fontSize: '8px', color: '#999' }}>Meaven Intelligence Hub</div>
+                        </div>
+                        <div style={{ borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: '900', color: '#999' }}>TRANSMISSION PROTOCOL</div>
+                            <div style={{ fontSize: '9px', marginTop: '10px', color: '#666', lineHeight: '1.4' }}>
+                                This report has been digitally authenticated and electronically transmitted to: <strong>{projectInfo.clientEmail || projectInfo.client}</strong>.<br />
+                                Technical acknowledgment is assumed upon receipt unless contested within 48 hours.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>

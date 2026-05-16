@@ -516,25 +516,61 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
 
     const projectName = payload.projectInfo?.name;
     if (projectName) {
-        setProjects(prev => prev.map(p => {
-            if (p.name === projectName) {
-                return {
-                    ...p,
-                    history: [
-                        ...(p.history || []),
-                        {
-                            id: Date.now(),
-                            type: payload.overallRisk === 'High Risk' ? 'danger' : 'info',
-                            title: `Execution Audit: ${payload.auditId}`,
-                            detail: `Score: ${payload.readinessScore}/100. ${payload.observations?.criticalRisks || 'Audit completed.'}`,
-                            date: new Date().toISOString().split('T')[0],
-                            isClientVisible: false
-                        }
-                    ]
-                };
-            }
-            return p;
-        }));
+        const projectExists = projects.some(p => p.name === projectName);
+        
+        if (!projectExists) {
+            // Create New Project based on Audit Data
+            const newProject = {
+                id: Date.now(),
+                name: projectName,
+                client: payload.projectInfo.client || 'Direct Site Entry',
+                status: 'Active',
+                readiness: payload.readinessScore,
+                startDate: new Date().toISOString().split('T')[0],
+                milestones: { measurementDate: null, siteReadiness: null, completion: null },
+                clientFinancials: { totalValue: 0, requests: [], received: [] },
+                history: [
+                    { 
+                        id: Date.now(), 
+                        type: 'info', 
+                        title: 'Project Initialized via Audit', 
+                        detail: `Loop started via Technical Audit ${payload.auditId}`, 
+                        timestamp: new Date().toISOString() 
+                    },
+                    {
+                        id: Date.now() + 1,
+                        type: payload.overallRisk === 'High Risk' ? 'danger' : 'info',
+                        title: `Execution Audit: ${payload.auditId}`,
+                        detail: `Initial Score: ${payload.readinessScore}/100. ${payload.observations?.criticalRisks || 'Audit completed.'}`,
+                        date: new Date().toISOString().split('T')[0],
+                        isClientVisible: false
+                    }
+                ]
+            };
+            setProjects(prev => [...(prev || []), newProject]);
+        } else {
+            // Update Existing Project
+            setProjects(prev => prev.map(p => {
+                if (p.name === projectName) {
+                    return {
+                        ...p,
+                        readiness: payload.readinessScore,
+                        history: [
+                            ...(p.history || []),
+                            {
+                                id: Date.now(),
+                                type: payload.overallRisk === 'High Risk' ? 'danger' : 'info',
+                                title: `Execution Audit: ${payload.auditId}`,
+                                detail: `Score: ${payload.readinessScore}/100. ${payload.observations?.criticalRisks || 'Audit completed.'}`,
+                                date: new Date().toISOString().split('T')[0],
+                                isClientVisible: false
+                            }
+                        ]
+                    };
+                }
+                return p;
+            }));
+        }
     }
   }
 
