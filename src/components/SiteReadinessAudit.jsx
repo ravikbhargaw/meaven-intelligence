@@ -52,23 +52,24 @@ const generateInitialChecklist = (items) => {
     }), {});
 };
 
-const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
+const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, readOnly = false }) => {
     const reportRef = useRef(null);
-    const [auditId, setAuditId] = useState('');
+    const [auditId, setAuditId] = useState(initialData?.auditId || '');
     const [activeSection, setActiveSection] = useState('project_info');
     const [isExporting, setIsExporting] = useState(false);
-    const [signature, setSignature] = useState(null);
+    const [signature, setSignature] = useState(initialData?.signature || null);
     const signatureCanvasRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
     
     // Form State
-    const [projectInfo, setProjectInfo] = useState({
+    const [projectInfo, setProjectInfo] = useState(initialData?.projectInfo || {
         name: '', client: '', architect: '', address: '', city: '',
         inspectionDate: new Date().toISOString().split('T')[0],
-        inspectedBy: '', type: '', scope: '', drawingRev: '', timeline: '', status: ''
+        inspectedBy: '', type: '', scope: '', drawingRev: '', timeline: '', status: '',
+        clientEmail: ''
     });
 
-    const [checklists, setChecklists] = useState({
+    const [checklists, setChecklists] = useState(initialData?.checklists || {
         drawing: generateInitialChecklist(SITE_SECTIONS.DRAWING),
         civil: generateInitialChecklist(SITE_SECTIONS.CIVIL),
         glassRisk: generateInitialChecklist(SITE_SECTIONS.GLASS_RISK),
@@ -77,20 +78,21 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
         snags: generateInitialChecklist(SITE_SECTIONS.SNAGS)
     });
 
-    const [observations, setObservations] = useState({
+    const [observations, setObservations] = useState(initialData?.observations || {
         criticalRisks: '', deviations: '', dependencies: '',
         actions: '', freezeNotes: '', clientNotes: ''
     });
 
-    const [overallRisk, setOverallRisk] = useState('');
-    const [uploadedFiles, setUploadedFiles] = useState([]);
+    const [overallRisk, setOverallRisk] = useState(initialData?.overallRisk || '');
+    const [uploadedFiles, setUploadedFiles] = useState(initialData?.uploadedFiles || []);
     
     useEffect(() => {
-        // Auto-generate ID: MVN - Random 3 Letters - 001
-        const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
-        const randNum = Math.floor(Math.random() * 900) + 100;
-        setAuditId(`MVN-${randomStr}-${randNum}`);
-    }, []);
+        if (!initialData) {
+            const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
+            const randNum = Math.floor(Math.random() * 900) + 100;
+            setAuditId(`MVN-${randomStr}-${randNum}`);
+        }
+    }, [initialData]);
 
     const calculateScore = () => {
         let totalItems = 0;
@@ -126,6 +128,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
     };
 
     const handleFileUpload = (e) => {
+        if (readOnly) return;
         const files = Array.from(e.target.files);
         const newFiles = files.map(file => ({
             name: file.name,
@@ -175,11 +178,13 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
     };
 
     const startDrawing = (e) => {
+        if (readOnly) return;
         setIsDrawing(true);
         draw(e);
     };
 
     const stopDrawing = () => {
+        if (readOnly) return;
         setIsDrawing(false);
         if (signatureCanvasRef.current) {
             setSignature(signatureCanvasRef.current.toDataURL());
@@ -187,7 +192,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
     };
 
     const draw = (e) => {
-        if (!isDrawing || !signatureCanvasRef.current) return;
+        if (readOnly || !isDrawing || !signatureCanvasRef.current) return;
         const canvas = signatureCanvasRef.current;
         const ctx = canvas.getContext('2d');
         const rect = canvas.getBoundingClientRect();
@@ -212,6 +217,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
     };
 
     const clearSignature = () => {
+        if (readOnly) return;
         if (signatureCanvasRef.current) {
             const canvas = signatureCanvasRef.current;
             const ctx = canvas.getContext('2d');
@@ -460,40 +466,61 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                 </div>
 
                 {/* SIGNATURE PAD */}
-                <div style={{ marginTop: '2rem', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h3 style={{ textTransform: 'uppercase', fontSize: '0.9rem', color: 'var(--text-primary)', margin: 0 }}>Digital Auditor Signature</h3>
-                        <button type="button" onClick={clearSignature} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.7rem', cursor: 'pointer', textDecoration: 'underline' }}>Clear</button>
+                {!readOnly && (
+                    <div style={{ marginTop: '2rem', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ textTransform: 'uppercase', fontSize: '0.9rem', color: 'var(--text-primary)', margin: 0 }}>Digital Auditor Signature</h3>
+                            <button type="button" onClick={clearSignature} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.7rem', cursor: 'pointer', textDecoration: 'underline' }}>Clear</button>
+                        </div>
+                        <div style={{ background: '#fff', borderRadius: '4px', overflow: 'hidden', height: '150px', cursor: 'crosshair' }}>
+                            <canvas 
+                                ref={signatureCanvasRef}
+                                width={800}
+                                height={150}
+                                onMouseDown={startDrawing}
+                                onMouseUp={stopDrawing}
+                                onMouseMove={draw}
+                                onTouchStart={startDrawing}
+                                onTouchEnd={stopDrawing}
+                                onTouchMove={draw}
+                                style={{ width: '100%', height: '100%' }}
+                            />
+                        </div>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Authenticated by Lead Execution Auditor</p>
                     </div>
-                    <div style={{ background: '#fff', borderRadius: '4px', overflow: 'hidden', height: '150px', cursor: 'crosshair' }}>
-                        <canvas 
-                            ref={signatureCanvasRef}
-                            width={800}
-                            height={150}
-                            onMouseDown={startDrawing}
-                            onMouseUp={stopDrawing}
-                            onMouseMove={draw}
-                            onTouchStart={startDrawing}
-                            onTouchEnd={stopDrawing}
-                            onTouchMove={draw}
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                )}
+
+                {readOnly && signature && (
+                    <div style={{ marginTop: '2rem', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <h3 style={{ textTransform: 'uppercase', fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>Audit Authentication</h3>
+                        <div style={{ background: '#fff', padding: '1rem', borderRadius: '4px', display: 'inline-block' }}>
+                            <img src={signature} alt="Audit Signature" style={{ maxHeight: '80px' }} />
+                        </div>
                     </div>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Authenticated by Lead Execution Auditor</p>
-                </div>
+                )}
 
                 {/* ACTION BUTTONS */}
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '3rem', flexWrap: 'wrap' }}>
-                    <button type="button" onClick={() => alert('Draft Saved Securely.')} style={{ flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--text-secondary)', color: 'var(--text-primary)', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '1px' }}>
-                        Save Draft
-                    </button>
-                    <button type="button" onClick={generatePDF} style={{ flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '1px' }}>
-                        Generate Premium PDF
-                    </button>
-                    <button type="button" onClick={submitAudit} style={{ flex: 2, background: 'var(--accent-color)', border: 'none', color: '#fff', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '2px', boxShadow: '0 4px 15px rgba(var(--accent-color-rgb), 0.4)' }}>
-                        Submit Audit
-                    </button>
-                </div>
+                {!readOnly && (
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '3rem', flexWrap: 'wrap' }}>
+                        <button type="button" onClick={() => alert('Draft Saved Securely.')} style={{ flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--text-secondary)', color: 'var(--text-primary)', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '1px' }}>
+                            Save Draft
+                        </button>
+                        <button type="button" onClick={generatePDF} style={{ flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '1px' }}>
+                            Generate Premium PDF
+                        </button>
+                        <button type="button" onClick={submitAudit} style={{ flex: 2, background: 'var(--accent-color)', border: 'none', color: '#fff', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '2px', boxShadow: '0 4px 15px rgba(var(--accent-color-rgb), 0.4)' }}>
+                            Submit Audit
+                        </button>
+                    </div>
+                )}
+
+                {readOnly && (
+                    <div style={{ marginTop: '3rem' }}>
+                        <button type="button" onClick={generatePDF} style={{ width: '100%', background: 'var(--accent-color)', border: 'none', color: '#fff', padding: '1rem', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '1px' }}>
+                            Download Historical Report (PDF)
+                        </button>
+                    </div>
+                )}
 
                 {/* LEGAL DISCLAIMER */}
                 <div style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)', opacity: 0.6 }}>
@@ -522,7 +549,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                     <div style={{ position: 'absolute', top: 0, right: 0, width: '400px', height: '400px', background: 'linear-gradient(135deg, #66b2c205 0%, transparent 100%)', clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }} />
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ fontSize: '20px', fontWeight: '900', color: '#66b2c2' }}>MEAVEN</div>
+                        <img src="/images/logo-dark.png" alt="Meaven" style={{ height: '40px' }} />
                         <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '10px', fontWeight: '900', letterSpacing: '2px', color: '#66b2c2' }}>INTELLIGENCE HUB</div>
                             <div style={{ fontSize: '8px', color: '#999' }}>TECHNICAL AUDIT DIVISION</div>
@@ -573,6 +600,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid #eee', marginBottom: '40px' }}>
                         <div style={{ fontSize: '10px', fontWeight: '800' }}>{projectInfo.name} | AUDIT {auditId}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <img src="/images/logo-dark.png" alt="Meaven" style={{ height: '18px' }} />
                             <div style={{ fontSize: '10px', color: '#999' }}>PAGE 02</div>
                         </div>
                     </div>
@@ -620,6 +648,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid #eee', marginBottom: '40px' }}>
                             <div style={{ fontSize: '10px', fontWeight: '800' }}>{projectInfo.name} | TECHNICAL AUDIT</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <img src="/images/logo-dark.png" alt="Meaven" style={{ height: '18px' }} />
                                 <div style={{ fontSize: '10px', color: '#999' }}>PAGE 0{sectionIndex + 3}</div>
                             </div>
                         </div>
@@ -667,6 +696,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid #eee', marginBottom: '40px' }}>
                         <div style={{ fontSize: '10px', fontWeight: '800' }}>{projectInfo.name} | MEDIA & SIGN-OFF</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <img src="/images/logo-dark.png" alt="Meaven" style={{ height: '18px' }} />
                             <div style={{ fontSize: '10px', color: '#999' }}>FINAL PAGE</div>
                         </div>
                     </div>

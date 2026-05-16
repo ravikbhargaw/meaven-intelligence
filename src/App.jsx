@@ -125,6 +125,7 @@ function App() {
   const [isSyncing, setIsSyncing] = useState(true)
   const [navHistory, setNavHistory] = useState([])
   const [theme, setTheme] = useState(() => localStorage.getItem('meaven_theme') || 'dark')
+  const [viewingAudit, setViewingAudit] = useState(null)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -555,6 +556,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     return {
                         ...p,
                         readiness: payload.readinessScore,
+                        auditHistory: [...(p.auditHistory || []), payload],
                         history: [
                             ...(p.history || []),
                             {
@@ -572,6 +574,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
             }));
         }
     }
+    setViewingAudit(payload); // Open the report after submission
   }
 
   const handleAddVendor = (newVendor) => {
@@ -1002,6 +1005,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     onAddNote={handleProjectAddNote}
                     onToggleVisibility={handleToggleTimelineVisibility}
                     userRole={user?.role}
+                    onViewAudit={(audit) => { setViewingAudit(audit); setActiveTab('audit'); }}
                   />
                 )}
 
@@ -1032,7 +1036,27 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
                   />
                 )}
-                {activeTab === 'audit' && <SiteReadinessAudit projects={projects} onSubmitAudit={handleExecutionAuditSubmit} />}
+                {activeTab === 'audit' && (
+                  <div className="card animate-fade-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', minHeight: '80vh' }}>
+                      {viewingAudit && (
+                          <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--accent-color)' }}>{viewingAudit.auditId} | TECHNICAL REPORT</h2>
+                              <button 
+                                  onClick={() => { setViewingAudit(null); handleBack(); }}
+                                  style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+                              >
+                                  CLOSE REVIEW
+                              </button>
+                          </div>
+                      )}
+                      <SiteReadinessAudit 
+                        projects={projects} 
+                        onSubmitAudit={handleExecutionAuditSubmit} 
+                        initialData={viewingAudit}
+                        readOnly={!!viewingAudit}
+                      />
+                  </div>
+                )}
                 {activeTab === 'calculator' && !clientView && ( <StrategicPricingEngine projects={projects} onAddNote={handleProjectAddNote} /> )}
                 {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
                 {activeTab === 'reports' && ( <IntelligenceReports projects={projects} vendors={vendors} portfolios={portfolios} /> )}

@@ -8,7 +8,7 @@ const ModalOverlay = ({ children }) => (
     </div>
 )
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '---';
     const date = new Date(dateStr);
@@ -365,6 +365,44 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                 )}
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {/* TECHNICAL AUDIT VAULT */}
+                <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                            <span style={{ fontSize: '1.2rem' }}>📑</span>
+                            <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>TECHNICAL AUDIT VAULT</h4>
+                        </div>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+                            {(selectedProject.auditHistory || []).length} REPORTS SECURED
+                        </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                        {(selectedProject.auditHistory || []).length > 0 ? (
+                            selectedProject.auditHistory.map(audit => (
+                                <div key={audit.auditId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{audit.auditId}</div>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                            {formatDate(audit.timestamp)} • {audit.readinessScore}% READINESS
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => onViewAudit?.(audit)}
+                                        style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000' }}
+                                    >
+                                        REVIEW REPORT
+                                    </button>
+                                </div>
+                            ))
+                        ) : (
+                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.8rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                                No technical audits have been submitted for this project yet.
+                            </div>
+                        )}
                     </div>
                 </div>
 
