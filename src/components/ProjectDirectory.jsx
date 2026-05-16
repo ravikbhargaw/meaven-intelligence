@@ -888,7 +888,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{p.name || 'Unnamed Project'}</h3>
-                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client: {p.client || 'TBD'}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Client: {p.client || 'TBD'}</p>
+                    {(p.auditHistory || []).length > 0 && (
+                        <span style={{ fontSize: '0.5rem', background: 'rgba(102, 178, 194, 0.15)', color: 'var(--accent-color)', padding: '0.1rem 0.3rem', borderRadius: '4px', fontWeight: '900' }}>
+                            {p.auditHistory.length} AUDITS
+                        </span>
+                    )}
+                  </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--accent-color)' }}>{pl.margin.toFixed(0)}%</div>

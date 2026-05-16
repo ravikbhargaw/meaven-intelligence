@@ -40,9 +40,11 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
   const categories = ['All', 'Glass', 'Aluminum', 'Hardware', 'Lighting', 'Logistics']
   const statuses = ['All', 'Certified', 'Vetting']
 
-  const filteredVendors = vendors.filter(v => {
-    const matchesSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (v.gst || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredVendors = (vendors || []).filter(v => {
+    if (!v) return false;
+    const safeSearch = (searchTerm || '').toLowerCase();
+    const matchesSearch = (v.name || '').toLowerCase().includes(safeSearch) || 
+                         (v.gst || '').toLowerCase().includes(safeSearch)
     const matchesCategory = filterCategory === 'All' || v.category === filterCategory
     const matchesStatus = filterStatus === 'All' || v.status === filterStatus
     return matchesSearch && matchesCategory && matchesStatus
@@ -103,7 +105,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                     <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', filter: isReadOnly ? 'blur(8px)' : 'none', fontWeight: '900' }}>{selectedVendor.name}</h1>
                     <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: selectedVendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)', color: selectedVendor.status === 'Certified' ? 'var(--success)' : '#FF9500', fontWeight: '900', letterSpacing: '0.05em' }}>
-                        {selectedVendor.status.toUpperCase()}
+                        {(selectedVendor.status || 'Vetting').toUpperCase()}
                     </span>
                     {selectedVendor.isMsaSigned ? (
                         <span style={{ fontSize: '0.6rem', padding: '0.2rem 0.6rem', borderRadius: '20px', background: 'rgba(50, 215, 75, 0.1)', color: 'var(--success)', border: '1px solid var(--success)', fontWeight: '900' }}>✓ MSA SIGNED</span>
@@ -891,7 +893,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                       transition: 'all 0.3s ease'
                   }}>
                     {vendor.name}
-                    {vendor.id === Math.max(...filteredVendors.map(v => v.id)) && !isReadOnly && (
+                    {filteredVendors.length > 0 && vendor.id === Math.max(...filteredVendors.map(v => (v && v.id) || 0)) && !isReadOnly && (
                         vendor.status === 'Certified' ? (
                             <span style={{ marginLeft: '0.5rem', fontSize: '0.6rem', color: 'var(--success)', border: '1px solid var(--success)', padding: '0.1rem 0.4rem', borderRadius: '4px', verticalAlign: 'middle' }}>AI RECOMMENDED</span>
                         ) : (

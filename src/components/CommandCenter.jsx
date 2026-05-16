@@ -129,9 +129,16 @@ const CommandCenter = ({ projects = [], proposals = [], vendors = [], onSelectPr
                                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.status === 'Active' ? 'var(--success)' : 'var(--danger)', boxShadow: `0 0 5px ${p.status === 'Active' ? 'var(--success)' : 'var(--danger)'}` }} />
                                                     <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</h4>
                                                 </div>
-                                                <p style={{ margin: 0, fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                    {p.location} // {formatDate(p.startDate)}
-                                                </p>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <p style={{ margin: 0, fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                        {p.location} // {formatDate(p.startDate)}
+                                                    </p>
+                                                    {(p.auditHistory || []).length > 0 && (
+                                                        <span style={{ fontSize: '0.5rem', background: 'rgba(102, 178, 194, 0.15)', color: 'var(--accent-color)', padding: '0.1rem 0.3rem', borderRadius: '4px', fontWeight: '900' }}>
+                                                            {p.auditHistory.length} AUDITS
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* SECTION 2: FINANCIALS */}

@@ -540,11 +540,11 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     },
                     {
                         id: Date.now() + 1,
-                        type: payload.overallRisk === 'High Risk' ? 'danger' : 'info',
-                        title: `Execution Audit: ${payload.auditId}`,
-                        detail: `Initial Score: ${payload.readinessScore}/100. ${payload.observations?.criticalRisks || 'Audit completed.'}`,
-                        date: new Date().toISOString().split('T')[0],
-                        isClientVisible: false
+                        type: 'success',
+                        title: 'Technical Audit Transmitted',
+                        detail: `Audit ${payload.auditId} (${payload.readinessScore}% Readiness) digitally transmitted to ${payload.projectInfo?.clientEmail || 'Client'}. Verification window: 48h.`,
+                        timestamp: new Date().toISOString(),
+                        isClientVisible: true
                     }
                 ]
             };
@@ -561,11 +561,11 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                             ...(p.history || []),
                             {
                                 id: Date.now(),
-                                type: payload.overallRisk === 'High Risk' ? 'danger' : 'info',
-                                title: `Execution Audit: ${payload.auditId}`,
-                                detail: `Score: ${payload.readinessScore}/100. ${payload.observations?.criticalRisks || 'Audit completed.'}`,
-                                date: new Date().toISOString().split('T')[0],
-                                isClientVisible: false
+                                type: 'success',
+                                title: 'Technical Audit Transmitted',
+                                detail: `Audit ${payload.auditId} (${payload.readinessScore}% Readiness) digitally transmitted to ${payload.projectInfo?.clientEmail || 'Client'}. Verification window: 48h.`,
+                                timestamp: new Date().toISOString(),
+                                isClientVisible: true
                             }
                         ]
                     };

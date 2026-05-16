@@ -143,9 +143,12 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
         if (!reportElement) return;
         
         setIsExporting(true);
+        // Force scroll to top to prevent html2canvas offset issues
+        window.scrollTo(0, 0);
+        
         reportElement.style.display = 'block';
         
-        // Wait for rendering
+        // Wait for images and layout to settle
         setTimeout(async () => {
             try {
                 const pdf = new jsPDF('p', 'mm', 'a4');
@@ -156,14 +159,22 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                         scale: 2, 
                         useCORS: true, 
                         logging: false,
-                        backgroundColor: '#ffffff' 
+                        backgroundColor: '#ffffff',
+                        windowWidth: 794, // Fixed A4 width at 96dpi
+                        scrollY: -window.scrollY // Compensate for any remaining scroll
                     });
+                    
                     const imgData = canvas.toDataURL('image/png');
                     const pdfWidth = pdf.internal.pageSize.getWidth();
                     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                     
                     if (i > 0) pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    
+                    // Center the image if it's slightly different from A4 aspect ratio
+                    const xOffset = 0;
+                    const yOffset = 0;
+                    
+                    pdf.addImage(imgData, 'PNG', xOffset, yOffset, pdfWidth, pdfHeight);
                 }
 
                 pdf.save(`${auditId}_Technical_Audit_Report.pdf`);
@@ -174,7 +185,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                 setIsExporting(false);
                 reportElement.style.display = 'none';
             }
-        }, 800);
+        }, 1200); // Increased delay for stability
     };
 
     const startDrawing = (e) => {
