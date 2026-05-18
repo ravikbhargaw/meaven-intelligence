@@ -106,11 +106,15 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'register') return 'register';
     if (params.get('view') === 'partner') return 'partner';
-    return localStorage.getItem('hub_active_tab') || 'dashboard';
+    const cached = localStorage.getItem('hub_active_tab');
+    if (cached === 'partner' || cached === 'register') return 'dashboard';
+    return cached || 'dashboard';
   })
   
   useEffect(() => {
-    localStorage.setItem('hub_active_tab', activeTab);
+    if (activeTab !== 'partner' && activeTab !== 'register') {
+        localStorage.setItem('hub_active_tab', activeTab);
+    }
   }, [activeTab]);
 
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false)
