@@ -31,6 +31,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
 
   const handleSetSelectedVendor = (id) => {
     setSelectedVendorId(id);
+    setActiveContractId(null); // Reset active contract on vendor change to prevent desync
     if (onSelectVendor) onSelectVendor(id);
   }
   
@@ -396,7 +397,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', flex: 1 }}>
-                {activeContractId ? (
+                {selectedContract ? (
                     <div className="card animate-fade-in" style={{ border: '1px solid var(--accent-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                             <div>

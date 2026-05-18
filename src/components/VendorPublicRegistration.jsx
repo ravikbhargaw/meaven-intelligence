@@ -59,12 +59,22 @@ const VendorPublicRegistration = () => {
             }]
         }
 
+        const generatedId = Date.now()
+        const vendorPayload = {
+            id: String(generatedId),
+            name: newVendor.name,
+            data: {
+                ...newVendor,
+                id: generatedId
+            }
+        }
+
         try {
-            const { error } = await supabase.from('vendors').insert([newVendor])
+            const { error } = await supabase.from('vendors').insert([vendorPayload])
             if (error) throw error
 
             const localVendors = JSON.parse(localStorage.getItem('hub_vendors') || '[]')
-            localStorage.setItem('hub_vendors', JSON.stringify([...localVendors, { ...newVendor, id: Date.now() }]))
+            localStorage.setItem('hub_vendors', JSON.stringify([...localVendors, { ...newVendor, id: generatedId }]))
 
             setStep(2)
         } catch (err) {
