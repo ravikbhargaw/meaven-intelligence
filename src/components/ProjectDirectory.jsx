@@ -204,6 +204,25 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             <option value="On Hold">ON HOLD</option>
                             <option value="Final Closure">FINAL CLOSURE</option>
                         </select>
+                        <select 
+                            value={selectedProject.stageIndex !== undefined ? selectedProject.stageIndex : 1}
+                            onChange={(e) => onUpdateValue(selectedProject.id, { stageIndex: parseInt(e.target.value) })}
+                            style={{ 
+                                background: 'var(--bg-accent)',
+                                color: 'var(--accent-color)', border: '1px solid var(--border-accent)', borderRadius: '20px', padding: '0.4rem 1rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer'
+                            }}
+                        >
+                            <option value={0}>STAGE 0: Project Assigned</option>
+                            <option value={1}>STAGE 1: Site Verification Pending</option>
+                            <option value={2}>STAGE 2: Site Audit Submitted</option>
+                            <option value={3}>STAGE 3: Readiness Approved</option>
+                            <option value={4}>STAGE 4: Production Freeze</option>
+                            <option value={5}>STAGE 5: Installation In Progress</option>
+                            <option value={6}>STAGE 6: QC Pending</option>
+                            <option value={7}>STAGE 7: Snag Closure Pending</option>
+                            <option value={8}>STAGE 8: Handover Completed</option>
+                            <option value={9}>STAGE 9: Closure Approved</option>
+                        </select>
                         {selectedProject.isSignOffRequested && !selectedProject.managerSignOff && (
                             <span style={{ fontSize: '0.55rem', color: '#FF9500', fontWeight: '900', letterSpacing: '0.05em' }}>(AWAITING SIGN-OFF)</span>
                         )}
@@ -538,9 +557,12 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                     isClientVisible: true
                                                 }
                                             ];
+                                            const currentStage = selectedProject.stageIndex !== undefined ? selectedProject.stageIndex : 1;
+                                            const nextStage = Math.min(9, currentStage + 1);
                                             onUpdateValue(selectedProject.id, { 
                                                 vendorUpdates: newUpdates,
-                                                history: newHistory
+                                                history: newHistory,
+                                                stageIndex: nextStage
                                             });
                                         }} style={{ background: 'var(--accent-color)', border: 'none', color: '#000', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>Approve</button>
                                     </div>
