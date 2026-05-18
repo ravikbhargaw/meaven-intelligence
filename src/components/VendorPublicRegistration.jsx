@@ -44,12 +44,16 @@ const VendorPublicRegistration = () => {
             status: 'Vetting',
             miScore: 0,
             metrics: { price: 50, speed: 50, precision: 50, communication: 50 },
-            documents: Object.entries(docs).filter(([_, file]) => file).map(([key, file]) => ({
-                id: Date.now() + Math.random(),
-                name: file.name,
-                type: key,
-                date: new Date().toLocaleDateString()
-            })),
+            documents: Object.entries(docs).filter(([_, file]) => file).map(([key, file]) => {
+                const tagMap = { gst: 'GST', pan: 'PAN', cheque: 'Cheque' }
+                return {
+                    id: Date.now() + Math.random(),
+                    name: file.name,
+                    type: key,
+                    tag: tagMap[key.toLowerCase()] || key,
+                    date: new Date().toLocaleDateString()
+                }
+            }),
             history: [{
                 id: Date.now(),
                 date: new Date().toLocaleDateString(),

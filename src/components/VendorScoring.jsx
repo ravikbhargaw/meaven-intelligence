@@ -68,6 +68,15 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
     return masked + visible
   }
 
+  // Safe helper: always returns an array regardless of how documents was stored
+  const safeDocuments = (vendor) => {
+    if (!vendor) return []
+    const docs = vendor.documents
+    if (Array.isArray(docs)) return docs
+    if (docs && typeof docs === 'object') return Object.values(docs).filter(Boolean)
+    return []
+  }
+
   const selectedVendor = (vendors || []).find(v => v && v.id === selectedVendorId)
   const selectedContract = selectedVendor?.contracts?.find(c => c.id === activeContractId)
 
@@ -326,7 +335,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                 { label: 'PAN Card Doc', key: 'PAN' },
                                 { label: 'Cancelled Cheque', key: 'Cheque' }
                             ].map(doc => {
-                                const hasDoc = (selectedVendor.documents || []).some(d => d.tag === doc.key);
+                                const hasDoc = safeDocuments(selectedVendor).some(d => d.tag === doc.key);
                                 return (
                                     <div key={doc.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', padding: '0.5rem', background: 'rgba(0,0,0,0.1)', borderRadius: '6px' }}>
                                         <span style={{ color: hasDoc ? '#fff' : 'var(--text-secondary)' }}>{doc.label}</span>
@@ -342,9 +351,9 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                         const hasAddress = !!selectedVendor.address;
                         const hasPan = !!selectedVendor.pan;
                         const hasBank = !!selectedVendor.accountNumber && !!selectedVendor.ifscCode;
-                        const hasGstDoc = (selectedVendor.documents || []).some(d => d.tag === 'GST');
-                        const hasPanDoc = (selectedVendor.documents || []).some(d => d.tag === 'PAN');
-                        const hasChequeDoc = (selectedVendor.documents || []).some(d => d.tag === 'Cheque');
+                        const hasGstDoc = safeDocuments(selectedVendor).some(d => d.tag === 'GST');
+                        const hasPanDoc = safeDocuments(selectedVendor).some(d => d.tag === 'PAN');
+                        const hasChequeDoc = safeDocuments(selectedVendor).some(d => d.tag === 'Cheque');
                         
                         const isEligible = hasPhone && hasAddress && hasPan && hasBank && hasGstDoc && hasPanDoc && hasChequeDoc;
 
@@ -651,7 +660,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                         url: URL.createObjectURL(f)
                                     }));
                                     onUpdateVendor(selectedVendor.id, { 
-                                        documents: [...(selectedVendor.documents || []), ...newDocs] 
+                                        documents: [...safeDocuments(selectedVendor), ...newDocs] 
                                     });
                                 }}
                                 style={{ display: 'none' }} 
@@ -662,7 +671,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {(selectedVendor.documents || []).length > 0 ? (selectedVendor.documents.map(doc => (
+                        {safeDocuments(selectedVendor).length > 0 ? (safeDocuments(selectedVendor).map(doc => (
                             <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                     <div style={{ width: '40px', height: '40px', background: 'rgba(102, 178, 194, 0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
@@ -678,7 +687,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                     <select 
                                         value={doc.tag || ''}
                                         onChange={(e) => {
-                                            const updatedDocs = selectedVendor.documents.map(d => 
+                                            const updatedDocs = safeDocuments(selectedVendor).map(d => 
                                                 d.id === doc.id ? { ...d, tag: e.target.value } : d
                                             );
                                             onUpdateVendor(selectedVendor.id, { documents: updatedDocs });
@@ -694,7 +703,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                     <a href={doc.url} download={doc.name} style={{ textDecoration: 'none', fontSize: '1.2rem' }} title="Download">📥</a>
                                     <button 
                                         onClick={() => {
-                                            const updatedDocs = selectedVendor.documents.filter(d => d.id !== doc.id);
+                                            const updatedDocs = safeDocuments(selectedVendor).filter(d => d.id !== doc.id);
                                             onUpdateVendor(selectedVendor.id, { documents: updatedDocs });
                                         }}
                                         style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.9rem' }}
@@ -798,7 +807,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                                 msaStatus: 'Executed', 
                                                 msaDate: signedDate, 
                                                 signerName: signerName,
-                                                documents: [...(selectedVendor.documents || []), newDoc]
+                                                documents: [...safeDocuments(selectedVendor), newDoc]
                                             });
                                             setIsMsaModalOpen(false);
                                             setIsEsignMode(false);
