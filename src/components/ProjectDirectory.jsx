@@ -32,6 +32,19 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
     const y = date.getFullYear();
     return `${d}-${m}-${y}`;
   }
+
+  // Formats ISO timestamp or date string as dd-mm-yyyy HH:MM
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '---';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${d}-${m}-${y} ${hh}:${mm}`;
+  }
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSubTab, setActiveSubTab] = useState('overview') 
@@ -477,7 +490,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                                 type: upd.type === 'risk' ? 'warning' : 'success',
                                                                 title: upd.type === 'risk' ? `Approved Vendor Risk: ${upd.severity}` : 'Approved Site Update',
                                                                 detail: `${upd.note}${upd.media && upd.media.length > 0 ? ` (Attached ${upd.media.length} photos)` : ''}`,
-                                                                date: new Date().toISOString().split('T')[0],
+                                                                timestamp: new Date().toISOString(),
                                                                 isClientVisible: true
                                                             }
                                                         ];
@@ -499,7 +512,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                                 type: 'danger',
                                                                 title: 'Rejected Vendor Submission',
                                                                 detail: `Rejected update: "${upd.note}"`,
-                                                                date: new Date().toISOString().split('T')[0],
+                                                                timestamp: new Date().toISOString(),
                                                                 isClientVisible: false
                                                             }
                                                         ];
@@ -681,7 +694,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                                 </button>
                                                             )}
                                                         </div>
-                                                        <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>{formatDate(h.date || h.timestamp)}</span>
+                                                        <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>{formatDateTime(h.timestamp || h.date)}</span>
                                                     </div>
                                                     <p style={{ margin: '0.2rem 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{h.detail}</p>
                                                 </div>

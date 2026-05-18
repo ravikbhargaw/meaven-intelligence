@@ -23,6 +23,7 @@ import VendorPublicRegistration from './components/VendorPublicRegistration'
 import PostInstallationQC from './components/PostInstallationQC'
 import ExecutionOS from './components/ExecutionOS'
 import ExecutionPartnerSystem from './components/ExecutionPartnerSystem'
+import FounderControlTower from './components/FounderControlTower'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
 class ErrorBoundary extends React.Component {
@@ -958,6 +959,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
               </div>
               <nav className="sidebar-nav-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1, paddingBottom: '1.5rem' }}>
                 <SidebarGroupHeader label="Core Command" />
+                <SidebarItem active={activeTab === 'controlTower'} onClick={() => handleNavigate('controlTower')} icon="🎛️" label="Founder Control Tower" />
                 <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleNavigate('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
                 
                 <SidebarGroupHeader label="Site Execution" />
@@ -1052,6 +1054,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     <h1 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.4rem)' }}>
                       {activeTab === 'dashboard' 
                           ? (clientView ? `Experience: ${selectedClient || activeProject?.client || 'Meaven'}` : 'Tactical Command') 
+                          : activeTab === 'controlTower' ? 'Founder Control Tower'
                           : activeTab === 'projects' ? 'Operations Hub' 
                           : activeTab === 'vendors' ? 'Partner Bench' 
                           : activeTab === 'calculator' ? 'Tech Calc' 
@@ -1108,6 +1111,10 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                       onSelectTab={setActiveTab}
                     />
                   )
+                )}
+
+                {activeTab === 'controlTower' && (
+                  <FounderControlTower projects={projects} vendors={vendors} onNavigate={handleNavigate} />
                 )}
 
                 {activeTab === 'projects' && (
