@@ -469,7 +469,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                     </div>
                 ) : (
                     <div className="card" style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--border-color)', background: 'none' }}>
-                        <p style={{ color: 'var(--text-secondary)' }}>Select a project from the sidebar to view detailed financial tracking.</p>
+                        <p style={{ color: 'var(--text-secondary)' }}>Select a project from the above bar to view detailed financial tracking.</p>
                     </div>
                 )}
 
