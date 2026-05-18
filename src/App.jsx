@@ -189,7 +189,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     setProjects(localProjects)
                 }
             } else {
-                setProjects(cloudProjects.map(p => p.data))
+                setProjects(cloudProjects.map(p => p.data).filter(Boolean))
             }
 
             if (!cloudVendors || cloudVendors.length === 0) {
@@ -199,7 +199,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     setVendors(localVendors)
                 }
             } else {
-                setVendors(cloudVendors.map(v => v.data))
+                setVendors(cloudVendors.map(v => v.data).filter(Boolean))
             }
 
             if (!cloudPortfolios || cloudPortfolios.length === 0) {
@@ -209,7 +209,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     setPortfolios(localPortfolios)
                 }
             } else {
-                setPortfolios(cloudPortfolios.map(p => p.data))
+                setPortfolios(cloudPortfolios.map(p => p.data).filter(Boolean))
             }
 
             if (cloudReadiness && cloudReadiness.length > 0) {

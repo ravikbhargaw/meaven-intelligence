@@ -89,10 +89,12 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   // Find linked vendor (Active only)
   // Find linked vendor (Robust detection)
   const linkedVendor = (vendors || []).find(v => 
-    v.name === selectedProject?.assignedVendor || 
-    (v.contracts || []).some(c => 
-        (c.projectName || '').toLowerCase().trim() === (selectedProject?.name || '').toLowerCase().trim() && 
-        (c.status === 'Active' || !c.status)
+    v && (
+      v.name === selectedProject?.assignedVendor || 
+      (v.contracts || []).some(c => 
+          (c.projectName || '').toLowerCase().trim() === (selectedProject?.name || '').toLowerCase().trim() && 
+          (c.status === 'Active' || !c.status)
+      )
     )
   )
 
@@ -154,7 +156,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
     const financials = selectedProject.clientFinancials || { totalValue: 0, requests: [], received: [] }
     const totalReceived = (financials.received || []).reduce((sum, r) => sum + r.amount, 0)
     const outstanding = pl.revenue - totalReceived
-    const linkedVendor = (vendors || []).find(v => (v.contracts || []).some(c => c.projectName === selectedProject.name && (c.status === 'Active' || !c.status)));
+    const linkedVendor = (vendors || []).find(v => v && (v.contracts || []).some(c => c.projectName === selectedProject.name && (c.status === 'Active' || !c.status)));
 
     return (
       <div className="project-detail-view animate-fade-in" style={{ paddingBottom: '5rem' }}>
