@@ -20,6 +20,7 @@ import FieldPortal from './components/FieldPortal'
 import IntelligenceReports from './components/IntelligenceReports'
 import { supabase } from './supabaseClient'
 import VendorPublicRegistration from './components/VendorPublicRegistration'
+import PostInstallationQC from './components/PostInstallationQC'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
 class ErrorBoundary extends React.Component {
@@ -853,6 +854,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleNavigate('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Operations Hub" />}
                 <SidebarItem active={activeTab === 'audit'} onClick={() => handleNavigate('audit')} icon="📋" label="Execution Audit" />
+                <SidebarItem active={activeTab === 'postQC'} onClick={() => handleNavigate('postQC')} icon="🔍" label="Post-Install QC" />
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />}
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />}
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.email === 'ravi.bhargaw@meaven.in') && (
@@ -1055,6 +1057,11 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                         initialData={viewingAudit}
                         readOnly={!!viewingAudit}
                       />
+                  </div>
+                )}
+                {activeTab === 'postQC' && (
+                  <div className="card animate-fade-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', minHeight: '80vh' }}>
+                      <PostInstallationQC projects={projects} />
                   </div>
                 )}
                 {activeTab === 'calculator' && !clientView && ( <StrategicPricingEngine projects={projects} onAddNote={handleProjectAddNote} /> )}
