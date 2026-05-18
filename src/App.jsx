@@ -21,6 +21,8 @@ import IntelligenceReports from './components/IntelligenceReports'
 import { supabase } from './supabaseClient'
 import VendorPublicRegistration from './components/VendorPublicRegistration'
 import PostInstallationQC from './components/PostInstallationQC'
+import ExecutionOS from './components/ExecutionOS'
+import ExecutionPartnerSystem from './components/ExecutionPartnerSystem'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
 class ErrorBoundary extends React.Component {
@@ -103,6 +105,7 @@ function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'register') return 'register';
+    if (params.get('view') === 'partner') return 'partner';
     return localStorage.getItem('hub_active_tab') || 'dashboard';
   })
   
@@ -162,7 +165,10 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
   // --- CLOUD SYNC ENGINE ---
   useEffect(() => {
     async function loadTacticalData() {
-        if (!user) return
+        if (!user && activeTab !== 'partner') {
+            setIsSyncing(false)
+            return
+        }
         setIsSyncing(true)
 
         try {
@@ -346,6 +352,36 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
        <VendorPublicRegistration />
     </div>
   )
+
+  const handleVendorUpdateSubmit = (projectId, update) => {
+    setProjects(prev => prev.map(p => {
+        if (Number(p.id) === Number(projectId)) {
+            return {
+                ...p,
+                vendorUpdates: [
+                    ...(p.vendorUpdates || []),
+                    update
+                ]
+            }
+        }
+        return p
+    }))
+  }
+
+  if (activeTab === 'partner') {
+    if (isSyncing) {
+        return (
+            <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ color: 'var(--accent-color)', fontSize: '1.2rem', fontWeight: '800', letterSpacing: '0.1em' }}>SYNCING SECURE PROJECT DATA...</div>
+            </div>
+        )
+    }
+    return (
+        <div className="dashboard-app-root">
+           <ExecutionPartnerSystem projects={projects} onSubmitUpdate={handleVendorUpdateSubmit} />
+        </div>
+    )
+  }
 
   if (!user) return (
     <div className="dashboard-app-root">
@@ -857,6 +893,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 <SidebarItem active={activeTab === 'postQC'} onClick={() => handleNavigate('postQC')} icon="🔍" label="Post-Install QC" />
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />}
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />}
+                {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'executionOS'} onClick={() => handleNavigate('executionOS')} icon="🎛️" label="Execution OS" />}
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.email === 'ravi.bhargaw@meaven.in') && (
                   <>
                     <SidebarItem active={activeTab === 'strategy'} onClick={() => handleNavigate('strategy')} icon="🧠" label="Executive Strategy" />
@@ -937,6 +974,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                           : activeTab === 'projects' ? 'Operations Hub' 
                           : activeTab === 'vendors' ? 'Partner Bench' 
                           : activeTab === 'calculator' ? 'Tech Calc' 
+                          : activeTab === 'executionOS' ? 'Execution Infrastructure'
                           : activeTab === 'strategy' ? 'Executive Hub'
                           : activeTab === 'reports' ? 'Intel Reports'
                           : 'Admin'}
@@ -1064,6 +1102,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                       <PostInstallationQC projects={projects} />
                   </div>
                 )}
+                {activeTab === 'executionOS' && <ExecutionOS />}
                 {activeTab === 'calculator' && !clientView && ( <StrategicPricingEngine projects={projects} onAddNote={handleProjectAddNote} /> )}
                 {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
                 {activeTab === 'reports' && ( <IntelligenceReports projects={projects} vendors={vendors} portfolios={portfolios} /> )}

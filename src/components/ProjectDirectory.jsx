@@ -210,12 +210,24 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     </div>
                 </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem', fontWeight: '500' }}>CLIENT PORTFOLIO: {selectedProject.client}</p>
-                <button 
-                    onClick={() => { if(confirm(`Flush Project ${selectedProject.name}?`)) { onRemoveProject(selectedProject.id); setSelectedProjectId(null); } }} 
-                    style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.6rem', marginTop: '1.2rem', cursor: 'pointer', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}
-                >
-                    🗑️ Flush Individual Loop
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.2rem', flexWrap: 'wrap' }}>
+                    <button 
+                        onClick={() => {
+                            const link = `${window.location.origin}/?view=partner&projectId=${selectedProject.id}`;
+                            navigator.clipboard.writeText(link);
+                            alert('Vendor Execution Link copied to clipboard:\n' + link);
+                        }} 
+                        style={{ background: 'var(--accent-color)', border: 'none', color: '#000', fontSize: '0.7rem', padding: '0.6rem 1rem', borderRadius: '20px', cursor: 'pointer', fontWeight: '800' }}
+                    >
+                        📋 Copy Vendor Execution Link
+                    </button>
+                    <button 
+                        onClick={() => { if(confirm(`Flush Project ${selectedProject.name}?`)) { onRemoveProject(selectedProject.id); setSelectedProjectId(null); } }} 
+                        style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.6rem', cursor: 'pointer', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}
+                    >
+                        🗑️ Flush Individual Loop
+                    </button>
+                </div>
             </div>
             <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: '900', color: pl.margin > 30 ? 'var(--success)' : 'var(--accent-color)', lineHeight: 1 }}>
@@ -457,6 +469,39 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                     >
                                         Assign Partner
                                     </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* VENDOR UPDATES PENDING APPROVAL */}
+                {(selectedProject.vendorUpdates || []).filter(u => u.status === 'pending_approval').length > 0 && (
+                    <div style={{ background: 'rgba(255,165,0,0.1)', border: '1px solid var(--accent-color)', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.5rem' }}>
+                            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                            <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>PENDING VENDOR UPDATES</h4>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {(selectedProject.vendorUpdates || []).filter(u => u.status === 'pending_approval').map(upd => (
+                                <div key={upd.id} style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.7rem', color: upd.severity !== 'Low' ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                                            {upd.type === 'risk' ? `RISK FLAG: ${upd.severity}` : 'FIELD UPDATE'}
+                                        </div>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{upd.note}</div>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>{new Date(upd.date).toLocaleString()}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button onClick={() => {
+                                            const newUpdates = selectedProject.vendorUpdates.map(u => u.id === upd.id ? { ...u, status: 'rejected' } : u);
+                                            onUpdateValue(selectedProject.id, { vendorUpdates: newUpdates });
+                                        }} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: 'var(--danger)', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}>Reject</button>
+                                        <button onClick={() => {
+                                            const newUpdates = selectedProject.vendorUpdates.map(u => u.id === upd.id ? { ...u, status: 'approved' } : u);
+                                            onUpdateValue(selectedProject.id, { vendorUpdates: newUpdates });
+                                        }} style={{ background: 'var(--accent-color)', border: 'none', color: '#000', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>Approve</button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
