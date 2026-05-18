@@ -40,7 +40,10 @@ export default function ExecutionPartnerSystem({ projects = [], onSubmitUpdate }
     
     const actualProject = projects.find(p => String(p.id) === String(projectId));
     
-    const [view, setView] = useState('onboarding'); // onboarding, active_project, success
+    const [view, setView] = useState(() => {
+        const onboarded = localStorage.getItem(`mvn_onboarded_${projectId}`);
+        return onboarded === 'true' ? 'active_project' : 'onboarding';
+    }); // onboarding, active_project, success
     const [uploadNote, setUploadNote] = useState('');
     const [riskSeverity, setRiskSeverity] = useState('Low'); // Low, Medium, High, Critical
     const [isUploadMode, setIsUploadMode] = useState(false);
@@ -153,8 +156,12 @@ export default function ExecutionPartnerSystem({ projects = [], onSubmitUpdate }
 
                 <button 
                     onClick={() => {
-                        if (currentOnboardingStep < ONBOARDING_STEPS.length - 1) setCurrentOnboardingStep(prev => prev + 1);
-                        else setView('active_project');
+                        if (currentOnboardingStep < ONBOARDING_STEPS.length - 1) {
+                            setCurrentOnboardingStep(prev => prev + 1);
+                        } else {
+                            localStorage.setItem(`mvn_onboarded_${projectId}`, 'true');
+                            setView('active_project');
+                        }
                     }} 
                     style={{ background: 'var(--accent-color)', color: '#000', padding: '1rem', borderRadius: '12px', fontWeight: '800', fontSize: '1rem', border: 'none', cursor: 'pointer', width: '100%', marginTop: '2rem' }}
                 >

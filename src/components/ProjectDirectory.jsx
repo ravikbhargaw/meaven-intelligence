@@ -509,11 +509,39 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                     <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                                         <button onClick={() => {
                                             const newUpdates = selectedProject.vendorUpdates.map(u => u.id === upd.id ? { ...u, status: 'rejected' } : u);
-                                            onUpdateValue(selectedProject.id, { vendorUpdates: newUpdates });
+                                            const newHistory = [
+                                                ...(selectedProject.history || []),
+                                                {
+                                                    id: Date.now(),
+                                                    type: 'danger',
+                                                    title: 'Rejected Vendor Submission',
+                                                    detail: `Rejected update: "${upd.note}"`,
+                                                    date: new Date().toISOString().split('T')[0],
+                                                    isClientVisible: false
+                                                }
+                                            ];
+                                            onUpdateValue(selectedProject.id, { 
+                                                vendorUpdates: newUpdates,
+                                                history: newHistory
+                                            });
                                         }} style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: 'var(--danger)', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}>Reject</button>
                                         <button onClick={() => {
                                             const newUpdates = selectedProject.vendorUpdates.map(u => u.id === upd.id ? { ...u, status: 'approved' } : u);
-                                            onUpdateValue(selectedProject.id, { vendorUpdates: newUpdates });
+                                            const newHistory = [
+                                                ...(selectedProject.history || []),
+                                                {
+                                                    id: Date.now(),
+                                                    type: upd.type === 'risk' ? 'warning' : 'success',
+                                                    title: upd.type === 'risk' ? `Approved Vendor Risk: ${upd.severity}` : 'Approved Site Update',
+                                                    detail: `${upd.note}${upd.media && upd.media.length > 0 ? ` (Attached ${upd.media.length} photos)` : ''}`,
+                                                    date: new Date().toISOString().split('T')[0],
+                                                    isClientVisible: true
+                                                }
+                                            ];
+                                            onUpdateValue(selectedProject.id, { 
+                                                vendorUpdates: newUpdates,
+                                                history: newHistory
+                                            });
                                         }} style={{ background: 'var(--accent-color)', border: 'none', color: '#000', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>Approve</button>
                                     </div>
                                 </div>
