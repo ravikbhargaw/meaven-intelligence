@@ -8,6 +8,20 @@ const ModalOverlay = ({ children }) => (
     </div>
 )
 
+// Execution stage labels — shared with ExecutionPartnerSystem
+const STAGES = [
+    'Project Assigned',
+    'Site Verification Pending',
+    'Site Audit Submitted',
+    'Readiness Approved',
+    'Production Freeze',
+    'Installation In Progress',
+    'QC Pending',
+    'Snag Closure Pending',
+    'Handover Completed',
+    'Closure Approved'
+]
+
 const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '---';
