@@ -484,15 +484,27 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {(selectedProject.vendorUpdates || []).filter(u => u.status === 'pending_approval').map(upd => (
-                                <div key={upd.id} style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div>
+                                <div key={upd.id} style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem', marginBottom: '0.8rem' }}>
+                                    <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '0.7rem', color: upd.severity !== 'Low' ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
                                             {upd.type === 'risk' ? `RISK FLAG: ${upd.severity}` : 'FIELD UPDATE'}
                                         </div>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{upd.note}</div>
-                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>{new Date(upd.date).toLocaleString()}</div>
+                                        <div style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: '600' }}>{upd.note}</div>
+                                        {upd.media && upd.media.length > 0 && (
+                                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem', flexWrap: 'wrap' }}>
+                                                {upd.media.map((img, idx) => (
+                                                    <img 
+                                                        key={idx} 
+                                                        src={img} 
+                                                        style={{ width: '90px', height: '90px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-color)', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }} 
+                                                        alt="pending-vendor-media" 
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{new Date(upd.date).toLocaleString()}</div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                                         <button onClick={() => {
                                             const newUpdates = selectedProject.vendorUpdates.map(u => u.id === upd.id ? { ...u, status: 'rejected' } : u);
                                             onUpdateValue(selectedProject.id, { vendorUpdates: newUpdates });

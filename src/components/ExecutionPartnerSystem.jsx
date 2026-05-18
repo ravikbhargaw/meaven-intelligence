@@ -48,6 +48,20 @@ export default function ExecutionPartnerSystem({ projects = [], onSubmitUpdate }
     // Onboarding State
     const [currentOnboardingStep, setCurrentOnboardingStep] = useState(0);
 
+    // Media Upload State
+    const [uploadedMedia, setUploadedMedia] = useState([]);
+
+    const handleFileChange = (e) => {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setUploadedMedia(prev => [...prev, reader.result]);
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
     // If invalid link
     if (!actualProject) {
         return (
@@ -92,13 +106,17 @@ export default function ExecutionPartnerSystem({ projects = [], onSubmitUpdate }
             date: new Date().toISOString(),
             note: uploadNote,
             severity: riskSeverity,
-            status: 'pending_approval'
+            status: 'pending_approval',
+            media: uploadedMedia
         };
         
         if (onSubmitUpdate) {
             onSubmitUpdate(actualProject.id, newUpdate);
         }
         
+        setUploadNote('');
+        setUploadedMedia([]);
+        setIsUploadMode(false);
         setView('success');
     };
 
@@ -202,6 +220,13 @@ export default function ExecutionPartnerSystem({ projects = [], onSubmitUpdate }
                                         <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{new Date(upd.date).toLocaleDateString()}</span>
                                     </div>
                                     <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.4 }}>{upd.note}</p>
+                                    {upd.media && upd.media.length > 0 && (
+                                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem', overflowX: 'auto' }}>
+                                            {upd.media.map((img, idx) => (
+                                                <img key={idx} src={img} style={{ width: '80px', height: '80px', borderRadius: '6px', objectFit: 'cover', border: '1px solid var(--border-color)' }} alt="vendor-site-photo" />
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         )}
@@ -242,10 +267,38 @@ export default function ExecutionPartnerSystem({ projects = [], onSubmitUpdate }
                                 placeholder="Describe site condition, snags, or readiness..." 
                                 style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: '#fff', padding: '1rem', borderRadius: '8px', minHeight: '80px', outline: 'none', fontFamily: 'inherit' }} 
                             />
+
+                            {uploadedMedia.length > 0 && (
+                                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', padding: '0.5rem 0' }}>
+                                    {uploadedMedia.map((img, i) => (
+                                        <div key={i} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0 }}>
+                                            <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Preview" />
+                                            <button 
+                                                type="button"
+                                                onClick={() => setUploadedMedia(prev => prev.filter((_, idx) => idx !== i))}
+                                                style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: '0.6rem', padding: '2px 4px', cursor: 'pointer' }}
+                                            >✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            <input 
+                                type="file" 
+                                id="vendor-media-upload" 
+                                multiple 
+                                accept="image/*" 
+                                style={{ display: 'none' }} 
+                                onChange={handleFileChange} 
+                            />
                             
                             <div style={{ display: 'flex', gap: '1rem' }}>
-                                <button style={{ flex: 1, background: 'var(--bg-secondary)', border: '1px dashed var(--text-secondary)', padding: '1rem', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: '700' }}>
-                                    + ADD MEDIA
+                                <button 
+                                    type="button"
+                                    onClick={() => document.getElementById('vendor-media-upload').click()}
+                                    style={{ flex: 1, background: 'var(--bg-secondary)', border: '1px dashed var(--text-secondary)', padding: '1rem', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}
+                                >
+                                    + ADD MEDIA ({uploadedMedia.length})
                                 </button>
                                 <button onClick={handleUploadUpdate} style={{ flex: 1, background: riskSeverity !== 'Low' ? 'var(--danger)' : 'var(--success)', color: '#000', border: 'none', padding: '1rem', borderRadius: '8px', fontWeight: '800' }}>
                                     TRANSMIT
