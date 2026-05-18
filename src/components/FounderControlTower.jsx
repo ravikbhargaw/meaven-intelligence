@@ -19,7 +19,9 @@ const FounderControlTower = ({ projects, vendors, onNavigate }) => {
             const daysSinceLastUpdate = p.history?.length ? Math.floor((now - new Date(p.history[0].timestamp || p.history[0].date)) / (1000 * 60 * 60 * 24)) : 0;
             
             if (daysSinceLastUpdate > 2) riskScore += 2;
-            if (p.stageIndex > 1 && !p.vendorId) riskScore += 3;
+            const linkedVendor = vendors?.find(v => v && (v.contracts || []).some(c => c.projectName === p.name && (c.status === 'Active' || !c.status)));
+
+            if (p.stageIndex > 1 && !linkedVendor) riskScore += 3;
 
             // Health Overview
             if (riskScore === 0) healthOverview.healthy.push(p.name);
@@ -33,8 +35,8 @@ const FounderControlTower = ({ projects, vendors, onNavigate }) => {
                     name: p.name,
                     stage: p.stageIndex || 1,
                     daysDelayed: daysSinceLastUpdate,
-                    blocker: !p.vendorId ? 'No Vendor Assigned' : 'Execution Inactive',
-                    vendorName: p.vendorId ? vendors?.find(v => String(v.id) === String(p.vendorId))?.name : 'None',
+                    blocker: !linkedVendor ? 'No Vendor Assigned' : 'Execution Inactive',
+                    vendorName: linkedVendor ? linkedVendor.name : 'None',
                     riskScore: riskScore
                 });
             }
@@ -46,7 +48,7 @@ const FounderControlTower = ({ projects, vendors, onNavigate }) => {
                         id: u.id,
                         type: u.type === 'risk' ? 'Risk Flag' : 'Site Update',
                         projectName: p.name,
-                        vendorName: vendors?.find(v => String(v.id) === String(p.vendorId))?.name || 'Unknown',
+                        vendorName: linkedVendor ? linkedVendor.name : 'Unknown',
                         time: new Date(u.timestamp || u.date).toLocaleDateString(),
                         urgency: u.severity || 'Medium'
                     });
@@ -55,7 +57,7 @@ const FounderControlTower = ({ projects, vendors, onNavigate }) => {
                         priorities.push({
                             id: `upd-${u.id}`,
                             projectName: p.name,
-                            vendorName: vendors?.find(v => String(v.id) === String(p.vendorId))?.name || 'Unknown',
+                            vendorName: linkedVendor ? linkedVendor.name : 'Unknown',
                             priority: u.severity,
                             action: 'Pending Update Approval',
                             delay: 'Action Required',
