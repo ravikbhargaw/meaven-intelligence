@@ -489,7 +489,9 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                         <div style={{ fontSize: '0.7rem', color: upd.severity !== 'Low' ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
                                             {upd.type === 'risk' ? `RISK FLAG: ${upd.severity}` : 'FIELD UPDATE'}
                                         </div>
-                                        <div style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: '600' }}>{upd.note}</div>
+                                        <div style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: '600' }}>
+                                            {upd.note || "⚠️ [No description provided - Legacy or empty update]"}
+                                        </div>
                                         {upd.media && upd.media.length > 0 && (
                                             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem', flexWrap: 'wrap' }}>
                                                 {upd.media.map((img, idx) => (
