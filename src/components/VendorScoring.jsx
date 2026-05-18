@@ -68,7 +68,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
     return masked + visible
   }
 
-  const selectedVendor = vendors.find(v => v.id === selectedVendorId)
+  const selectedVendor = (vendors || []).find(v => v && v.id === selectedVendorId)
   const selectedContract = selectedVendor?.contracts?.find(c => c.id === activeContractId)
 
   const getGlobalFinancials = (v) => {
@@ -512,7 +512,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                         
                         if (linkMode === 'existing') {
                             // CHECK FOR DUPLICATE LINKING
-                            const existingVendor = vendors.find(v => v.contracts?.some(c => c.projectName === pName))
+                            const existingVendor = (vendors || []).find(v => v && v.contracts?.some(c => c.projectName === pName))
                             if (existingVendor) {
                                 alert(`CRITICAL CONFLICT: This project is already linked to ${existingVendor.name}. Each project site is limited to one primary partner to ensure accountability.`)
                                 return
