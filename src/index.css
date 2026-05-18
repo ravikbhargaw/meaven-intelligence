@@ -539,3 +539,24 @@ button {
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
+
+/* Responsive Sidebar Group Headers styling */
+.sidebar-group-header {
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+  .sidebar-group-header .sidebar-text {
+    display: none !important;
+  }
+  .sidebar-group-header {
+    margin-top: 0.8rem !important;
+    margin-bottom: 0.2rem !important;
+    padding-left: 0 !important;
+    justify-content: center;
+  }
+  .sidebar-group-header hr.sidebar-divider {
+    display: block !important;
+    opacity: 0.3;
+  }
+}

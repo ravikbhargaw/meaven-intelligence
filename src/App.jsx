@@ -890,16 +890,27 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '32px', marginBottom: '0.5rem', filter: 'var(--logo-filter)', transition: 'filter 0.5s ease' }} />
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.4em', fontWeight: '500', textTransform: 'uppercase', margin: 0 }}>INTELLIGENCE</p>
               </div>
-              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
+                <SidebarGroupHeader label="Core Command" />
                 <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleNavigate('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
+                
+                <SidebarGroupHeader label="Site Execution" />
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Operations Hub" />}
                 <SidebarItem active={activeTab === 'audit'} onClick={() => handleNavigate('audit')} icon="📋" label="Execution Audit" />
                 <SidebarItem active={activeTab === 'postQC'} onClick={() => handleNavigate('postQC')} icon="🔍" label="Post-Install QC" />
-                {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />}
-                {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />}
-                {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'executionOS'} onClick={() => handleNavigate('executionOS')} icon="🎛️" label="Execution OS" />}
+
+                {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && (
+                  <>
+                    <SidebarGroupHeader label="Platform Engines" />
+                    <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />
+                    <SidebarItem active={activeTab === 'calculator'} onClick={() => handleNavigate('calculator')} icon="🧮" label="Tech Calculator" />
+                    <SidebarItem active={activeTab === 'executionOS'} onClick={() => handleNavigate('executionOS')} icon="🎛️" label="Execution OS" />
+                  </>
+                )}
+
                 {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.email === 'ravi.bhargaw@meaven.in') && (
                   <>
+                    <SidebarGroupHeader label="Executive Suite" />
                     <SidebarItem active={activeTab === 'strategy'} onClick={() => handleNavigate('strategy')} icon="🧠" label="Executive Strategy" />
                     <SidebarItem active={activeTab === 'reports'} onClick={() => handleNavigate('reports')} icon="📈" label="Intelligence Reports" />
                     <SidebarItem active={activeTab === 'admin'} onClick={() => handleNavigate('admin')} icon="⚙️" label="Governance Console" />
@@ -1190,11 +1201,33 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
   )
 }
 
+function SidebarGroupHeader({ label }) {
+  return (
+    <div className="sidebar-group-header" style={{ 
+      fontSize: '0.62rem', 
+      fontWeight: '700', 
+      color: 'var(--text-secondary)', 
+      letterSpacing: '0.15em', 
+      textTransform: 'uppercase', 
+      marginTop: '1.1rem', 
+      marginBottom: '0.3rem', 
+      paddingLeft: '1rem',
+      opacity: 0.5,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem'
+    }}>
+      <span className="sidebar-text">{label}</span>
+      <hr className="sidebar-divider" style={{ display: 'none', border: 'none', borderTop: '1px solid var(--border-color)', margin: 0, width: '100%' }} />
+    </div>
+  )
+}
+
 function SidebarItem({ icon, label, active, onClick }) {
   return (
     <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', borderRadius: '10px', color: active ? 'var(--accent-color)' : 'var(--text-secondary)', background: active ? 'rgba(102, 178, 194, 0.1)' : 'transparent', width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer' }}>
       <span style={{ fontSize: '1.2rem' }}>{icon}</span>
-      <span style={{ fontWeight: active ? '600' : '400' }}>{label}</span>
+      <span className="sidebar-text" style={{ fontWeight: active ? '600' : '400' }}>{label}</span>
     </button>
   )
 }
