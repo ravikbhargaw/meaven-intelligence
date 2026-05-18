@@ -885,69 +885,75 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
         </select>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.8rem' }}>
         {filteredVendors.map(vendor => {
           const score = calculateScore(vendor.metrics)
           const globalFin = getGlobalFinancials(vendor)
 
           return (
-            <div key={vendor.id} className="card vendor-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => handleSetSelectedVendor(vendor.id)}>
+            <div
+              key={vendor.id}
+              className="card vendor-card"
+              onClick={() => handleSetSelectedVendor(vendor.id)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.7rem',
+                cursor: 'pointer',
+                position: 'relative',
+                overflow: 'hidden',
+                padding: '1rem',
+                minHeight: '160px',
+                justifyContent: 'space-between'
+              }}
+            >
+              {/* Top: category + score */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(102, 178, 194, 0.1)', color: 'var(--accent-color)', textTransform: 'uppercase', fontWeight: '700' }}>{vendor.category}</span>
-                  <h3 style={{ 
-                      marginTop: '0.5rem', 
-                      fontSize: '1.1rem',
-                      filter: isReadOnly ? 'blur(4px)' : 'none',
-                      opacity: isReadOnly ? 0.4 : 1,
-                      transition: 'all 0.3s ease'
-                  }}>
-                    {vendor.name}
-                    {filteredVendors.length > 0 && vendor.id === Math.max(...filteredVendors.map(v => (v && v.id) || 0)) && !isReadOnly && (
-                        vendor.status === 'Certified' ? (
-                            <span style={{ marginLeft: '0.5rem', fontSize: '0.6rem', color: 'var(--success)', border: '1px solid var(--success)', padding: '0.1rem 0.4rem', borderRadius: '4px', verticalAlign: 'middle' }}>AI RECOMMENDED</span>
-                        ) : (
-                            <span 
-                                title={`PENDING COMPLIANCE: ${!vendor.isGstVerified ? 'GST Verification' : ''}${!vendor.isGstVerified && !vendor.isCertVerified ? ', ' : ''}${!vendor.isCertVerified ? 'Technical Quality Audit' : ''} required before certification.`}
-                                style={{ marginLeft: '0.5rem', fontSize: '0.6rem', color: '#FF9500', border: '1px solid #FF9500', padding: '0.1rem 0.4rem', borderRadius: '4px', verticalAlign: 'middle', cursor: 'help' }}
-                            >
-                                ⚠️ AI RECOMMENDED (VETTING INCOMPLETE)
-                            </span>
-                        )
-                    )}
-                  </h3>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', borderRadius: '20px', background: vendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)', color: vendor.status === 'Certified' ? 'var(--success)' : '#FF9500', fontWeight: '600' }}>
-                        {vendor.status}
-                    </span>
-                    <div style={{ fontSize: '1.2rem', fontWeight: '800', color: score > 80 ? 'var(--success)' : 'var(--accent-color)' }}>
-                        {score}
-                    </div>
+                <span style={{ fontSize: '0.55rem', padding: '0.15rem 0.4rem', borderRadius: '4px', background: 'rgba(102, 178, 194, 0.1)', color: 'var(--accent-color)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>
+                  {vendor.category || 'General'}
+                </span>
+                <div style={{ fontSize: '1.1rem', fontWeight: '900', color: score > 80 ? 'var(--success)' : 'var(--accent-color)', lineHeight: 1 }}>
+                  {score}
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.85rem' }}>
-                <div>
-                  <p style={{ color: 'var(--text-secondary)', marginBottom: '0.2rem', fontSize: '0.7rem' }}>CONTACT</p>
-                  <p>{vendor.contact}</p>
-                </div>
-                <div>
-                  <p style={{ color: 'var(--text-secondary)', marginBottom: '0.2rem', fontSize: '0.7rem' }}>PORTFOLIO DUE</p>
-                  <p style={{ fontWeight: '700', color: 'var(--danger)', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(globalFin.due / 100000).toFixed(2)}L</p>
-                </div>
+              {/* Middle: name + status */}
+              <div>
+                <h3 style={{
+                  margin: '0 0 0.35rem 0',
+                  fontSize: '0.9rem',
+                  fontWeight: '800',
+                  lineHeight: '1.2',
+                  filter: isReadOnly ? 'blur(4px)' : 'none',
+                  opacity: isReadOnly ? 0.4 : 1
+                }}>
+                  {vendor.name}
+                </h3>
+                <span style={{
+                  fontSize: '0.55rem',
+                  padding: '0.15rem 0.5rem',
+                  borderRadius: '20px',
+                  background: vendor.status === 'Certified' ? 'rgba(50, 215, 75, 0.1)' : 'rgba(255, 149, 0, 0.1)',
+                  color: vendor.status === 'Certified' ? 'var(--success)' : '#FF9500',
+                  fontWeight: '700'
+                }}>
+                  {(vendor.status || 'Vetting').toUpperCase()}
+                </span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.55rem', color: vendor.isMsaSigned ? 'var(--success)' : 'var(--text-secondary)', border: `1px solid ${vendor.isMsaSigned ? 'var(--success)' : 'var(--border-color)'}`, padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                        {vendor.isMsaSigned ? 'MSA ✓' : 'MSA –'}
-                    </span>
-                    <span style={{ fontSize: '0.55rem', color: vendor.isGstVerified ? 'var(--success)' : 'var(--text-secondary)', border: `1px solid ${vendor.isGstVerified ? 'var(--success)' : 'var(--border-color)'}`, padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                        {vendor.isGstVerified ? 'GST ✓' : 'GST –'}
-                    </span>
+              {/* Bottom: compliance flags + project count */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.6rem' }}>
+                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                  <span style={{ fontSize: '0.5rem', color: vendor.isMsaSigned ? 'var(--success)' : 'var(--text-secondary)', border: `1px solid ${vendor.isMsaSigned ? 'var(--success)' : 'var(--border-color)'}`, padding: '0.1rem 0.3rem', borderRadius: '3px' }}>
+                    {vendor.isMsaSigned ? 'MSA ✓' : 'MSA –'}
+                  </span>
+                  <span style={{ fontSize: '0.5rem', color: vendor.isGstVerified ? 'var(--success)' : 'var(--text-secondary)', border: `1px solid ${vendor.isGstVerified ? 'var(--success)' : 'var(--border-color)'}`, padding: '0.1rem 0.3rem', borderRadius: '3px' }}>
+                    {vendor.isGstVerified ? 'GST ✓' : 'GST –'}
+                  </span>
                 </div>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{vendor.contracts?.length || 0} Projects</span>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  {vendor.contracts?.length || 0} sites
+                </span>
               </div>
             </div>
           )
