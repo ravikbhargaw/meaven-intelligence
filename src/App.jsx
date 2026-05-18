@@ -890,7 +890,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '32px', marginBottom: '0.5rem', filter: 'var(--logo-filter)', transition: 'filter 0.5s ease' }} />
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.4em', fontWeight: '500', textTransform: 'uppercase', margin: 0 }}>INTELLIGENCE</p>
               </div>
-              <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
+              <nav className="sidebar-nav-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1, paddingBottom: '1.5rem' }}>
                 <SidebarGroupHeader label="Core Command" />
                 <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleNavigate('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
                 

@@ -136,12 +136,22 @@ button {
   width: 280px;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
-  padding: 2rem 1.5rem;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
   display: flex;
   flex-direction: column;
   position: fixed;
   height: 100vh;
   z-index: 100;
+}
+
+.sidebar-nav-container {
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.sidebar-nav-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .main-content {
