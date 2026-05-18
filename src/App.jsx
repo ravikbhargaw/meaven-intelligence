@@ -199,7 +199,32 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     setVendors(localVendors)
                 }
             } else {
-                setVendors(cloudVendors.map(v => v.data).filter(Boolean))
+                const normalizedVendors = cloudVendors
+                    .map(v => {
+                        // Support both wrapped { id, name, data } and flat rows
+                        const d = v.data || v
+                        // Check deletion at root level OR inside data
+                        const deletedStatuses = ['delete', 'deleted']
+                        if (deletedStatuses.includes((v.status || '').toLowerCase())) return null
+                        if (deletedStatuses.includes((d.status || '').toLowerCase())) return null
+                        // Normalize: keep original names AND add hub aliases so all UI fields populate
+                        return {
+                            ...d,
+                            // Hub uses .pan and .gst directly — VendorIQ stores same names, keep both
+                            pan: d.pan || d.panNumber || '',
+                            gst: d.gst || d.gstNumber || '',
+                            phone: d.phone || d.mobile || '',
+                            address: d.address || d.location || '',
+                            contact: d.contact || d.email || '',
+                            // Ensure required arrays are always arrays
+                            contracts: Array.isArray(d.contracts) ? d.contracts : [],
+                            history: Array.isArray(d.history) ? d.history : [],
+                            documents: Array.isArray(d.documents) ? d.documents : [],
+                            metrics: d.metrics || { price: 50, speed: 50, precision: 50, communication: 50 }
+                        }
+                    })
+                    .filter(Boolean)
+                setVendors(normalizedVendors)
             }
 
             if (!cloudPortfolios || cloudPortfolios.length === 0) {
