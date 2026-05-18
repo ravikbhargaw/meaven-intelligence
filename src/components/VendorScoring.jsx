@@ -162,52 +162,6 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
 
         <div className="stack-on-mobile" style={{ gap: '2rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1 }}>
-                <div className="card" style={{ padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Project Sites</h4>
-                        {!isReadOnly && (
-                            <button onClick={() => { setLinkMode('existing'); setIsContractModalOpen(true); }} style={{ color: 'var(--accent-color)', fontSize: '0.75rem', fontWeight: '600' }}>+ Link Project</button>
-                        )}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                        {(selectedVendor.contracts || []).map(c => (
-                            <div 
-                                key={c.id} 
-                                onClick={() => setActiveContractId(c.id)}
-                                style={{ 
-                                    padding: '1rem', 
-                                    borderRadius: 'var(--radius-standard)', 
-                                    background: activeContractId === c.id ? 'var(--accent-color)' : 'var(--bg-accent)',
-                                    color: activeContractId === c.id ? '#fff' : 'var(--text-primary)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    border: '1px solid ' + (activeContractId === c.id ? 'var(--accent-color)' : 'var(--border-color)')
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem' }}>{c.projectName}</p>
-                                    {(() => {
-                                        const p = projects.find(proj => proj.name === c.projectName);
-                                        const status = p?.status || 'Active';
-                                        return (
-                                            <span 
-                                                title="This status is synchronized with Project Central. Modify it there to update partner records."
-                                                style={{ 
-                                                    fontSize: '0.5rem', padding: '0.2rem 0.5rem', borderRadius: '4px', 
-                                                    background: status === 'Completed' ? 'var(--success)' : (status === 'On Hold' ? 'var(--danger)' : (status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)')),
-                                                    color: '#fff', fontWeight: '800', cursor: 'help'
-                                                }}
-                                            >
-                                                {status.toUpperCase()}
-                                            </span>
-                                        );
-                                    })()}
-                                </div>
-                                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', opacity: 0.7 }}>Order: ₹{(c.orderValue / 100000).toFixed(2)}L</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
 
                 <div className="card" style={{ background: 'var(--bg-accent)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -406,6 +360,54 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', flex: 1 }}>
+                {/* Project Sites — selector for financial ledger below */}
+                <div className="card" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Project Sites</h4>
+                        {!isReadOnly && (
+                            <button onClick={() => { setLinkMode('existing'); setIsContractModalOpen(true); }} style={{ color: 'var(--accent-color)', fontSize: '0.75rem', fontWeight: '600' }}>+ Link Project</button>
+                        )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                        {(selectedVendor.contracts || []).map(c => (
+                            <div
+                                key={c.id}
+                                onClick={() => setActiveContractId(c.id)}
+                                style={{
+                                    padding: '1rem',
+                                    borderRadius: 'var(--radius-standard)',
+                                    background: activeContractId === c.id ? 'var(--accent-color)' : 'var(--bg-accent)',
+                                    color: activeContractId === c.id ? '#fff' : 'var(--text-primary)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    border: '1px solid ' + (activeContractId === c.id ? 'var(--accent-color)' : 'var(--border-color)')
+                                }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <p style={{ margin: 0, fontWeight: '700', fontSize: '0.9rem' }}>{c.projectName}</p>
+                                    {(() => {
+                                        const p = projects.find(proj => proj.name === c.projectName);
+                                        const status = p?.status || 'Active';
+                                        return (
+                                            <span
+                                                title="This status is synchronized with Project Central. Modify it there to update partner records."
+                                                style={{
+                                                    fontSize: '0.5rem', padding: '0.2rem 0.5rem', borderRadius: '4px',
+                                                    background: status === 'Completed' ? 'var(--success)' : (status === 'On Hold' ? 'var(--danger)' : (status === 'Final Closure' ? '#7b61ff' : 'var(--accent-color)')),
+                                                    color: '#fff', fontWeight: '800', cursor: 'help'
+                                                }}
+                                            >
+                                                {status.toUpperCase()}
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
+                                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', opacity: 0.7 }}>Order: ₹{(c.orderValue / 100000).toFixed(2)}L</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 {selectedContract ? (
                     <div className="card animate-fade-in" style={{ border: '1px solid var(--accent-color)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
