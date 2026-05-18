@@ -10,7 +10,7 @@ export default function FieldPortal({ projects, vendors, onSubmitReport, onExit 
 
     const handleLogin = (e) => {
         e.preventDefault()
-        const vendor = vendors.find(v => v.id.toString() === selectedVendorId)
+        const vendor = vendors.find(v => v && v.id?.toString() === selectedVendorId)
         if (!vendor) {
             alert('Please select a Partner Profile.')
             return
@@ -39,7 +39,7 @@ export default function FieldPortal({ projects, vendors, onSubmitReport, onExit 
         setDetails('')
     }
 
-    const vendorProjects = projects.filter(p => p.assignedVendor && vendors.find(v => v.id.toString() === selectedVendorId)?.name === p.assignedVendor)
+    const vendorProjects = projects.filter(p => p && p.assignedVendor && vendors.find(v => v && v.id?.toString() === selectedVendorId)?.name === p.assignedVendor)
 
     return (
         <div className="animate-fade-in" style={{ minHeight: '100vh', width: '100vw', background: '#0a0a0a', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem', fontFamily: 'Inter, sans-serif' }}>
@@ -53,7 +53,9 @@ export default function FieldPortal({ projects, vendors, onSubmitReport, onExit 
                     <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <select required value={selectedVendorId} onChange={e => setSelectedVendorId(e.target.value)} style={{ padding: '0.8rem', background: '#111', border: '1px solid #333', color: '#fff', borderRadius: '6px' }}>
                             <option value="">Select Partner Profile...</option>
-                            {vendors.map(v => <option key={v.id} value={v.id.toString()}>{v.name}</option>)}
+                            {vendors.map((v, idx) => v && (
+                                <option key={v.id || idx} value={v.id ? v.id.toString() : ''}>{v.name}</option>
+                            ))}
                         </select>
                         <input required type="password" placeholder="4-Digit Access Code" maxLength="4" value={pin} onChange={e => setPin(e.target.value)} style={{ padding: '0.8rem', background: '#111', border: '1px solid #333', color: '#fff', borderRadius: '6px', textAlign: 'center', letterSpacing: '0.5em' }} />
                         <button type="submit" style={{ background: 'var(--accent-color)', color: '#000', padding: '1rem', border: 'none', borderRadius: '6px', fontWeight: '800', cursor: 'pointer', marginTop: '1rem' }}>AUTHENTICATE</button>
@@ -71,7 +73,9 @@ export default function FieldPortal({ projects, vendors, onSubmitReport, onExit 
                             <>
                                 <select required value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)} style={{ padding: '0.8rem', background: '#111', border: '1px solid #333', color: '#fff', borderRadius: '6px' }}>
                                     <option value="">Select Project Site...</option>
-                                    {vendorProjects.map(p => <option key={p.id} value={p.id.toString()}>{p.name}</option>)}
+                                    {vendorProjects.map((p, idx) => p && (
+                                        <option key={p.id || idx} value={p.id ? p.id.toString() : ''}>{p.name}</option>
+                                    ))}
                                 </select>
                                 <select required value={issueType} onChange={e => setIssueType(e.target.value)} style={{ padding: '0.8rem', background: '#111', border: '1px solid #333', color: '#fff', borderRadius: '6px' }}>
                                     <option value="Readiness Issue">Site Not Ready (Civil/Wall/Floor)</option>

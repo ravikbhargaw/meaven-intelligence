@@ -116,7 +116,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   const recommendations = getRecommendations()
 
   const handleQuickAssign = (vendorId) => {
-    setSelectedVendorId(vendorId.toString())
+    setSelectedVendorId(vendorId ? vendorId.toString() : '')
     setIsAssignModalOpen(true)
   }
 
@@ -831,7 +831,11 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                     style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }}
                                 >
                                     <option value="" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Choose from bench...</option>
-                                    {vendors.map(v => <option key={v.id} value={v.id.toString()} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>{v.name} ({v.category})</option>)}
+                                    {vendors.map((v, idx) => v && (
+                                        <option key={v.id || idx} value={v.id ? v.id.toString() : ''} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+                                            {v.name || 'Unnamed Partner'} ({v.category || 'General'})
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         ) : (
@@ -874,7 +878,11 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <select name="vendorId" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
                             <option value="">Select Replacement...</option>
-                            {vendors.filter(v => v.id !== linkedVendor?.id).map(v => <option key={v.id} value={v.id.toString()}>{v.name}</option>)}
+                            {vendors.filter(v => v && v.id !== linkedVendor?.id).map((v, idx) => (
+                                <option key={v.id || idx} value={v.id ? v.id.toString() : ''}>
+                                    {v.name || 'Unnamed Partner'}
+                                </option>
+                            ))}
                         </select>
                         <input name="orderValue" type="number" required placeholder="New Contract Value" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
