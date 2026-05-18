@@ -1262,6 +1262,25 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
             />
           </div>
         )}
+        {isNewProjectModalOpen && (
+            <NewProjectModal
+                portfolios={portfolios}
+                onCreateProject={handleCreateProject}
+                onClose={() => setIsNewProjectModalOpen(false)}
+            />
+        )}
+        {isNewPortfolioModalOpen && (
+            <NewPortfolioModal
+                onCreatePortfolio={handleCreatePortfolio}
+                onClose={() => setIsNewPortfolioModalOpen(false)}
+            />
+        )}
+        {showPinModal && (
+            <PinModal
+                onVerify={handlePinVerify}
+                onClose={() => { setShowPinModal(false); setClientView(false); setActiveTab('dashboard'); }}
+            />
+        )}
         <AiAssistant 
           activeTab={activeTab} 
           clientView={clientView} 

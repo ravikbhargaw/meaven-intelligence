@@ -92,56 +92,63 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                 <div className="admin-section-content animate-slide-up" key={activeSection} style={{ flex: 1, minWidth: 0 }}>
                     {activeSection === 'portfolios' && (
                         <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                            {portfolios.map(p => (
-                                <div key={p.id} className="card" style={{ padding: '2rem', border: `1px solid ${p.isPortalActive ? 'var(--success)' : 'var(--border-color)'}` }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                                        <div>
-                                            <h3 style={{ margin: 0, fontSize: '1.3rem' }}>{p.name}</h3>
-                                            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>POC: {p.pocName || 'TBD'} • {p.pocEmail}</p>
-                                        </div>
-                                        <div style={{ 
-                                            padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.6rem', fontWeight: '900', 
-                                            background: p.isPortalActive ? 'rgba(52, 215, 75, 0.1)' : 'rgba(255,255,255,0.05)',
-                                            color: p.isPortalActive ? 'var(--success)' : 'var(--text-secondary)',
-                                            border: `1px solid ${p.isPortalActive ? 'var(--success)' : 'var(--border-color)'}`
-                                        }}>
-                                            {p.isPortalActive ? '● LIVE PORTAL' : 'OFFLINE'}
-                                        </div>
-                                    </div>
-                                    
-                                    <div style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid var(--border-color)' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Magic Link</span>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <span style={{ fontSize: '0.6rem', color: 'var(--accent-color)', fontWeight: '800' }}>PIN: {p.clientPin || '2410'}</span>
-                                                <button onClick={() => handleUpdatePin(p)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.7rem', cursor: 'pointer', padding: 0 }}>✎</button>
+                            {portfolios.length === 0 ? (
+                                <div style={{ color: 'var(--text-secondary)', padding: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed var(--border-color)', gridColumn: '1 / -1' }}>
+                                    <p style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>No Active Portfolios</p>
+                                    <p style={{ fontSize: '0.8rem', opacity: 0.7 }}>Initialize a new project loop or create a portfolio to generate client portals.</p>
+                                </div>
+                            ) : (
+                                portfolios.map(p => (
+                                    <div key={p.id} className="card" style={{ padding: '2rem', border: `1px solid ${p.isPortalActive ? 'var(--success)' : 'var(--border-color)'}` }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                            <div>
+                                                <h3 style={{ margin: 0, fontSize: '1.3rem' }}>{p.name}</h3>
+                                                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>POC: {p.pocName || 'TBD'} • {p.pocEmail}</p>
+                                            </div>
+                                            <div style={{ 
+                                                padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.6rem', fontWeight: '900', 
+                                                background: p.isPortalActive ? 'rgba(52, 215, 75, 0.1)' : 'rgba(255,255,255,0.05)',
+                                                color: p.isPortalActive ? 'var(--success)' : 'var(--text-secondary)',
+                                                border: `1px solid ${p.isPortalActive ? 'var(--success)' : 'var(--border-color)'}`
+                                            }}>
+                                                {p.isPortalActive ? '● LIVE PORTAL' : 'OFFLINE'}
                                             </div>
                                         </div>
-                                        <div style={{ color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            meaven.in/track/{p.accessKey || p.id}
+                                        
+                                        <div style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid var(--border-color)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Magic Link</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <span style={{ fontSize: '0.6rem', color: 'var(--accent-color)', fontWeight: '800' }}>PIN: {p.clientPin || '2410'}</span>
+                                                    <button onClick={() => handleUpdatePin(p)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.7rem', cursor: 'pointer', padding: 0 }}>✎</button>
+                                                </div>
+                                            </div>
+                                            <div style={{ color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                meaven.in/track/{p.accessKey || p.id}
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '0.8rem' }}>
+                                            {!p.isPortalActive ? (
+                                                <button 
+                                                    onClick={() => onUpdatePortfolio(p.id, { ...p, isPortalActive: true })}
+                                                    className="btn btn-primary" 
+                                                    style={{ flex: 1, justifyContent: 'center' }}
+                                                >
+                                                    🚀 ACTIVATE
+                                                </button>
+                                            ) : (
+                                                <>
+                                                    <button onClick={() => handleShareEmail(p)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center', fontSize: '0.75rem' }}>📧 Email</button>
+                                                    <button onClick={() => handleShareWhatsApp(p)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center', fontSize: '0.75rem', color: '#25D366', borderColor: '#25D366' }}>📱 WhatsApp</button>
+                                                    <button onClick={() => confirm(`Kill access for ${p.name}?`) && onUpdatePortfolio(p.id, { ...p, isPortalActive: false })} className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>🛑</button>
+                                                </>
+                                            )}
+                                            <button title="Reset Keys" onClick={() => onUpdatePortfolio(p.id, { ...p, accessKey: Math.random().toString(36).substr(2, 8) })} className="btn btn-outline">🔄</button>
                                         </div>
                                     </div>
-
-                                    <div style={{ display: 'flex', gap: '0.8rem' }}>
-                                        {!p.isPortalActive ? (
-                                            <button 
-                                                onClick={() => onUpdatePortfolio(p.id, { ...p, isPortalActive: true })}
-                                                className="btn btn-primary" 
-                                                style={{ flex: 1, justifyContent: 'center' }}
-                                            >
-                                                🚀 ACTIVATE
-                                            </button>
-                                        ) : (
-                                            <>
-                                                <button onClick={() => handleShareEmail(p)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center', fontSize: '0.75rem' }}>📧 Email</button>
-                                                <button onClick={() => handleShareWhatsApp(p)} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center', fontSize: '0.75rem', color: '#25D366', borderColor: '#25D366' }}>📱 WhatsApp</button>
-                                                <button onClick={() => confirm(`Kill access for ${p.name}?`) && onUpdatePortfolio(p.id, { ...p, isPortalActive: false })} className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>🛑</button>
-                                            </>
-                                        )}
-                                        <button title="Reset Keys" onClick={() => onUpdatePortfolio(p.id, { ...p, accessKey: Math.random().toString(36).substr(2, 8) })} className="btn btn-outline">🔄</button>
-                                    </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     )}
 
