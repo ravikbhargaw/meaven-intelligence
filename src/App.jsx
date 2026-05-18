@@ -166,6 +166,43 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     setActiveTab(prevTab)
   }
 
+  // --- VENDOR NORMALIZATION: Full root+data merge for VendorIQ compatibility ---
+  const normalizeVendors = (rows) => {
+    return rows
+      .map(v => {
+        // Merge root-level Supabase columns WITH nested data JSONB
+        // This handles both hub vendors ({ id, name, data: {...} })
+        // and VendorIQ vendors that may store fields at root level too
+        const rootFields = { ...v }
+        delete rootFields.data
+        const dataFields = v.data || {}
+        // data takes precedence over root for actual vendor fields
+        const d = { ...rootFields, ...dataFields }
+
+        // Filter out deleted vendors (VendorIQ sets status at root level)
+        const deletedStatuses = ['delete', 'deleted']
+        if (deletedStatuses.includes((v.status || '').toLowerCase())) return null
+        if (deletedStatuses.includes((d.status || '').toLowerCase())) return null
+
+        return {
+          ...d,
+          // Field aliases: ensure hub field names are always populated
+          pan:     d.pan     || d.panNumber  || '',
+          gst:     d.gst     || d.gstNumber  || '',
+          phone:   d.phone   || d.mobile     || '',
+          address: d.address || d.location   || '',
+          contact: d.contact || d.email      || '',
+          name:    d.name    || v.name       || 'Unnamed Vendor',
+          // Ensure hub-required arrays are always arrays (never undefined/object)
+          contracts: Array.isArray(d.contracts) ? d.contracts : [],
+          history:   Array.isArray(d.history)   ? d.history   : [],
+          documents: Array.isArray(d.documents) ? d.documents : [],
+          metrics: d.metrics || { price: 50, speed: 50, precision: 50, communication: 50 }
+        }
+      })
+      .filter(Boolean)
+  }
+
   // --- CLOUD SYNC ENGINE ---
   useEffect(() => {
     async function loadTacticalData() {
@@ -199,32 +236,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                     setVendors(localVendors)
                 }
             } else {
-                const normalizedVendors = cloudVendors
-                    .map(v => {
-                        // Support both wrapped { id, name, data } and flat rows
-                        const d = v.data || v
-                        // Check deletion at root level OR inside data
-                        const deletedStatuses = ['delete', 'deleted']
-                        if (deletedStatuses.includes((v.status || '').toLowerCase())) return null
-                        if (deletedStatuses.includes((d.status || '').toLowerCase())) return null
-                        // Normalize: keep original names AND add hub aliases so all UI fields populate
-                        return {
-                            ...d,
-                            // Hub uses .pan and .gst directly — VendorIQ stores same names, keep both
-                            pan: d.pan || d.panNumber || '',
-                            gst: d.gst || d.gstNumber || '',
-                            phone: d.phone || d.mobile || '',
-                            address: d.address || d.location || '',
-                            contact: d.contact || d.email || '',
-                            // Ensure required arrays are always arrays
-                            contracts: Array.isArray(d.contracts) ? d.contracts : [],
-                            history: Array.isArray(d.history) ? d.history : [],
-                            documents: Array.isArray(d.documents) ? d.documents : [],
-                            metrics: d.metrics || { price: 50, speed: 50, precision: 50, communication: 50 }
-                        }
-                    })
-                    .filter(Boolean)
-                setVendors(normalizedVendors)
+                setVendors(normalizeVendors(cloudVendors))
             }
 
             if (!cloudPortfolios || cloudPortfolios.length === 0) {
@@ -253,6 +265,31 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
         }
     }
     loadTacticalData()
+
+    // ✅ REAL-TIME SYNC: Subscribe to vendor table changes from VendorIQ
+    const vendorSubscription = supabase
+        .channel('vendors-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, (payload) => {
+            if (payload.eventType === 'DELETE') {
+                setVendors(prev => prev.filter(v => String(v.id) !== String(payload.old?.id)))
+            } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                const newRow = payload.new
+                const normalized = normalizeVendors([newRow])
+                if (normalized.length === 0) {
+                    // vendor was deleted/flagged — remove it
+                    setVendors(prev => prev.filter(v => String(v.id) !== String(newRow.id)))
+                    return
+                }
+                setVendors(prev => {
+                    const exists = prev.find(v => String(v.id) === String(normalized[0].id))
+                    if (exists) return prev.map(v => String(v.id) === String(normalized[0].id) ? normalized[0] : v)
+                    return [...prev, normalized[0]]
+                })
+            }
+        })
+        .subscribe()
+
+    return () => supabase.removeChannel(vendorSubscription)
   }, [user])
 
   // --- AUTO-PERSISTENCE (LOCAL + CLOUD) ---
@@ -266,7 +303,11 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
   useEffect(() => { 
     localStorage.setItem('vendors', JSON.stringify(vendors)) 
     if (!isSyncing && vendors.length > 0) {
-        vendors.forEach(v => supabase.from('vendors').upsert({ id: String(v.id), name: v.name, data: v }).then(() => {}))
+        // Only upsert hub-created vendors (those with contracts or hub-created history)
+        // Skip VendorIQ-only registrations to prevent overwriting their cloud data
+        vendors
+            .filter(v => v._hubCreated || (v.contracts && v.contracts.length > 0))
+            .forEach(v => supabase.from('vendors').upsert({ id: String(v.id), name: v.name, data: v }).then(() => {}))
     }
   }, [vendors, isSyncing])
 
