@@ -60,21 +60,31 @@ function App() {
     return () => clearInterval(timer)
   }, [])
 
-  // --- AUTOMATED ACCESS (PIN CAPTURE) ---
+  // --- AUTOMATED ACCESS (PORTAL & PIN CAPTURE) ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    const portalParam = params.get('portal')
     const pinParam = params.get('pin')
-    if (pinParam && !user) {
+    if ((portalParam || pinParam) && !user) {
         // Debounce slightly to allow cloud auth to initialize
-        const timer = setTimeout(() => handleClientLogin(pinParam), 1000)
+        const timer = setTimeout(() => handleClientLogin(portalParam, pinParam), 1000)
         return () => clearTimeout(timer)
     }
   }, [user])
 
-  const handleClientLogin = async (pin) => {
+  const handleClientLogin = async (portal, pin) => {
     try {
         const { data: cloudPortfolios } = await supabase.from('portfolios').select('*')
-        const portfolio = cloudPortfolios?.find(p => p.data.clientPin === pin)
+        let portfolio = null
+        
+        if (portal) {
+            portfolio = cloudPortfolios?.find(p => 
+                (p.data.accessKey === portal || String(p.id) === String(portal)) && 
+                (!pin || p.data.clientPin === pin)
+            )
+        } else if (pin) {
+            portfolio = cloudPortfolios?.find(p => p.data.clientPin === pin)
+        }
         
         if (portfolio) {
             loginAsClient(portfolio.data)

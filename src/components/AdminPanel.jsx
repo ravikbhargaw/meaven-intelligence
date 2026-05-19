@@ -11,15 +11,22 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
         setNewUser({ name: '', email: '', role: 'Admin' })
     }
 
+    const getMagicLink = (p) => {
+        const base = (window.location.origin + window.location.pathname).replace(/\/$/, '');
+        return `${base}?portal=${p.accessKey || p.id}&pin=${p.clientPin || '2410'}`;
+    }
+
     const handleShareWhatsApp = (p) => {
-        const text = `Hi ${p.pocName || 'Partner'}! Here is your Meaven Project Portal access link: https://meaven.intelligence/client/${p.accessKey || p.id} \n\nYour Secure PIN is: ${p.clientPin || '2410'}`;
+        const magicLink = getMagicLink(p);
+        const text = `Hi ${p.pocName || 'Partner'}! Here is your Meaven Project Portal access link: ${magicLink} \n\nYour Secure PIN is: ${p.clientPin || '2410'}`;
         const url = `https://wa.me/${p.pocPhone || ''}?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
     }
 
     const handleShareEmail = (p) => {
+        const magicLink = getMagicLink(p);
         const subject = `ACTION REQUIRED: Your Meaven Project Portal Access`;
-        const body = `Hi ${p.pocName},\n\nYour secure project portal is ready for tracking. \n\nAccess Link: https://meaven.intelligence/client/${p.accessKey || p.id} \nYour Secure PIN: ${p.clientPin || '2410'} \n\nBest regards,\nMeaven Intelligence Hub`;
+        const body = `Hi ${p.pocName},\n\nYour secure project portal is ready for tracking. \n\nAccess Link: ${magicLink} \nYour Secure PIN: ${p.clientPin || '2410'} \n\nBest regards,\nMeaven Intelligence Hub`;
         const mailto = `mailto:${p.pocEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         window.location.href = mailto;
     }
@@ -123,8 +130,15 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                                                     <button onClick={() => handleUpdatePin(p)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.7rem', cursor: 'pointer', padding: 0 }}>✎</button>
                                                 </div>
                                             </div>
-                                            <div style={{ color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                meaven.in/track/{p.accessKey || p.id}
+                                            <div 
+                                                title="Click to copy Magic Link"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(getMagicLink(p));
+                                                    alert("Magic Link copied to clipboard!");
+                                                }}
+                                                style={{ color: 'var(--accent-color)', fontSize: '0.75rem', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer', textDecoration: 'underline' }}
+                                            >
+                                                {getMagicLink(p)}
                                             </div>
                                         </div>
 
