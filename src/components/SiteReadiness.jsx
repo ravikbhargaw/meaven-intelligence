@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
+import SiteReadinessAudit from './SiteReadinessAudit'
+import PostInstallationQC from './PostInstallationQC'
 
-const SiteReadiness = ({ project, projects, portfolios = [], template = [], data, onUpdate, onUpdateMilestones, onProposePlaybookUpdate, userRole, isReadOnly, onBack, onLockLocation, onUpdateProject, onSelectProject }) => {
+const SiteReadiness = ({ project, projects, portfolios = [], template = [], data, onUpdate, onUpdateMilestones, onProposePlaybookUpdate, userRole, isReadOnly, onBack, onLockLocation, onUpdateProject, onSelectProject, clientView }) => {
   const [items, setItems] = useState(data?.items || template || [])
   const [photos, setPhotos] = useState(data?.photos || [])
   const [observations, setObservations] = useState(data?.observations || '')
@@ -12,6 +14,8 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
   const [locationError, setLocationError] = useState('')
   const [isCalibrating, setIsCalibrating] = useState(false)
   const [isMigrating, setIsMigrating] = useState(false)
+  const [viewingAudit, setViewingAudit] = useState(null)
+  const [viewingQC, setViewingQC] = useState(null)
 
   const defaultTemplate = [
     { id: 1, label: 'Physical Site Measurement & Verification', status: 'pending', category: 'Civil', notes: '' },
@@ -173,60 +177,61 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
           </div>
       </div>
 
-      <div className="card" style={{ marginTop: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0 }}>Site Checklist</h3>
-              <button className="btn btn-outline" onClick={() => setIsEditingChecklist(!isEditingChecklist)}>
-                  {isEditingChecklist ? 'Lock Checklist 🔒' : 'Edit Checklist 🔓'}
-              </button>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {(items || []).map(item => (
-                  <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.2rem', padding: '1.2rem', background: 'var(--bg-accent)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                      <button 
-                        onClick={() => isEditingChecklist && toggleStatus(item.id)}
-                        style={{ 
-                            width: '32px', height: '32px', borderRadius: '8px', 
-                            border: '2px solid ' + (item.status === 'passed' ? 'var(--success)' : (item.status === 'failed' ? 'var(--danger)' : 'var(--border-color)')),
-                            background: item.status === 'passed' ? 'rgba(50, 215, 75, 0.1)' : (item.status === 'failed' ? 'rgba(255, 69, 58, 0.1)' : 'transparent'),
-                            color: item.status === 'passed' ? 'var(--success)' : (item.status === 'failed' ? 'var(--danger)' : 'var(--text-secondary)'),
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: isEditingChecklist ? 'pointer' : 'default',
-                            fontSize: '1.2rem', fontWeight: '900', transition: 'all 0.2s ease'
-                        }}
-                      >
-                        {item.status === 'passed' ? '✓' : (item.status === 'failed' ? '✗' : '–')}
-                      </button>
-                      <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '1rem' }}>{item.label}</div>
-                          
-                          {/* Persistent Notes Display */}
-                          {(item.notes || isEditingChecklist) && (
-                            <div style={{ marginTop: '0.4rem' }}>
-                              {isEditingChecklist ? (
-                                <input 
-                                  type="text" 
-                                  value={item.notes || ''} 
-                                  onChange={(e) => handleNoteChange(item.id, e.target.value)}
-                                  placeholder="Add technical notes..."
-                                  style={{ width: '100%', background: 'var(--bg-accent)', border: 'none', borderBottom: '1px solid var(--accent-color)', color: 'var(--text-primary)', fontSize: '0.85rem', padding: '0.3rem 0', outline: 'none' }}
-                                />
-                              ) : (
-                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', opacity: 0.8 }}>
-                                  📝 {item.notes}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                      </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '700', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
-                        {item.category}
-                      </div>
-                  </div>
-              ))}
-          </div>
-      </div>
+      {!clientView && (
+        <div className="card" style={{ marginTop: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ margin: 0 }}>Site Checklist</h3>
+                <button className="btn btn-outline" onClick={() => setIsEditingChecklist(!isEditingChecklist)}>
+                    {isEditingChecklist ? 'Lock Checklist 🔒' : 'Edit Checklist 🔓'}
+                </button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {(items || []).map(item => (
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.2rem', padding: '1.2rem', background: 'var(--bg-accent)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <button 
+                          onClick={() => isEditingChecklist && toggleStatus(item.id)}
+                          style={{ 
+                              width: '32px', height: '32px', borderRadius: '8px', 
+                              border: '2px solid ' + (item.status === 'passed' ? 'var(--success)' : (item.status === 'failed' ? 'var(--danger)' : 'var(--border-color)')),
+                              background: item.status === 'passed' ? 'rgba(50, 215, 75, 0.1)' : (item.status === 'failed' ? 'rgba(255, 69, 58, 0.1)' : 'transparent'),
+                              color: item.status === 'passed' ? 'var(--success)' : (item.status === 'failed' ? 'var(--danger)' : 'var(--text-secondary)'),
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: isEditingChecklist ? 'pointer' : 'default',
+                              fontSize: '1.2rem', fontWeight: '900', transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {item.status === 'passed' ? '✓' : (item.status === 'failed' ? '✗' : '–')}
+                        </button>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '1rem' }}>{item.label}</div>
+                            
+                            {(item.notes || isEditingChecklist) && (
+                              <div style={{ marginTop: '0.4rem' }}>
+                                {isEditingChecklist ? (
+                                  <input 
+                                    type="text" 
+                                    value={item.notes || ''} 
+                                    onChange={(e) => handleNoteChange(item.id, e.target.value)}
+                                    placeholder="Add technical notes..."
+                                    style={{ width: '100%', background: 'var(--bg-accent)', border: 'none', borderBottom: '1px solid var(--accent-color)', color: 'var(--text-primary)', fontSize: '0.85rem', padding: '0.3rem 0', outline: 'none' }}
+                                  />
+                                ) : (
+                                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', opacity: 0.8 }}>
+                                    📝 {item.notes}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '700', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
+                          {item.category}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem', marginTop: '2rem' }}>
           {/* Strategic Observations */}
@@ -279,6 +284,137 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
               </div>
           </div>
       </div>
+
+      {/* Client View Audit & QC Vaults */}
+      {clientView && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }} className="stack-on-mobile">
+            {/* Technical Audit Vault */}
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <span style={{ fontSize: '1.2rem' }}>📑</span>
+                        <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>TECHNICAL AUDIT VAULT</h4>
+                    </div>
+                    <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+                        {(project?.auditHistory || []).length} SECURED REPORTS
+                    </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', maxHeight: '350px' }}>
+                    {(project?.auditHistory || []).length > 0 ? (
+                        project.auditHistory.map(audit => (
+                            <div key={audit.auditId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{audit.auditId}</div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                        {new Date(audit.timestamp).toLocaleDateString()} • {audit.readinessScore || audit.scores?.readiness}% READINESS
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setViewingAudit(audit)}
+                                    style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000' }}
+                                >
+                                    VIEW REPORT
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem', color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
+                            <span>📭</span>
+                            <p style={{ margin: '0.5rem 0 0 0' }}>No technical audits have been submitted for this project yet.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Post-Installation QC Vault */}
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <span style={{ fontSize: '1.2rem' }}>🔍</span>
+                        <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>QC & HANDOVER VALIDATION</h4>
+                    </div>
+                    <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+                        {(project?.qcHistory || []).length} SECURED REPORTS
+                    </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', maxHeight: '350px' }}>
+                    {(project?.qcHistory || []).length > 0 ? (
+                        project.qcHistory.map(qc => (
+                            <div key={qc.qcId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{qc.qcId}</div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                        {new Date(qc.timestamp).toLocaleDateString()} • {qc.scores?.readiness}% READINESS
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setViewingQC(qc)}
+                                    style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000' }}
+                                >
+                                    VIEW REPORT
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem', color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
+                            <span>📭</span>
+                            <p style={{ margin: '0.5rem 0 0 0' }}>No handover QC reports have been submitted for this project yet.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Render Read-Only Audits Overlay */}
+      {viewingAudit && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, overflowY: 'auto', padding: '2rem 1rem' }}>
+          <div style={{ maxWidth: '950px', margin: '0 auto', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', position: 'relative', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--accent-color)', fontWeight: '900' }}>{viewingAudit.auditId} | READ-ONLY TECHNICAL REPORT</h2>
+              <button 
+                onClick={() => setViewingAudit(null)}
+                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.5rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '800' }}
+              >
+                CLOSE REPORT
+              </button>
+            </div>
+            <div style={{ padding: '1rem' }}>
+              <SiteReadinessAudit 
+                projects={projects}
+                initialData={viewingAudit}
+                readOnly={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Render Read-Only QC Overlay */}
+      {viewingQC && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, overflowY: 'auto', padding: '2rem 1rem' }}>
+          <div style={{ maxWidth: '950px', margin: '0 auto', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', position: 'relative', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--accent-color)', fontWeight: '900' }}>{viewingQC.qcId} | READ-ONLY HANDOVER REPORT</h2>
+              <button 
+                onClick={() => setViewingQC(null)}
+                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.5rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '800' }}
+              >
+                CLOSE REPORT
+              </button>
+            </div>
+            <div style={{ padding: '1rem' }}>
+              <PostInstallationQC 
+                projects={projects}
+                initialData={viewingQC}
+                readOnly={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

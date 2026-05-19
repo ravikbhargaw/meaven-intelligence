@@ -721,6 +721,54 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     setViewingAudit(payload); // Open the report after submission
   }
 
+  const handleQCReportSubmit = (payload) => {
+    const existingQCs = JSON.parse(localStorage.getItem('post_qcs')) || [];
+    existingQCs.push(payload);
+    localStorage.setItem('post_qcs', JSON.stringify(existingQCs));
+
+    if (supabase) {
+        supabase.from('qc_reports').upsert([{ id: payload.qcId, data: payload }]).then(({error}) => {
+            if (error) console.error("Cloud Sync Error for QC Report:", error);
+        });
+    }
+
+    const projectName = payload.projectInfo?.name;
+    if (projectName) {
+        setProjects(prev => prev.map(p => {
+            if (p.name === projectName) {
+                const qcHistory = [...(p.qcHistory || []), payload];
+                
+                let nextStage = p.stageIndex !== undefined ? p.stageIndex : 1;
+                if (payload.overallStatus === 'Ready for Handover') {
+                  nextStage = 8;
+                } else if (payload.overallStatus === 'Ready with Minor Rectifications' || payload.overallStatus === 'Hold for Rectification') {
+                  nextStage = 7;
+                } else if (payload.overallStatus === 'Critical Rework Required') {
+                  nextStage = 6;
+                }
+
+                return {
+                    ...p,
+                    qcHistory,
+                    stageIndex: nextStage,
+                    history: [
+                        ...(p.history || []),
+                        {
+                            id: Date.now(),
+                            type: payload.overallStatus.includes('Ready') ? 'success' : 'warning',
+                            title: `QC Report Submitted: ${payload.qcId}`,
+                            detail: `Overall Status: ${payload.overallStatus} • Readiness: ${payload.scores.readiness}% • Snags: ${payload.scores.severity}`,
+                            timestamp: new Date().toISOString(),
+                            isClientVisible: true
+                        }
+                    ]
+                };
+            }
+            return p;
+        }));
+    }
+  };
+
   const handleAddVendor = (newVendor) => {
     setVendors([...vendors, { ...newVendor, id: Date.now() }])
   }
@@ -995,15 +1043,19 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
               </div>
               <nav className="sidebar-nav-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1, paddingBottom: '1.5rem' }}>
                 <SidebarGroupHeader label="Core Command" />
-                <SidebarItem active={activeTab === 'controlTower'} onClick={() => handleNavigate('controlTower')} icon="🎛️" label="Founder Control Tower" />
+                {!clientView && <SidebarItem active={activeTab === 'controlTower'} onClick={() => handleNavigate('controlTower')} icon="🎛️" label="Founder Control Tower" />}
                 <SidebarItem active={activeTab === 'dashboard'} onClick={() => handleNavigate('dashboard')} icon="📊" label={clientView ? "Experience Hub" : "Internal Dashboard"} />
                 
-                <SidebarGroupHeader label="Site Execution" />
-                {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Operations Hub" />}
-                <SidebarItem active={activeTab === 'audit'} onClick={() => handleNavigate('audit')} icon="📋" label="Execution Audit" />
-                <SidebarItem active={activeTab === 'postQC'} onClick={() => handleNavigate('postQC')} icon="🔍" label="Post-Install QC" />
+                {!clientView && (
+                  <>
+                    <SidebarGroupHeader label="Site Execution" />
+                    {(user?.role === 'SuperAdmin' || user?.role === 'Admin') && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Operations Hub" />}
+                    <SidebarItem active={activeTab === 'audit'} onClick={() => handleNavigate('audit')} icon="📋" label="Execution Audit" />
+                    <SidebarItem active={activeTab === 'postQC'} onClick={() => handleNavigate('postQC')} icon="🔍" label="Post-Install QC" />
+                  </>
+                )}
 
-                {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || !clientView) && (
+                {(user?.role === 'SuperAdmin' || user?.role === 'Admin') && !clientView && (
                   <>
                     <SidebarGroupHeader label="Platform Engines" />
                     <SidebarItem active={activeTab === 'vendors'} onClick={() => handleNavigate('vendors')} icon="🤝" label="Vendor Bench" />
@@ -1012,7 +1064,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                   </>
                 )}
 
-                {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.email === 'ravi.bhargaw@meaven.in') && (
+                {(user?.role === 'SuperAdmin' || user?.role === 'Admin' || user?.email === 'ravi.bhargaw@meaven.in') && !clientView && (
                   <>
                     <SidebarGroupHeader label="Executive Suite" />
                     <SidebarItem active={activeTab === 'strategy'} onClick={() => handleNavigate('strategy')} icon="🧠" label="Executive Strategy" />
@@ -1051,15 +1103,15 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                         </div>
                     </div>
                 </div>
-                <button onClick={() => setIsNewProjectModalOpen(true)} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '0.8rem', fontWeight: '800' }}>+ INITIALIZE PROJECT LOOP</button>
+                {!clientView && <button onClick={() => setIsNewProjectModalOpen(true)} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '0.8rem', fontWeight: '800' }}>+ INITIALIZE PROJECT LOOP</button>}
                 {/* v8.5 IDENTITY & ROLE AUTH */}
                 <div style={{ padding: '0.8rem', borderTop: '1px solid var(--border-color)', marginTop: '0.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0, letterSpacing: '0.1em' }}>
-                                {user.role || 'OPERATOR'} • {user.email === 'ravi.bhargaw@meaven.in' ? 'ROOT' : 'LEVEL 1'}
+                                {clientView ? 'CLIENT • LEVEL 1' : `${user.role || 'OPERATOR'} • ${user.email === 'ravi.bhargaw@meaven.in' ? 'ROOT' : 'LEVEL 1'}`}
                             </p>
-                            <p style={{ fontSize: '0.75rem', fontWeight: '800', margin: 0 }}>{user.name}</p>
+                            <p style={{ fontSize: '0.75rem', fontWeight: '800', margin: 0 }}>{clientView ? (selectedClient || activeProject?.client || 'Client partner') : user.name}</p>
                         </div>
                         <button 
                             onClick={logout} 
@@ -1068,7 +1120,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                             EXIT
                         </button>
                     </div>
-                    {(user?.email === 'ravi.bhargaw@meaven.in' || user?.role === 'SuperAdmin') && (
+                    {(user?.email === 'ravi.bhargaw@meaven.in' || user?.role === 'SuperAdmin') && !clientView && (
                         <button onClick={() => setActiveTab('admin')} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.6rem', marginTop: '0.6rem', cursor: 'pointer', padding: 0, fontWeight: '700', opacity: 0.9 }}>⚙️ OPEN GOVERNANCE CONSOLE</button>
                     )}
                     <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.6rem', marginTop: '0.4rem', cursor: 'pointer', padding: 0, fontWeight: '700', opacity: 0.5, display: 'block' }}>↩ RE-INITIALIZE SESSION</button>
@@ -1138,6 +1190,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                             projects={projects}
                             data={readinessData[activeProjectId]}
                             isReadOnly={true}
+                            clientView={true}
                             onBack={() => setActiveProjectId(null)}
                           />
                         </div>
@@ -1235,7 +1288,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                 )}
                 {activeTab === 'postQC' && (
                   <div className="card animate-fade-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', minHeight: '80vh' }}>
-                      <PostInstallationQC projects={projects} />
+                      <PostInstallationQC projects={projects} onSubmitQC={handleQCReportSubmit} />
                   </div>
                 )}
                 {activeTab === 'executionOS' && <ExecutionOS />}
