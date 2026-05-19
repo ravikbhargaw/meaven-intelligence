@@ -319,6 +319,31 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
     }
   }, [portfolios, isSyncing])
 
+  // --- SELF-HEALING PORTFOLIOS ENGINE ---
+  // Automatically generate missing client portfolios for any existing projects
+  useEffect(() => {
+    if (isSyncing || !projects || projects.length === 0) return
+
+    const uniqueClients = [...new Set(projects.map(p => p.client).filter(Boolean))]
+    const missingPortfolios = uniqueClients.filter(clientName => {
+        return !(portfolios || []).some(p => p.name === clientName)
+    })
+
+    if (missingPortfolios.length > 0) {
+        const newPortfolios = missingPortfolios.map((clientName, index) => ({
+            id: Date.now() + index,
+            name: clientName,
+            stakeholders: [],
+            isPortalActive: false,
+            clientPin: '2410',
+            accessKey: Math.random().toString(36).substr(2, 8),
+            pocName: 'TBD',
+            pocEmail: `${clientName.toLowerCase().replace(/\s+/g, '')}@meaven.in`
+        }))
+        setPortfolios(prev => [...(prev || []), ...newPortfolios])
+    }
+  }, [projects, portfolios, isSyncing])
+
   useEffect(() => {
     localStorage.setItem('meaven_projects', JSON.stringify(projects))
     localStorage.setItem('meaven_vendors', JSON.stringify(vendors))
