@@ -136,6 +136,7 @@ function App() {
   const [vendors, setVendors] = useState([])
   const [portfolios, setPortfolios] = useState([])
   const [activeProjectId, setActiveProjectId] = useState(null)
+  const activeProject = projects.find(p => Number(p.id) === Number(activeProjectId))
   const [selectedVendorId, setSelectedVendorId] = useState(null)
   const [isClientAuthorized, setIsClientAuthorized] = useState(false)
   const [readinessData, setReadinessData] = useState({})
@@ -1130,12 +1131,24 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
                         onAuthorize={() => setIsClientAuthorized(true)} 
                       />
                     ) : (
-                      <ClientExperienceHub 
-                        clientName={selectedClient || activeProject?.client} 
-                        projects={projects.filter(p => p.client === (selectedClient || activeProject?.client))} 
-                        vendors={vendors} 
-                        onViewProject={(id) => { setActiveProjectId(id); setActiveTab('dashboard'); }} 
-                      />
+                      activeProjectId ? (
+                        <div style={{ padding: '1rem 0' }}>
+                          <SiteReadiness 
+                            project={projects.find(p => p.id === activeProjectId)}
+                            projects={projects}
+                            data={readinessData[activeProjectId]}
+                            isReadOnly={true}
+                            onBack={() => setActiveProjectId(null)}
+                          />
+                        </div>
+                      ) : (
+                        <ClientExperienceHub 
+                          clientName={selectedClient || activeProject?.client} 
+                          projects={projects.filter(p => p.client === (selectedClient || activeProject?.client))} 
+                          vendors={vendors} 
+                          onSelectProject={(id) => { setActiveProjectId(id); }} 
+                        />
+                      )
                     )
                   ) : (
                     <CommandCenter 
