@@ -38,6 +38,18 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
     }
   }, [project?.id, data])
 
+  const allPhotos = [
+      ...(photos || []),
+      ...(project?.auditHistory || [])
+          .flatMap(audit => audit.uploadedFiles || [])
+          .filter(f => f && f.type && f.type.startsWith('image'))
+          .map(f => f.url || f.base64 || f),
+      ...(project?.qcHistory || [])
+          .flatMap(qc => qc.uploadedFiles || [])
+          .filter(f => f && f.type && f.type.startsWith('image'))
+          .map(f => f.url || f.base64 || f)
+  ].filter(Boolean);
+
   // MANUAL SYNC HANDLER (TO PREVENT LOOPS)
   const syncToParent = (newItems, newPhotos, newObs) => {
       if (!onUpdate) return
@@ -144,13 +156,6 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
       </div>
 
       <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
-          <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.65rem', background: 'var(--accent-color)', color: '#000', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>AI TRACKED</div>
-              <h3>Technical Readiness</h3>
-              <div style={{ fontSize: '3rem', fontWeight: '900', color: 'var(--accent-color)' }}>{project?.readiness || 0}%</div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Tactical Audit Progress</p>
-          </div>
-          
           <div className="card" style={{ background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.05) 0%, transparent 100%)', border: '1px solid var(--accent-color)' }}>
               <h4 style={{ margin: 0, fontSize: '0.75rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.2rem' }}>🤖 AI Site Intelligence</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -261,22 +266,25 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
                   )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '1rem' }}>
-                  {(photos || []).map((photo, i) => (
-                      <div key={i} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                          <img src={photo} alt={`Site evidence ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          {!isReadOnly && (
-                            <button 
-                                onClick={() => {
-                                    const newPhotos = photos.filter((_, idx) => idx !== i)
-                                    setPhotos(newPhotos)
-                                    syncToParent(null, newPhotos, null)
-                                }}
-                                style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(255, 69, 58, 0.8)', border: 'none', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '0.6rem' }}
-                            >✕</button>
-                          )}
-                      </div>
-                  ))}
-                  {(photos || []).length === 0 && (
+                  {allPhotos.map((photo, i) => {
+                      const isManualPhoto = i < (photos || []).length;
+                      return (
+                          <div key={i} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                              <img src={photo} alt={`Site evidence ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              {!isReadOnly && isManualPhoto && (
+                                <button 
+                                    onClick={() => {
+                                        const newPhotos = photos.filter((_, idx) => idx !== i)
+                                        setPhotos(newPhotos)
+                                        syncToParent(null, newPhotos, null)
+                                    }}
+                                    style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(255, 69, 58, 0.8)', border: 'none', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '0.6rem' }}
+                                >✕</button>
+                              )}
+                          </div>
+                      );
+                  })}
+                  {allPhotos.length === 0 && (
                       <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.8rem', border: '1px dashed var(--border-color)', borderRadius: '12px' }}>
                           No visual evidence uploaded yet.
                       </div>

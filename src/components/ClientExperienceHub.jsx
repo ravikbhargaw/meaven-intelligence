@@ -86,26 +86,30 @@ const ProjectCompactCard = ({ project, onSelectProject }) => {
 
             {/* ISOLATION FIREWALL HISTORY (Minimized) */}
             <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '0.6rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.8rem', fontWeight: '800' }}>Latest Site Updates</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                    {(() => {
-                        const sensitiveKeywords = ['vendor', 'advance', 'paid', 'tactical', 'margin', 'rs.', 'profit', 'delay'];
-                        const history = project.history?.filter(h => {
-                            if (h.isClientVisible !== true) return false;
-                            const content = `${h.title} ${h.detail}`.toLowerCase();
-                            return !sensitiveKeywords.some(key => content.includes(key));
-                        }).slice(0, 2) || []; // Only show top 2 for density
+                {(() => {
+                    const sensitiveKeywords = ['vendor', 'advance', 'paid', 'tactical', 'margin', 'rs.', 'profit', 'delay'];
+                    const history = project.history?.filter(h => {
+                        if (h.isClientVisible !== true) return false;
+                        const content = `${h.title} ${h.detail}`.toLowerCase();
+                        return !sensitiveKeywords.some(key => content.includes(key));
+                    }).slice(0, 2) || []; // Only show top 2 for density
 
-                        if (history.length === 0) return <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0 }}>Waiting for next site audit sync...</p>
+                    if (history.length === 0) return null;
 
-                        return history.map(h => (
-                            <div key={h.id} style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-                                <div style={{ minWidth: '45px', fontSize: '0.6rem', color: 'var(--text-secondary)' }}>{h.date || 'Today'}</div>
-                                <div style={{ fontSize: '0.75rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.title}</div>
+                    return (
+                        <>
+                            <p style={{ fontSize: '0.6rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.8rem', fontWeight: '800' }}>Latest Site Updates</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                {history.map(h => (
+                                    <div key={h.id} style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+                                        <div style={{ minWidth: '45px', fontSize: '0.6rem', color: 'var(--text-secondary)' }}>{h.date || 'Today'}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.title}</div>
+                                    </div>
+                                ))}
                             </div>
-                        ))
-                    })()}
-                </div>
+                        </>
+                    );
+                })()}
             </div>
 
             {/* ACTION FOOTER */}

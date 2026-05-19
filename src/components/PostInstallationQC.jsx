@@ -343,7 +343,8 @@ const PostInstallationQC = ({ projects = [], onSubmitQC, initialData = null, rea
                                                 <button
                                                     key={opt}
                                                     type="button"
-                                                    onClick={() => handleChecklistChange(sectionKey, item, 'status', opt)}
+                                                    disabled={readOnly}
+                                                    onClick={() => { if (!readOnly) handleChecklistChange(sectionKey, item, 'status', opt); }}
                                                     style={{
                                                         padding: '0.4rem 0.8rem',
                                                         fontSize: '0.75rem',
@@ -351,7 +352,7 @@ const PostInstallationQC = ({ projects = [], onSubmitQC, initialData = null, rea
                                                         border: `1px solid ${data.status === opt ? statusColors[opt] : 'var(--border-color)'}`,
                                                         background: data.status === opt ? `${statusColors[opt]}20` : 'transparent',
                                                         color: data.status === opt ? statusColors[opt] : 'var(--text-secondary)',
-                                                        cursor: 'pointer'
+                                                        cursor: readOnly ? 'default' : 'pointer'
                                                     }}
                                                 >
                                                     {opt}
@@ -362,6 +363,7 @@ const PostInstallationQC = ({ projects = [], onSubmitQC, initialData = null, rea
                                         <textarea 
                                             placeholder="Remarks (Optional)..." 
                                             value={data.remarks}
+                                            disabled={readOnly}
                                             rows={1}
                                             onChange={(e) => {
                                                 handleChecklistChange(sectionKey, item, 'remarks', e.target.value);
@@ -440,6 +442,7 @@ const PostInstallationQC = ({ projects = [], onSubmitQC, initialData = null, rea
                                     type={field.type} 
                                     list={field.list}
                                     value={projectInfo[field.key]} 
+                                    disabled={readOnly}
                                     onChange={e => {
                                         const val = e.target.value;
                                         setProjectInfo(prev => {
@@ -466,7 +469,7 @@ const PostInstallationQC = ({ projects = [], onSubmitQC, initialData = null, rea
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Installation Type</label>
-                            <select value={projectInfo.installationType} onChange={e => setProjectInfo({...projectInfo, installationType: e.target.value})} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)' }}>
+                            <select value={projectInfo.installationType} disabled={readOnly} onChange={e => setProjectInfo({...projectInfo, installationType: e.target.value})} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)' }}>
                                 <option value="">Select...</option>
                                 {['Frameless Glass', 'Framed Partitions', 'Acoustic Partitions', 'Sliding Systems', 'Spider Glazing', 'Other'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
                             </select>
@@ -519,6 +522,7 @@ const PostInstallationQC = ({ projects = [], onSubmitQC, initialData = null, rea
                                 <textarea 
                                     rows={3} 
                                     value={observations[obs.key]} 
+                                    disabled={readOnly}
                                     onChange={e => setObservations({...observations, [obs.key]: e.target.value})}
                                     style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)', fontSize: '0.9rem', resize: 'vertical' }}
                                 />
@@ -548,8 +552,9 @@ const PostInstallationQC = ({ projects = [], onSubmitQC, initialData = null, rea
                                 <button 
                                     key={level}
                                     type="button"
-                                    onClick={() => setOverallStatus(level)}
-                                    style={{ flex: 1, minWidth: '200px', padding: '1rem', background: isActive ? `${colors[level]}20` : 'var(--bg-primary)', border: `1px solid ${isActive ? colors[level] : 'var(--border-color)'}`, color: isActive ? colors[level] : 'var(--text-secondary)', borderRadius: '6px', cursor: 'pointer', fontWeight: isActive ? 'bold' : 'normal', transition: 'all 0.2s' }}
+                                    disabled={readOnly}
+                                    onClick={() => { if (!readOnly) setOverallStatus(level); }}
+                                    style={{ flex: 1, minWidth: '200px', padding: '1rem', background: isActive ? `${colors[level]}20` : 'var(--bg-primary)', border: `1px solid ${isActive ? colors[level] : 'var(--border-color)'}`, color: isActive ? colors[level] : 'var(--text-secondary)', borderRadius: '6px', cursor: readOnly ? 'default' : 'pointer', fontWeight: isActive ? 'bold' : 'normal', transition: 'all 0.2s' }}
                                 >
                                     {level}
                                 </button>

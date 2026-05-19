@@ -276,8 +276,9 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                                             <input 
                                                 type="checkbox" 
                                                 checked={data.checked}
+                                                disabled={readOnly}
                                                 onChange={(e) => handleChecklistChange(sectionKey, item, 'checked', e.target.checked)}
-                                                style={{ marginTop: '0.2rem', accentColor: 'var(--accent-color)' }}
+                                                style={{ marginTop: '0.2rem', accentColor: 'var(--accent-color)', cursor: readOnly ? 'default' : 'pointer' }}
                                             />
                                             {item}
                                         </label>
@@ -291,6 +292,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                                                 <textarea 
                                                     placeholder="Remarks..." 
                                                     value={data.remarks}
+                                                    disabled={readOnly}
                                                     rows={1}
                                                     onChange={(e) => {
                                                         handleChecklistChange(sectionKey, item, 'remarks', e.target.value);
@@ -304,12 +306,13 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                                                     style={{ flex: 2, minWidth: '150px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', padding: '0.4rem 0.6rem', borderRadius: '4px', color: 'var(--text-secondary)', fontSize: '0.8rem', resize: 'none', overflow: 'hidden' }}
                                                 />
                                             )}
-                                            <label style={{ flex: 1, minWidth: '100px', display: 'flex', alignItems: 'center', gap: '0.3rem', color: data.risk ? '#ff453a' : 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', border: data.risk ? '1px solid #ff453a' : '1px solid transparent', padding: '0.2rem 0.5rem', borderRadius: '4px', background: data.risk ? 'rgba(255, 69, 58, 0.1)' : 'transparent' }}>
+                                            <label style={{ flex: 1, minWidth: '100px', display: 'flex', alignItems: 'center', gap: '0.3rem', color: data.risk ? '#ff453a' : 'var(--text-secondary)', fontSize: '0.8rem', cursor: readOnly ? 'default' : 'pointer', border: data.risk ? '1px solid #ff453a' : '1px solid transparent', padding: '0.2rem 0.5rem', borderRadius: '4px', background: data.risk ? 'rgba(255, 69, 58, 0.1)' : 'transparent' }}>
                                                 <input 
                                                     type="checkbox" 
                                                     checked={data.risk}
+                                                    disabled={readOnly}
                                                     onChange={(e) => handleChecklistChange(sectionKey, item, 'risk', e.target.checked)}
-                                                    style={{ accentColor: '#ff453a' }}
+                                                    style={{ accentColor: '#ff453a', cursor: readOnly ? 'default' : 'pointer' }}
                                                 />
                                                 Flag Risk
                                             </label>
@@ -363,6 +366,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                                     type={field.type} 
                                     list={field.list}
                                     value={projectInfo[field.key]} 
+                                    disabled={readOnly}
                                     onChange={e => {
                                         const val = e.target.value;
                                         setProjectInfo(prev => {
@@ -386,7 +390,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Project Type</label>
-                            <select value={projectInfo.type} onChange={e => setProjectInfo({...projectInfo, type: e.target.value})} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)' }}>
+                            <select value={projectInfo.type} disabled={readOnly} onChange={e => setProjectInfo({...projectInfo, type: e.target.value})} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)' }}>
                                 <option value="">Select...</option>
                                 {['Office', 'Co-working', 'Hospital', 'Retail', 'Residential', 'Hotel', 'Other'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
                             </select>
@@ -394,7 +398,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Site Status</label>
-                            <select value={projectInfo.status} onChange={e => setProjectInfo({...projectInfo, status: e.target.value})} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)' }}>
+                            <select value={projectInfo.status} disabled={readOnly} onChange={e => setProjectInfo({...projectInfo, status: e.target.value})} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)' }}>
                                 <option value="">Select...</option>
                                 {['Under Civil Work', 'Finishing Stage', 'Ready for Verification', 'Ready for Installation', 'Delayed'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
                             </select>
@@ -447,6 +451,7 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                                 <textarea 
                                     rows={3} 
                                     value={observations[obs.key]} 
+                                    disabled={readOnly}
                                     onChange={e => setObservations({...observations, [obs.key]: e.target.value})}
                                     style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem', color: 'var(--text-primary)', fontSize: '0.9rem', resize: 'vertical' }}
                                 />
@@ -466,8 +471,9 @@ const SiteReadinessAudit = ({ projects = [], onSubmitAudit, initialData = null, 
                                 <button 
                                     key={level}
                                     type="button"
-                                    onClick={() => setOverallRisk(level)}
-                                    style={{ flex: 1, padding: '1rem', background: isActive ? `${colors[level]}20` : 'var(--bg-primary)', border: `1px solid ${isActive ? colors[level] : 'var(--border-color)'}`, color: isActive ? colors[level] : 'var(--text-secondary)', borderRadius: '6px', cursor: 'pointer', fontWeight: isActive ? 'bold' : 'normal', transition: 'all 0.2s' }}
+                                    disabled={readOnly}
+                                    onClick={() => { if (!readOnly) setOverallRisk(level); }}
+                                    style={{ flex: 1, padding: '1rem', background: isActive ? `${colors[level]}20` : 'var(--bg-primary)', border: `1px solid ${isActive ? colors[level] : 'var(--border-color)'}`, color: isActive ? colors[level] : 'var(--text-secondary)', borderRadius: '6px', cursor: readOnly ? 'default' : 'pointer', fontWeight: isActive ? 'bold' : 'normal', transition: 'all 0.2s' }}
                                 >
                                     {level}
                                 </button>
