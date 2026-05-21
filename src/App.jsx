@@ -153,17 +153,30 @@ function App() {
   }, [theme])
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark')
-  const [msaTemplate, setMsaTemplate] = useState(`
-MASTER SERVICE AGREEMENT
+  const defaultMsaTemplate = `
+<h2>MASTER SERVICE AGREEMENT</h2>
+<p>This Agreement is made on <strong>{{DATE}}</strong> between:</p>
+<p><strong>Meaven Designs Intelligence Hub (Meaven)</strong> AND <strong>{{VENDOR_NAME}}</strong>, located at {{ADDRESS}}.</p>
 
-This Agreement is made on {{DATE}} between:
-Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRESS}}.
+<h3>1. SERVICES</h3>
+<p>The Partner agrees to provide <strong>{{CATEGORY}}</strong> services as per individual Project Work Orders.</p>
 
-1. SERVICES: The Partner agrees to provide {{CATEGORY}} services as per individual Project Work Orders.
-2. COMPLIANCE: The Partner represents that GST ({{GST}}) and PAN ({{PAN}}) are valid.
-3. CONFIDENTIALITY: All project data is strictly confidential.
-4. JURISDICTION: This agreement is governed by the laws of India.
-  `.trim())
+<h3>2. COMPLIANCE</h3>
+<p>The Partner represents that GST (<strong>{{GST}}</strong>) and PAN (<strong>{{PAN}}</strong>) are valid and active compliance IDs.</p>
+
+<h3>3. CONFIDENTIALITY</h3>
+<p>All project data, financial records, drawings, client briefs, and EBITDA metrics are strictly confidential.</p>
+
+<h3>4. JURISDICTION</h3>
+<p>This agreement is governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts of Bangalore.</p>
+  `.trim();
+
+  const [msaTemplate, setMsaTemplate] = useState(() => localStorage.getItem('meaven_msa_template') || defaultMsaTemplate)
+
+  useEffect(() => {
+    localStorage.setItem('meaven_msa_template', msaTemplate)
+  }, [msaTemplate])
+
 
   const handleNavigate = (newTab) => {
     if (newTab === activeTab) return
@@ -1039,6 +1052,7 @@ Meaven Designs Intelligence Hub (Meaven) AND {{VENDOR_NAME}}, located at {{ADDRE
             <aside className="sidebar">
               <div className="logo-container" style={{ marginBottom: '3rem', textAlign: 'left' }}>
                 <img src="/images/logo.png" alt="Meaven Logo" style={{ height: '32px', marginBottom: '0.5rem', filter: 'var(--logo-filter)', transition: 'filter 0.5s ease' }} />
+                <img src="/images/logo-dark.png" alt="Preload Dark Logo" style={{ display: 'none' }} />
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.4em', fontWeight: '500', textTransform: 'uppercase', margin: 0 }}>INTELLIGENCE</p>
               </div>
               <nav className="sidebar-nav-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1, paddingBottom: '1.5rem' }}>

@@ -80,76 +80,105 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
         
         const widthVal = config.width || 0
         const heightVal = config.height || 0
-        const widthM = widthVal / 1000
-        const heightM = heightVal / 1000
-        const areaSqft = (widthM * heightM) * 10.764
         
-        const glassRate = PRICING_DB.glass[config.glassType].rate
-        const glassCost = areaSqft * glassRate
-        bom.push({ item: `Glass: ${config.glassType}`, qty: areaSqft.toFixed(2), unit: 'sqft', rate: glassRate, total: glassCost })
-        landingCost += glassCost
-
         let totalLinearMetres = 0
         let totalBarsOrdered = 0
+        let wastePercent = 0
 
-        if (config.systemType === 'partition') {
-            const panes = Math.ceil(widthVal / 914) 
-            const iSections = panes - 1
-            const sideTopLen = (widthVal) + (heightVal * 2)
-            const sideTopBars = Math.ceil(sideTopLen / PRICING_DB.profiles.modular_45.side_top.len)
-            const bottomBars = Math.ceil(widthVal / PRICING_DB.profiles.modular_45.bottom_set.len)
-            const iSectionBars = Math.ceil((iSections * heightVal) / PRICING_DB.profiles.modular_45.i_section.len)
-
-            totalLinearMetres = (sideTopLen + widthVal + (iSections * heightVal)) / 1000
-            totalBarsOrdered = sideTopBars + bottomBars + iSectionBars
-
-            bom.push({ item: 'Side/Top Profile (GPS 45M 01)', qty: sideTopBars, unit: 'bars', rate: PRICING_DB.profiles.modular_45.side_top.rate, total: sideTopBars * PRICING_DB.profiles.modular_45.side_top.rate })
-            bom.push({ item: 'Bottom Profile Set (GPS 45GH 02+03)', qty: bottomBars, unit: 'bars', rate: PRICING_DB.profiles.modular_45.bottom_set.rate, total: bottomBars * PRICING_DB.profiles.modular_45.bottom_set.rate })
-            if (iSections > 0) bom.push({ item: `I-Section Divider (${iSections} nos)`, qty: iSectionBars, unit: 'bars', rate: PRICING_DB.profiles.modular_45.i_section.rate, total: iSectionBars * PRICING_DB.profiles.modular_45.i_section.rate })
-
-            const perimeterM = (widthM * 2) + (heightM * 2)
-            const gasketQty = perimeterM * 2
-            const sealantQty = Math.max(1, Math.ceil(areaSqft * PRICING_DB.consumables.sealant.ratio))
-            bom.push({ item: 'Gasket (Perimeter * 2)', qty: gasketQty.toFixed(2), unit: 'rm', rate: PRICING_DB.consumables.gasket.rate, total: gasketQty * PRICING_DB.consumables.gasket.rate })
-            bom.push({ item: 'Sealant (4 per 500sqft)', qty: sealantQty, unit: 'bottles', rate: PRICING_DB.consumables.sealant.rate, total: sealantQty * PRICING_DB.consumables.sealant.rate })
+        if (config.systemType === 'fish_mouth') {
+            const widthFt = widthVal / 304.8
+            const heightFt = heightVal / 304.8
+            const areaSqft = widthFt * heightFt
             
-            if (config.corners90 > 0) bom.push({ item: '90 Degree Connector', qty: config.corners90, unit: 'pcs', rate: PRICING_DB.hardware.connectors['90 Degree'], total: config.corners90 * PRICING_DB.hardware.connectors['90 Degree'] })
-            if (config.corners180 > 0) bom.push({ item: '180 Degree Connector', qty: config.corners180, unit: 'pcs', rate: PRICING_DB.hardware.connectors['180 Degree'], total: config.corners180 * PRICING_DB.hardware.connectors['180 Degree'] })
-
-            const laborCost = areaSqft * PRICING_DB.labor.partition
-            bom.push({ item: 'Installation Labor', qty: areaSqft.toFixed(2), unit: 'sqft', rate: PRICING_DB.labor.partition, total: laborCost })
-        }
-
-        if (config.systemType === 'stile_door' || config.systemType === 'floor_spring') {
-            const n = config.numDoors || 0
-            const vascalQty = n === 0 ? 0 : (n === 1 ? 3 : Math.ceil(n * 2.5))
+            const glassRate = config.glassType === '10mm Toughened' ? 150 : 180
+            const glassCost = areaSqft * glassRate
+            bom.push({ item: `Glass: ${config.glassType} (Fish Mouth)`, qty: areaSqft.toFixed(2), unit: 'sqft', rate: glassRate, total: glassCost })
             
-            if (config.systemType === 'stile_door') {
-                const vertBars = Math.ceil((heightVal * 2 * n) / PRICING_DB.profiles.stile_door.vertical.len)
-                const horizBottomBars = Math.ceil((widthVal * n) / PRICING_DB.profiles.stile_door.bottom.len)
-                const horizCapBars = Math.ceil((widthVal * n) / PRICING_DB.profiles.stile_door.cap.len)
-                totalBarsOrdered = vertBars + horizBottomBars + horizCapBars
+            const totalRunningFeet = widthFt * 2
+            const barCount = Math.ceil(totalRunningFeet / 10)
+            const profileCost = barCount * 1250
+            bom.push({ item: `Fish Mouth Profile Bars (10-ft stock)`, qty: barCount, unit: 'bars', rate: 1250, total: profileCost })
+            
+            const panels = Math.ceil(widthVal / 900)
+            const bottles = panels + 2
+            const sealantCost = bottles * 180
+            bom.push({ item: `Consumables: Sealant Bottles (Fish Mouth)`, qty: bottles, unit: 'bottles', rate: 180, total: sealantCost })
+            
+            const laborCost = areaSqft * 40
+            bom.push({ item: `Installation Labor (Fish Mouth)`, qty: areaSqft.toFixed(2), unit: 'sqft', rate: 40, total: laborCost })
+            
+            landingCost = glassCost + profileCost + sealantCost + laborCost
+            wastePercent = barCount > 0 ? (1 - (totalRunningFeet / (barCount * 10))) * 100 : 0
+        } else {
+            const widthM = widthVal / 1000
+            const heightM = heightVal / 1000
+            const areaSqft = (widthM * heightM) * 10.764
+            
+            const glassRate = PRICING_DB.glass[config.glassType].rate
+            const glassCost = areaSqft * glassRate
+            bom.push({ item: `Glass: ${config.glassType}`, qty: areaSqft.toFixed(2), unit: 'sqft', rate: glassRate, total: glassCost })
+            landingCost += glassCost
 
-                bom.push({ item: 'SD-VP11 Vertical', qty: vertBars, unit: 'bars', rate: PRICING_DB.profiles.stile_door.vertical.rate, total: vertBars * PRICING_DB.profiles.stile_door.vertical.rate })
-                bom.push({ item: 'SD-HZ12B Bottom', qty: horizBottomBars, unit: 'bars', rate: PRICING_DB.profiles.stile_door.bottom.rate, total: horizBottomBars * PRICING_DB.profiles.stile_door.bottom.rate })
-                bom.push({ item: 'SD-RH13B Cap', qty: horizCapBars, unit: 'bars', rate: PRICING_DB.profiles.stile_door.cap.rate, total: horizCapBars * PRICING_DB.profiles.stile_door.cap.rate })
+            if (config.systemType === 'partition') {
+                const panes = Math.ceil(widthVal / 914) 
+                const iSections = panes - 1
+                const sideTopLen = (widthVal) + (heightVal * 2)
+                const sideTopBars = Math.ceil(sideTopLen / PRICING_DB.profiles.modular_45.side_top.len)
+                const bottomBars = Math.ceil(widthVal / PRICING_DB.profiles.modular_45.bottom_set.len)
+                const iSectionBars = Math.ceil((iSections * heightVal) / PRICING_DB.profiles.modular_45.i_section.len)
+
+                totalLinearMetres = (sideTopLen + widthVal + (iSections * heightVal)) / 1000
+                totalBarsOrdered = sideTopBars + bottomBars + iSectionBars
+
+                bom.push({ item: 'Side/Top Profile (GPS 45M 01)', qty: sideTopBars, unit: 'bars', rate: PRICING_DB.profiles.modular_45.side_top.rate, total: sideTopBars * PRICING_DB.profiles.modular_45.side_top.rate })
+                bom.push({ item: 'Bottom Profile Set (GPS 45GH 02+03)', qty: bottomBars, unit: 'bars', rate: PRICING_DB.profiles.modular_45.bottom_set.rate, total: bottomBars * PRICING_DB.profiles.modular_45.bottom_set.rate })
+                if (iSections > 0) bom.push({ item: `I-Section Divider (${iSections} nos)`, qty: iSectionBars, unit: 'bars', rate: PRICING_DB.profiles.modular_45.i_section.rate, total: iSectionBars * PRICING_DB.profiles.modular_45.i_section.rate })
+
+                const perimeterM = (widthM * 2) + (heightM * 2)
+                const gasketQty = perimeterM * 2
+                const sealantQty = Math.max(1, Math.ceil(areaSqft * PRICING_DB.consumables.sealant.ratio))
+                bom.push({ item: 'Gasket (Perimeter * 2)', qty: gasketQty.toFixed(2), unit: 'rm', rate: PRICING_DB.consumables.gasket.rate, total: gasketQty * PRICING_DB.consumables.gasket.rate })
+                bom.push({ item: 'Sealant (4 per 500sqft)', qty: sealantQty, unit: 'bottles', rate: PRICING_DB.consumables.sealant.rate, total: sealantQty * PRICING_DB.consumables.sealant.rate })
                 
-                PRICING_DB.hardware.stile_door_essentials.forEach(h => {
-                    bom.push({ item: h.name, qty: h.qty * n, unit: 'pcs', rate: h.rate, total: h.rate * h.qty * n })
-                })
-                const handle = PRICING_DB.hardware.handles[config.handleType]
-                bom.push({ item: handle.name, qty: n, unit: 'set', rate: handle.rate, total: handle.rate * n })
-                bom.push({ item: 'Stile Door Labor', qty: n, unit: 'units', rate: PRICING_DB.labor.stile_door, total: PRICING_DB.labor.stile_door * n })
-            } else {
-                PRICING_DB.hardware.floor_spring_kit.forEach(h => {
-                    bom.push({ item: h.name, qty: n, unit: 'pcs', rate: h.rate, total: h.rate * n })
-                })
-                bom.push({ item: 'Floor Spring Labor', qty: n, unit: 'units', rate: PRICING_DB.labor.floor_spring, total: PRICING_DB.labor.floor_spring * n })
-            }
-            bom.push({ item: `Vascal Opt. (N=${n})`, qty: vascalQty, unit: 'units', rate: PRICING_DB.vascal.rate, total: PRICING_DB.vascal.rate * vascalQty })
-        }
+                if (config.corners90 > 0) bom.push({ item: '90 Degree Connector', qty: config.corners90, unit: 'pcs', rate: PRICING_DB.hardware.connectors['90 Degree'], total: config.corners90 * PRICING_DB.hardware.connectors['90 Degree'] })
+                if (config.corners180 > 0) bom.push({ item: '180 Degree Connector', qty: config.corners180, unit: 'pcs', rate: PRICING_DB.hardware.connectors['180 Degree'], total: config.corners180 * PRICING_DB.hardware.connectors['180 Degree'] })
 
-        landingCost = bom.reduce((acc, curr) => acc + curr.total, 0)
+                const laborCost = areaSqft * PRICING_DB.labor.partition
+                bom.push({ item: 'Installation Labor', qty: areaSqft.toFixed(2), unit: 'sqft', rate: PRICING_DB.labor.partition, total: laborCost })
+            }
+
+            if (config.systemType === 'stile_door' || config.systemType === 'floor_spring') {
+                const n = config.numDoors || 0
+                const vascalQty = n === 0 ? 0 : (n === 1 ? 3 : Math.ceil(n * 2.5))
+                
+                if (config.systemType === 'stile_door') {
+                    const vertBars = Math.ceil((heightVal * 2 * n) / PRICING_DB.profiles.stile_door.vertical.len)
+                    const horizBottomBars = Math.ceil((widthVal * n) / PRICING_DB.profiles.stile_door.bottom.len)
+                    const horizCapBars = Math.ceil((widthVal * n) / PRICING_DB.profiles.stile_door.cap.len)
+                    totalBarsOrdered = vertBars + horizBottomBars + horizCapBars
+
+                    bom.push({ item: 'SD-VP11 Vertical', qty: vertBars, unit: 'bars', rate: PRICING_DB.profiles.stile_door.vertical.rate, total: vertBars * PRICING_DB.profiles.stile_door.vertical.rate })
+                    bom.push({ item: 'SD-HZ12B Bottom', qty: horizBottomBars, unit: 'bars', rate: PRICING_DB.profiles.stile_door.bottom.rate, total: horizBottomBars * PRICING_DB.profiles.stile_door.bottom.rate })
+                    bom.push({ item: 'SD-RH13B Cap', qty: horizCapBars, unit: 'bars', rate: PRICING_DB.profiles.stile_door.cap.rate, total: horizCapBars * PRICING_DB.profiles.stile_door.cap.rate })
+                    
+                    PRICING_DB.hardware.stile_door_essentials.forEach(h => {
+                        bom.push({ item: h.name, qty: h.qty * n, unit: 'pcs', rate: h.rate, total: h.rate * h.qty * n })
+                    })
+                    const handle = PRICING_DB.hardware.handles[config.handleType]
+                    bom.push({ item: handle.name, qty: n, unit: 'set', rate: handle.rate, total: handle.rate * n })
+                    bom.push({ item: 'Stile Door Labor', qty: n, unit: 'units', rate: PRICING_DB.labor.stile_door, total: PRICING_DB.labor.stile_door * n })
+                } else {
+                    PRICING_DB.hardware.floor_spring_kit.forEach(h => {
+                        bom.push({ item: h.name, qty: n, unit: 'pcs', rate: h.rate, total: h.rate * n })
+                    })
+                    bom.push({ item: 'Floor Spring Labor', qty: n, unit: 'units', rate: PRICING_DB.labor.floor_spring, total: PRICING_DB.labor.floor_spring * n })
+                }
+                bom.push({ item: `Vascal Opt. (N=${n})`, qty: vascalQty, unit: 'units', rate: PRICING_DB.vascal.rate, total: PRICING_DB.vascal.rate * vascalQty })
+            }
+
+            landingCost = bom.reduce((acc, curr) => acc + curr.total, 0)
+            wastePercent = totalBarsOrdered > 0 ? (1 - (totalLinearMetres / (totalBarsOrdered * 2.5))) * 100 : 0
+        }
 
         let margin = 0.55
         const areaVol = config.totalProjectArea || 0
@@ -161,23 +190,34 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
         }
         
         const sellingPrice = landingCost / (1 - (margin >= 1 ? 0.99 : margin))
-        const unitRate = config.systemType === 'partition' 
-            ? sellingPrice / ((widthVal * heightVal) / 90000)
-            : sellingPrice / (config.numDoors || 1)
+
+        const areaSqftFishMouth = (widthVal / 304.8) * (heightVal / 304.8)
+        const unitRate = config.systemType === 'fish_mouth'
+            ? (areaSqftFishMouth > 0 ? sellingPrice / areaSqftFishMouth : 0)
+            : config.systemType === 'partition' 
+                ? sellingPrice / ((widthVal * heightVal) / 90000)
+                : sellingPrice / (config.numDoors || 1)
 
         const vendorUnitRate = config.vendorQuote || 0
-        const vQuote = config.systemType === 'partition'
-            ? vendorUnitRate * ((widthVal * heightVal) / 90000)
-            : vendorUnitRate * (config.numDoors || 1)
+        const vQuote = config.systemType === 'fish_mouth'
+            ? vendorUnitRate * areaSqftFishMouth
+            : config.systemType === 'partition'
+                ? vendorUnitRate * ((widthVal * heightVal) / 90000)
+                : vendorUnitRate * (config.numDoors || 1)
         
         const vendorProfit = vQuote - landingCost
         const vendorMarginPercent = vQuote > 0 ? (vendorProfit / vQuote) * 100 : 0
-        const wastePercent = totalBarsOrdered > 0 ? (1 - (totalLinearMetres / (totalBarsOrdered * 2.5))) * 100 : 0
 
         const scripts = []
-        if (vendorMarginPercent > 20) scripts.push(`Vendor markup is ${vendorMarginPercent.toFixed(1)}%. Target ₹${Math.round(landingCost * 1.15).toLocaleString()} (15% overhead).`)
-        if (wastePercent > 30) scripts.push(`High wastage (${wastePercent.toFixed(1)}%). Demand off-cut credit for ${Math.round(totalBarsOrdered * 2.5 - totalLinearMetres)}m.`)
-        if (config.systemType === 'stile_door') scripts.push(`BOM Audit: Essential hardware is ₹${(4300 * (config.numDoors || 0)).toLocaleString()} total. Check for 'Misc' padding.`)
+        if (config.systemType === 'fish_mouth') {
+            if (vendorMarginPercent > 20) scripts.push(`Vendor markup is ${vendorMarginPercent.toFixed(1)}%. Target ₹${Math.round(landingCost * 1.15).toLocaleString()} (15% overhead).`)
+            if (wastePercent > 30) scripts.push(`High profile track wastage (${wastePercent.toFixed(1)}%). Consider reusing cut pieces.`)
+            scripts.push(`BOM Audit: Glass type is ${config.glassType}. Standard panels are split at 900mm width increments.`)
+        } else {
+            if (vendorMarginPercent > 20) scripts.push(`Vendor markup is ${vendorMarginPercent.toFixed(1)}%. Target ₹${Math.round(landingCost * 1.15).toLocaleString()} (15% overhead).`)
+            if (wastePercent > 30) scripts.push(`High wastage (${wastePercent.toFixed(1)}%). Demand off-cut credit for ${Math.round(totalBarsOrdered * 2.5 - totalLinearMetres)}m.`)
+            if (config.systemType === 'stile_door') scripts.push(`BOM Audit: Essential hardware is ₹${(4300 * (config.numDoors || 0)).toLocaleString()} total. Check for 'Misc' padding.`)
+        }
 
         return { bom, landingCost, margin, sellingPrice, unitRate, vendorProfit, vendorMarginPercent, vendorUnitRate, wastePercent, scripts }
     }, [config])
@@ -203,7 +243,8 @@ Margin: ${(calculation.margin * 100).toFixed(0)}% ${config.isManualMargin ? '(MA
                             <div>
                                 <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>CONFIGURATION</label>
                                 <select value={config.systemType} onChange={(e) => setConfig({...config, systemType: e.target.value})} style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.8rem' }}>
-                                    <option value="partition" style={{ background: 'var(--bg-primary)' }}>Partition</option>
+                                    <option value="partition" style={{ background: 'var(--bg-primary)' }}>Modular Profile Partition 45MM</option>
+                                    <option value="fish_mouth" style={{ background: 'var(--bg-primary)' }}>Fish Mouth Partition</option>
                                     <option value="stile_door" style={{ background: 'var(--bg-primary)' }}>Stile Door</option>
                                     <option value="floor_spring" style={{ background: 'var(--bg-primary)' }}>Floor Spring</option>
                                 </select>
@@ -247,13 +288,13 @@ Margin: ${(calculation.margin * 100).toFixed(0)}% ${config.isManualMargin ? '(MA
                         <h4 style={{ margin: '0 0 1.5rem 0', fontSize: '0.8rem', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>04. VENDOR AUDIT</h4>
                         <div>
                             <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
-                                VENDOR RATE ({config.systemType === 'partition' ? 'RS/SQFT' : 'PER UNIT'})
+                                VENDOR RATE ({config.systemType === 'partition' || config.systemType === 'fish_mouth' ? 'RS/SQFT' : 'PER UNIT'})
                             </label>
                             <input 
                                 type="number" 
                                 value={config.vendorQuote || ''} 
                                 onChange={(e) => setConfig({...config, vendorQuote: e.target.value === '' ? '' : Number(e.target.value)})} 
-                                placeholder={config.systemType === 'partition' ? "e.g. 450" : "e.g. 25000"}
+                                placeholder={config.systemType === 'partition' || config.systemType === 'fish_mouth' ? "e.g. 450" : "e.g. 25000"}
                                 style={{ width: '100%', padding: '0.8rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: '900' }} 
                             />
                             {config.vendorQuote > 0 && (
@@ -330,7 +371,7 @@ Margin: ${(calculation.margin * 100).toFixed(0)}% ${config.isManualMargin ? '(MA
                         <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--accent-color)' }} />
                         <div style={{ textAlign: 'center' }}>
                             <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-                                {config.systemType === 'partition' ? 'Estimated Rate (Rs/Sqft)' : 'Estimated Price (Per Unit)'}
+                                {config.systemType === 'partition' || config.systemType === 'fish_mouth' ? 'Estimated Rate (Rs/Sqft)' : 'Estimated Price (Per Unit)'}
                             </p>
                             <h2 style={{ fontSize: 'clamp(1.5rem, 8vw, 2.5rem)', margin: '0.8rem 0', color: 'var(--accent-color)', fontWeight: '900' }}>
                                 ₹{Math.round(calculation.unitRate).toLocaleString()}

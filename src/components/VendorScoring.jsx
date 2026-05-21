@@ -80,6 +80,90 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
   const selectedVendor = (vendors || []).find(v => v && v.id === selectedVendorId)
   const selectedContract = selectedVendor?.contracts?.find(c => c.id === activeContractId)
 
+  const handlePrintPdf = () => {
+    if (!selectedVendor) return
+    
+    let content = msaTemplate || ''
+    content = content.replace(/{{VENDOR_NAME}}/g, selectedVendor.name || '')
+    content = content.replace(/{{ADDRESS}}/g, selectedVendor.address || '[ADDRESS PENDING]')
+    content = content.replace(/{{GST}}/g, selectedVendor.gst || '')
+    content = content.replace(/{{PAN}}/g, selectedVendor.pan || '')
+    content = content.replace(/{{DATE}}/g, new Date().toLocaleDateString())
+    content = content.replace(/{{CATEGORY}}/g, selectedVendor.category || '')
+
+    const signatureAreaHtml = `
+      <div style="margin-top: 4rem; border-top: 2px solid #000000; padding-top: 2rem; display: flex; justify-content: space-between; gap: 2rem; page-break-inside: avoid;">
+        <div style="flex: 1;">
+          <p style="font-size: 0.75rem; text-transform: uppercase; color: #555555; font-weight: bold; margin: 0 0 0.5rem 0;">Meaven Designs Authorised Signatory</p>
+          <p class="signature-font" style="font-size: 2rem; margin: 0.5rem 0; color: #111111;">Ravi Bhargaw</p>
+          <p style="font-size: 0.75rem; margin: 0; color: #333333;">Director of Operations</p>
+        </div>
+        <div style="flex: 1; text-align: right;">
+          <p style="font-size: 0.75rem; text-transform: uppercase; color: #555555; font-weight: bold; margin: 0 0 0.5rem 0;">Partner Authorised Signatory</p>
+          \${selectedVendor.msaStatus === 'Executed' ? \`
+            <p class="signature-font" style="font-size: 2rem; margin: 0.5rem 0; color: #2b8a3e;">\${selectedVendor.signerName}</p>
+            <p style="font-size: 0.75rem; margin: 0; color: #333333;">Digitally Signed on \${selectedVendor.msaDate}</p>
+          \` : \`
+            <div style="height: 55px; background: rgba(0,0,0,0.03); border: 1px dashed #cccccc; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #777777; font-size: 0.75rem;">
+              PENDING SIGNATURE
+            </div>
+          \`}
+        </div>
+      </div>
+    `
+
+    // Find or create top-level print portal directly under body
+    let printPortal = document.getElementById('meaven-print-portal')
+    if (!printPortal) {
+      printPortal = document.createElement('div')
+      printPortal.id = 'meaven-print-portal'
+      printPortal.className = 'msa-print-section'
+      document.body.appendChild(printPortal)
+    }
+
+    printPortal.innerHTML = `
+      <table class="print-table-wrapper">
+        <thead>
+          <tr>
+            <th style="font-weight: normal; text-align: right; border: none; padding: 0;">
+              <div class="print-header-layout">
+                <img id="print-logo-img-vendor" src="/images/logo-dark.png" alt="Meaven Logo" class="print-logo" />
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="print-document-body">
+                \${content}
+                \${signatureAreaHtml}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    `
+
+    const printImg = document.getElementById('print-logo-img-vendor')
+    const triggerPrint = () => {
+      setTimeout(() => {
+        window.print()
+      }, 150)
+    }
+
+    if (printImg) {
+      if (printImg.complete) {
+        triggerPrint()
+      } else {
+        printImg.onload = triggerPrint
+        printImg.onerror = triggerPrint
+      }
+    } else {
+      triggerPrint()
+    }
+  }
+
   const getGlobalFinancials = (v) => {
     const contracts = v.contracts || []
     const totalOrder = contracts.reduce((sum, c) => sum + (parseInt(c.orderValue) || 0), 0)
@@ -724,72 +808,106 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
         {/* MSA CONTRACT MODAL / ESIGN PORTAL */}
         {isMsaModalOpen && (
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--bg-glass-heavy)', backdropFilter: 'blur(30px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 7000 }}>
-                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 800px)', padding: '0', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-                    <div style={{ padding: '1.5rem 2rem', background: 'var(--bg-accent)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 850px)', padding: '0', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ padding: '1.5rem 2rem', background: 'var(--bg-accent)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="no-print">
                         <h3 style={{ margin: 0, color: 'var(--accent-color)' }}>{isEsignMode ? '✍️ Digital Signature Portal' : '📜 MSA Contract Generation'}</h3>
                         <button onClick={() => { setIsMsaModalOpen(false); setIsEsignMode(false); }} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
                     </div>
 
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '3rem', background: '#fff', color: '#333', fontFamily: 'serif' }}>
-                        <div style={{ maxWidth: '600px', margin: '0 auto', fontSize: '0.9rem', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
-                            {(() => {
-                                let content = msaTemplate || '';
-                                content = content.replace(/{{VENDOR_NAME}}/g, selectedVendor.name || '');
-                                content = content.replace(/{{ADDRESS}}/g, selectedVendor.address || '[ADDRESS PENDING]');
-                                content = content.replace(/{{GST}}/g, selectedVendor.gst || '');
-                                content = content.replace(/{{PAN}}/g, selectedVendor.pan || '');
-                                content = content.replace(/{{DATE}}/g, new Date().toLocaleDateString());
-                                content = content.replace(/{{CATEGORY}}/g, selectedVendor.category || '');
-                                return content;
-                            })()}
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '3rem', background: '#ffffff', color: '#000000' }}>
+                        {/* High Fidelity Printable Container */}
+                        <div className="msa-print-preview-section" style={{ maxWidth: '650px', margin: '0 auto', fontSize: '10.5pt', lineHeight: '1.6', fontFamily: '"Georgia", serif', color: '#000000' }}>
+                            <table className="print-table-wrapper" style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
+                                <thead>
+                                    <tr>
+                                        <td style={{ border: 'none', padding: 0 }}>
+                                            <div className="print-header-layout">
+                                                <img src="/images/logo-dark.png" alt="Meaven Logo" className="print-logo" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ border: 'none', padding: 0 }}>
+                                            <div dangerouslySetInnerHTML={{ __html: (() => {
+                                                let content = msaTemplate || '';
+                                                content = content.replace(/{{VENDOR_NAME}}/g, selectedVendor.name || '');
+                                                content = content.replace(/{{ADDRESS}}/g, selectedVendor.address || '[ADDRESS PENDING]');
+                                                content = content.replace(/{{GST}}/g, selectedVendor.gst || '');
+                                                content = content.replace(/{{PAN}}/g, selectedVendor.pan || '');
+                                                content = content.replace(/{{DATE}}/g, new Date().toLocaleDateString());
+                                                content = content.replace(/{{CATEGORY}}/g, selectedVendor.category || '');
+                                                return content;
+                                            })() }} />
 
-                            <div style={{ marginTop: '4rem', borderTop: '2px solid #333', paddingTop: '2rem', display: 'flex', justifyContent: 'space-between' }}>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#666' }}>Meaven Designs Authorised Signatory</p>
-                                    <p style={{ fontFamily: '"Great Vibes", cursive', fontSize: '1.5rem', margin: '0.5rem 0' }}>Ravi Bhargaw</p>
-                                    <p style={{ fontSize: '0.7rem' }}>Director of Operations</p>
-                                </div>
-                                <div style={{ flex: 1, textAlign: 'right' }}>
-                                    <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#666' }}>Partner Authorised Signatory</p>
-                                    {selectedVendor.msaStatus === 'Executed' ? (
-                                        <>
-                                            <p style={{ fontFamily: '"Great Vibes", cursive', fontSize: '1.5rem', margin: '0.5rem 0', color: 'var(--success)' }}>{selectedVendor.signerName}</p>
-                                            <p style={{ fontSize: '0.7rem' }}>Digitally Signed on {selectedVendor.msaDate}</p>
-                                        </>
-                                    ) : (
-                                        <div style={{ height: '50px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: '0.7rem' }}>
-                                            {isEsignMode ? 'AWAITING SIGNATURE' : 'PENDING ISSUE'}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                                            {/* Signatures Area */}
+                                            <div style={{ marginTop: '4rem', borderTop: '2px solid #000000', paddingTop: '2rem', display: 'flex', justifyContent: 'space-between', gap: '2rem' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#555555', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>Meaven Designs Authorised Signatory</p>
+                                                    <p className="signature-font" style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#111111' }}>Ravi Bhargaw</p>
+                                                    <p style={{ fontSize: '0.75rem', margin: 0, color: '#333333' }}>Director of Operations</p>
+                                                </div>
+                                                <div style={{ flex: 1, textAlign: 'right' }}>
+                                                    <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#555555', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>Partner Authorised Signatory</p>
+                                                    {selectedVendor.msaStatus === 'Executed' ? (
+                                                        <>
+                                                            <p className="signature-font" style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#2b8a3e' }}>{selectedVendor.signerName}</p>
+                                                            <p style={{ fontSize: '0.75rem', margin: 0, color: '#333333' }}>Digitally Signed on {selectedVendor.msaDate}</p>
+                                                        </>
+                                                    ) : (
+                                                        <div style={{ height: '55px', background: 'rgba(0,0,0,0.03)', border: '1px dashed #cccccc', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#777777', fontSize: '0.75rem' }} className="no-print">
+                                                            {isEsignMode ? '✍️ AWAITING SIGNATURE' : '📜 PENDING SIGNATURE'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <div style={{ padding: '2rem', background: 'var(--bg-accent)', borderTop: '1px solid var(--border-color)' }}>
+                    <div style={{ padding: '2rem', background: 'var(--bg-accent)', borderTop: '1px solid var(--border-color)' }} className="no-print">
                         {!isEsignMode ? (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Review the contract terms before issuing to the partner.</p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                                 <button 
-                                    onClick={() => {
-                                        onUpdateVendor(selectedVendor.id, { msaStatus: 'Sent' });
-                                        setIsEsignMode(true); // Switch to Esign Mode for simulation
-                                    }}
-                                    className="btn btn-primary"
+                                    onClick={() => handlePrintPdf()}
+                                    className="btn btn-outline"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                 >
-                                    🚀 Issue & Send to Partner
+                                    🖨️ Print / Save Vector PDF
                                 </button>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }} className="hide-on-mobile">Review MSA terms before executing.</p>
+                                    {selectedVendor.msaStatus !== 'Executed' ? (
+                                        <button 
+                                            onClick={() => {
+                                                onUpdateVendor(selectedVendor.id, { msaStatus: 'Sent' });
+                                                setIsEsignMode(true);
+                                            }}
+                                            className="btn btn-primary"
+                                        >
+                                            ✍️ Interactive Web E-Sign
+                                        </button>
+                                    ) : (
+                                        <span style={{ color: 'var(--success)', fontWeight: 'bold', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                            <span>✅</span> Executed & Cached
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>Type Full Name to Sign Digitally</label>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <div style={{ flex: 1, minWidth: '240px' }}>
+                                        <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Type Full Name to Sign Digitally</label>
                                         <input 
                                             value={signerName}
                                             onChange={(e) => setSignerName(e.target.value)}
-                                            placeholder="John Doe"
-                                            style={{ width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--accent-color)', borderRadius: '8px', padding: '1rem', color: 'var(--text-primary)', fontSize: '1.1rem', fontFamily: '"Great Vibes", cursive' }}
+                                            placeholder="Authorized Partner Name"
+                                            style={{ width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--accent-color)', borderRadius: '8px', padding: '0.8rem 1rem', color: 'var(--text-primary)', fontSize: '1.2rem', fontFamily: '"Great Vibes", cursive' }}
                                         />
                                     </div>
                                     <button 
@@ -817,12 +935,12 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                             alert("Contract Executed! The signed PDF has been automatically stored in the Document Vault.");
                                         }}
                                         className="btn btn-primary" 
-                                        style={{ padding: '1.2rem 2.5rem', fontSize: '1rem' }}
+                                        style={{ padding: '1rem 2rem', fontSize: '0.95rem' }}
                                     >
                                         ✅ Sign & Execute
                                     </button>
                                 </div>
-                                <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)', textAlign: 'center' }}>By clicking 'Sign & Execute', you acknowledge that this typed signature is legally binding and equivalent to a hand-written signature.</p>
+                                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'center' }}>By clicking 'Sign & Execute', you acknowledge that this digital cursive representation is legally binding and equivalent to a handwritten signature.</p>
                             </div>
                         )}
                     </div>

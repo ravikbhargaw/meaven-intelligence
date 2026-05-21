@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
 
 :root {
   /* DARK THEME (DEFAULT) */
@@ -570,3 +571,247 @@ button {
     opacity: 0.3;
   }
 }
+
+/* HIGH FIDELITY LEGAL PRINT ENGINE */
+#meaven-print-portal {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.print-header-layout {
+  text-align: right;
+  width: 100%;
+  margin-bottom: 2.5rem;
+  border-bottom: 1.5px solid #dddddd;
+  padding-bottom: 1rem;
+}
+
+.print-logo {
+  height: 42px;
+  width: auto;
+  display: inline-block;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 25mm 20mm 25mm 20mm;
+  }
+
+  /* Hide the entire React application root to bypass fixed/absolute positioning and overflow constraints */
+  #root {
+    display: none !important;
+  }
+  
+  /* Show and style our dedicated printing portal at the document body level */
+  #meaven-print-portal {
+    display: block !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+    font-family: 'Georgia', serif !important;
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+  
+  .print-table-wrapper {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: none !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: table !important;
+  }
+  
+  .print-table-wrapper thead {
+    display: table-header-group !important;
+  }
+  
+  .print-table-wrapper tbody {
+    display: table-row-group !important;
+  }
+  
+  .print-table-wrapper tr {
+    display: table-row !important;
+  }
+  
+  .print-table-wrapper th,
+  .print-table-wrapper td {
+    display: table-cell !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+  
+  .print-header-layout {
+    text-align: right !important;
+    width: 100% !important;
+    margin-bottom: 2.5rem !important;
+    border-bottom: 1.5px solid #dddddd !important;
+    padding-bottom: 1rem !important;
+    display: block !important;
+  }
+
+  .print-logo {
+    height: 42px !important;
+    width: auto !important;
+    display: inline-block !important;
+  }
+
+  #meaven-print-portal h1,
+  #meaven-print-portal h2,
+  #meaven-print-portal h3,
+  #meaven-print-portal h4 {
+    color: #111111 !important;
+    font-family: 'Georgia', serif !important;
+    font-weight: bold !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.8rem !important;
+  }
+
+  #meaven-print-portal h1 {
+    font-size: 20pt !important;
+    text-align: center !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  #meaven-print-portal h2 {
+    font-size: 15pt !important;
+    border-bottom: 1px solid #eeeeee !important;
+    padding-bottom: 0.3rem !important;
+  }
+
+  #meaven-print-portal h3 {
+    font-size: 12pt !important;
+  }
+
+  #meaven-print-portal p {
+    color: #222222 !important;
+    margin-bottom: 1rem !important;
+    text-align: justify !important;
+  }
+
+  #meaven-print-portal ul,
+  #meaven-print-portal ol {
+    padding-left: 2rem !important;
+    margin-bottom: 1.2rem !important;
+  }
+
+  #meaven-print-portal li {
+    margin-bottom: 0.5rem !important;
+    color: #222222 !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Google Cursive font import for signature signatures */
+
+.signature-font {
+  font-family: 'Great Vibes', cursive !important;
+}
+
+/* Premium Quill Editor Theme Overrides */
+.ql-toolbar.ql-snow {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+  padding: 0.8rem !important;
+}
+
+.ql-container.ql-snow {
+  background: var(--bg-accent) !important;
+  border: 1px solid var(--border-color) !important;
+  border-bottom-left-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+  color: var(--text-primary) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.95rem !important;
+  line-height: 1.75 !important;
+  min-height: 500px !important;
+  max-height: 700px !important;
+}
+
+.ql-editor {
+  min-height: 500px !important;
+  max-height: 700px !important;
+  overflow-y: auto !important;
+  padding: 2.5rem !important;
+}
+
+/* Light / Dark Mode Controls & SVG Fills */
+.ql-snow .ql-stroke {
+  stroke: var(--text-secondary) !important;
+  transition: stroke 0.2s ease;
+}
+
+.ql-snow .ql-fill {
+  fill: var(--text-secondary) !important;
+  transition: fill 0.2s ease;
+}
+
+.ql-snow .ql-picker {
+  color: var(--text-secondary) !important;
+  font-weight: 600 !important;
+}
+
+.ql-snow .ql-picker-options {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--shadow-premium) !important;
+}
+
+.ql-snow .ql-picker-item:hover,
+.ql-snow .ql-picker-label:hover {
+  color: var(--accent-color) !important;
+}
+
+.ql-snow .ql-stroke:hover,
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar button.ql-active .ql-stroke {
+  stroke: var(--accent-color) !important;
+}
+
+.ql-snow.ql-toolbar button:hover .ql-fill,
+.ql-snow.ql-toolbar button.ql-active .ql-fill {
+  fill: var(--accent-color) !important;
+}
+
+.ql-snow.ql-toolbar button:hover,
+.ql-snow.ql-toolbar button.ql-active {
+  color: var(--accent-color) !important;
+}
+
+.ql-editor ol, .ql-editor ul {
+  padding-left: 1.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.ql-editor li {
+  margin-bottom: 0.4rem !important;
+}
+
+.ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4 {
+  color: var(--text-primary) !important;
+  font-weight: 700 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.8rem !important;
+}
+

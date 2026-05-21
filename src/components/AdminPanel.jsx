@@ -1,9 +1,185 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProposal, onAddUser, onRemoveUser, onResetUser, onBack, msaTemplate, onUpdateMsa, onUpdatePortfolio, onHardReset, onExportData }) => {
     const [activeSection, setActiveSection] = useState('portfolios') 
     const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Admin' })
-    const [localMsa, setLocalMsa] = useState(msaTemplate)
+    const editorContainerRef = useRef(null)
+    const quillRef = useRef(null)
+
+    useEffect(() => {
+        if (activeSection !== 'legal') {
+            quillRef.current = null
+        }
+    }, [activeSection])
+
+    useEffect(() => {
+        if (activeSection === 'legal' && editorContainerRef.current && !quillRef.current) {
+            if (window.Quill) {
+                quillRef.current = new window.Quill(editorContainerRef.current, {
+                    theme: 'snow',
+                    placeholder: 'Paste or type contract terms here...',
+                    modules: {
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            [{ 'align': [] }],
+                            ['clean']
+                        ]
+                    }
+                })
+
+                quillRef.current.clipboard.dangerouslyPasteHTML(msaTemplate || '')
+            }
+        }
+    }, [activeSection, msaTemplate])
+
+
+
+    const handleSaveMsa = () => {
+        const contentHtml = quillRef.current ? quillRef.current.root.innerHTML : msaTemplate
+        onUpdateMsa(contentHtml)
+        alert("MSA Template Saved Globally.")
+    }
+
+    const handlePrintPdf = () => {
+        const contentHtml = quillRef.current ? quillRef.current.root.innerHTML : msaTemplate
+        
+        // Find or create top-level print portal directly under body
+        let printPortal = document.getElementById('meaven-print-portal');
+        if (!printPortal) {
+            printPortal = document.createElement('div');
+            printPortal.id = 'meaven-print-portal';
+            printPortal.className = 'msa-print-section';
+            document.body.appendChild(printPortal);
+        }
+
+        printPortal.innerHTML = `
+            <table class="print-table-wrapper">
+                <thead>
+                    <tr>
+                        <th style="font-weight: normal; text-align: right; border: none; padding: 0;">
+                            <div class="print-header-layout">
+                                 <img id="print-logo-img" src="/images/logo-dark.png" alt="Meaven Logo" class="print-logo" />
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="print-document-body">
+                                 ${contentHtml}
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        `
+        
+        const printImg = document.getElementById('print-logo-img')
+        const triggerPrint = () => {
+            setTimeout(() => {
+                window.print()
+            }, 150)
+        }
+
+        if (printImg) {
+            if (printImg.complete) {
+                triggerPrint()
+            } else {
+                printImg.onload = triggerPrint
+                printImg.onerror = triggerPrint
+            }
+        } else {
+            triggerPrint()
+        }
+    }
+
+    const handleDownloadWord = () => {
+        const contentHtml = quillRef.current ? quillRef.current.root.innerHTML : msaTemplate
+
+        const htmlString = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <title>Master Service Agreement</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          body {
+            font-family: "Georgia", serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #000000;
+            padding: 1in;
+          }
+          h1, h2, h3, h4, h5, h6 {
+            font-family: "Georgia", serif;
+            font-weight: bold;
+            color: #000000;
+          }
+          h2 {
+            font-size: 16pt;
+            text-align: center;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+          }
+          h3 {
+            font-size: 13pt;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+          }
+          p {
+            margin-bottom: 1rem;
+            text-align: justify;
+          }
+          ul, ol {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            padding-left: 20px;
+          }
+          li {
+            margin-bottom: 0.3rem;
+          }
+          strong {
+            font-weight: bold;
+          }
+          table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1.5rem;
+          }
+          th, td {
+            border: 1px solid #cccccc;
+            padding: 0.5rem;
+            text-align: left;
+          }
+        </style>
+      </head>
+      <body>
+        ${contentHtml}
+      </body>
+      </html>
+    `
+
+        const blob = new Blob(['\ufeff' + htmlString], { type: 'application/msword' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `MSA_Contract_${new Date().toISOString().slice(0,10)}.doc`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -219,24 +395,33 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                     )}
 
                     {activeSection === 'legal' && (
-                        <div className="card" style={{ maxWidth: '900px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                                <div>
-                                    <h3 style={{ margin: 0 }}>Master Service Agreement (MSA) Template</h3>
-                                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Global legal terms for partner compliance.</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                            <div className="card" style={{ maxWidth: '900px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <div>
+                                        <h3 style={{ margin: 0 }}>Master Service Agreement (MSA) Template</h3>
+                                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Global legal terms for partner compliance. Edit directly and export.</p>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+                                        <button onClick={handleDownloadWord} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            📝 Download Word (.doc)
+                                        </button>
+                                        <button onClick={handlePrintPdf} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            🖨️ Download PDF / Print
+                                        </button>
+                                        <button onClick={handleSaveMsa} className="btn btn-primary">
+                                            Save Template
+                                        </button>
+                                    </div>
                                 </div>
-                                <button onClick={() => { onUpdateMsa(localMsa); alert("MSA Template Saved Globally."); }} className="btn btn-primary">Save Changes</button>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                                    {['{{VENDOR_NAME}}', '{{ADDRESS}}', '{{PAN}}', '{{GST}}', '{{DATE}}'].map(tag => (
+                                        <code key={tag} style={{ fontSize: '0.7rem', color: 'var(--accent-color)', background: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>{tag}</code>
+                                    ))}
+                                </div>
+                                
+                                <div ref={editorContainerRef} />
                             </div>
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                                {['{{VENDOR_NAME}}', '{{ADDRESS}}', '{{PAN}}', '{{GST}}', '{{DATE}}'].map(tag => (
-                                    <code key={tag} style={{ fontSize: '0.7rem', color: 'var(--accent-color)', background: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>{tag}</code>
-                                ))}
-                            </div>
-                            <textarea 
-                                value={localMsa} 
-                                onChange={e => setLocalMsa(e.target.value)}
-                                style={{ width: '100%', height: '500px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.5rem', color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.7', fontFamily: 'monospace' }}
-                            />
                         </div>
                     )}
 
@@ -296,6 +481,8 @@ const AdminPanel = ({ users = [], proposals = [], portfolios = [], onApproveProp
                     )}
                 </div>
             </div>
+            
+
         </div>
     )
 }
