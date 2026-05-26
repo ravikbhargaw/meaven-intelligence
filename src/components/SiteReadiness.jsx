@@ -27,6 +27,28 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
   const [isLinkAuditModalOpen, setIsLinkAuditModalOpen] = useState(false)
   const [auditSearchQuery, setAuditSearchQuery] = useState('')
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '---';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}-${m}-${y}`;
+  }
+
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '---';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${d}-${m}-${y} ${hh}:${mm}`;
+  }
+
   const defaultTemplate = [
     { id: 1, label: 'Physical Site Measurement & Verification', status: 'pending', category: 'Civil', notes: '' },
     { id: 2, label: 'Electrical Point Mapping (As-per-Site)', status: 'pending', category: 'MEP', notes: '' },
@@ -192,332 +214,536 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
         </div>
       </div>
 
-      <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
-          <div className="card" style={{ background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.05) 0%, transparent 100%)', border: '1px solid var(--accent-color)' }}>
+      {clientView ? (
+        // ==================== PREMIUM CLIENT VIEW LAYOUT ====================
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Row 1: AI Site Intelligence, Financial Pulse, and Technical Audit Vault */}
+          <div className="grid-three-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+            
+            {/* Card 1: AI Site Intelligence */}
+            <div className="card" style={{ background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.05) 0%, transparent 100%)', border: '1px solid var(--accent-color)' }}>
+              <h4 style={{ margin: 0, fontSize: '0.75rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.1rem', marginBottom: '1.2rem' }}>🤖 AI Site Intelligence</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Predictive Completion</span>
+                  <span style={{ fontWeight: '700' }}>{project?.readiness > 80 ? 'Within 3 Days' : '14+ Days (Est.)'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Bottleneck Risk</span>
+                  <span style={{ color: ((items || []).filter(i => i.status === 'failed').length > 0) ? 'var(--danger)' : 'var(--success)', fontWeight: '700' }}>
+                    {((items || []).filter(i => i.status === 'failed').length > 0) ? 'HIGH' : 'LOW'}
+                  </span>
+                </div>
+                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: '1.4' }}>
+                  AI suggests prioritizing <strong style={{ color: 'var(--accent-color)' }}>Opening Dimensions</strong> verification to avoid structural rework.
+                </p>
+              </div>
+            </div>
+
+            {/* Card 2: Financial Pulse */}
+            <div className="card" style={{ background: 'linear-gradient(135deg, rgba(50, 215, 75, 0.05) 0%, transparent 100%)', border: '1px solid rgba(50, 215, 75, 0.2)' }}>
+              <h4 style={{ margin: 0, fontSize: '0.75rem', color: 'var(--success)', textTransform: 'uppercase', letterSpacing: '0.1rem', marginBottom: '1.2rem' }}>📈 Financial Pulse</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Total Value</span>
+                  <span style={{ fontWeight: '700' }}>₹{(Number(financials.totalValue) / 100000).toFixed(2)}L</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Total Received</span>
+                  <span style={{ fontWeight: '700', color: 'var(--success)' }}>₹{(totalReceived / 100000).toFixed(2)}L</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: '700' }}>Outstanding</span>
+                  <span style={{ fontWeight: '800', color: outstanding > 0 ? 'var(--accent-color)' : 'var(--success)' }}>₹{(outstanding / 100000).toFixed(2)}L</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Technical Audit Vault */}
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>📑</span>
+                  <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>TECHNICAL AUDIT VAULT</h4>
+                </div>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+                  {(project?.auditHistory || []).length} SECURED REPORTS
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', maxHeight: '150px' }}>
+                {(project?.auditHistory || []).length > 0 ? (
+                  project.auditHistory.map(audit => (
+                    <div key={audit.auditId} style={{ background: 'var(--bg-accent)', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-primary)' }}>{audit.auditId}</div>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                          {new Date(audit.timestamp).toLocaleDateString()} • {(audit.readinessScore || audit.scores?.readiness)}% READINESS
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setViewingAudit(audit)}
+                        style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.3rem 0.6rem', fontSize: '0.6rem', fontWeight: '800', cursor: 'pointer', color: '#000' }}
+                      >
+                        VIEW
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.7rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
+                    <span>📭</span>
+                    <p style={{ margin: '0.3rem 0 0 0' }}>No audits submitted yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: QC & Handover Validation, Site Evidence, and Strategic Site Observations */}
+          <div className="grid-three-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+            
+            {/* Card 1: QC & Handover Validation */}
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🔍</span>
+                  <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>QC & HANDOVER VALIDATION</h4>
+                </div>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+                  {(project?.qcHistory || []).length} SECURED REPORTS
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', maxHeight: '150px' }}>
+                {(project?.qcHistory || []).length > 0 ? (
+                  project.qcHistory.map(qc => (
+                    <div key={qc.qcId} style={{ background: 'var(--bg-accent)', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-primary)' }}>{qc.qcId}</div>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                          {new Date(qc.timestamp).toLocaleDateString()} • {qc.scores?.readiness}% READINESS
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setViewingQC(qc)}
+                        style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.3rem 0.6rem', fontSize: '0.6rem', fontWeight: '800', cursor: 'pointer', color: '#000' }}
+                      >
+                        VIEW
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.7rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
+                    <span>📭</span>
+                    <p style={{ margin: '0.3rem 0 0 0' }}>No QC reports submitted yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Card 2: Site Evidence */}
+            <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+                <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Site Evidence</h3>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))', gap: '0.6rem', overflowY: 'auto', maxHeight: '150px', flex: 1 }}>
+                {allPhotos.map((photo, i) => (
+                  <div key={i} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                    <img src={photo} alt={"Site evidence " + i} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ))}
+                {allPhotos.length === 0 && (
+                  <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100px', color: 'var(--text-secondary)', fontSize: '0.7rem', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
+                    No evidence uploaded yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Card 3: Strategic Site Observations */}
+            <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <h3 style={{ margin: '0 0 1.2rem 0', fontSize: '0.9rem', color: 'var(--text-primary)' }}>Strategic Site Observations</h3>
+              <textarea 
+                value={observations}
+                readOnly={true}
+                placeholder="No structural deviations, accessibility issues, or technical observations logged yet."
+                style={{ width: '100%', flex: 1, minHeight: '100px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem', lineHeight: '1.5', outline: 'none', resize: 'none' }}
+              />
+            </div>
+          </div>
+
+          {/* Row 3: Client Execution Timeline pushed from Admin */}
+          <div className="card" style={{ padding: '2rem', borderRadius: '16px' }}>
+            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1rem', color: 'var(--accent-color)', letterSpacing: '0.05em', fontWeight: '800' }}>📋 PUSHED SITE EXECUTION TIMELINE</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '100px', padding: '0.5rem' }}>
+              {(() => {
+                const clientTimeline = (project?.history || [])
+                  .filter(h => h.isClientVisible)
+                  .slice()
+                  .reverse();
+                
+                if (clientTimeline.length === 0) {
+                  return (
+                    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)', fontSize: '0.8rem', border: '1px dashed var(--border-color)', borderRadius: '12px' }}>
+                      No timeline updates have been pushed to your view yet. Updates will appear here in real-time as site milestones are certified by the operations desk.
+                    </div>
+                  );
+                }
+
+                return (
+                  <>
+                    {clientTimeline.map((h, i) => (
+                      <div key={h.id} style={{ display: 'flex', gap: '1.2rem', position: 'relative' }}>
+                        <div style={{ 
+                          width: '12px', height: '12px', borderRadius: '50%', 
+                          background: h.type === 'success' ? 'var(--success)' : (h.type === 'warning' || h.type === 'danger' ? 'var(--danger)' : 'var(--accent-color)'), 
+                          marginTop: '6px', zIndex: 2,
+                          boxShadow: "0 0 10px " + (h.type === 'success' ? 'var(--success)' : (h.type === 'warning' || h.type === 'danger' ? 'var(--danger)' : 'var(--accent-color)'))
+                        }} />
+                        {i < clientTimeline.length - 1 && (
+                          <div style={{ position: 'absolute', left: '5px', top: '18px', bottom: '-22px', width: '2px', background: 'var(--border-color)' }} />
+                        )}
+                        <div style={{ flex: 1, background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <p style={{ margin: 0, fontWeight: '800', fontSize: '0.85rem', color: 'var(--text-primary)' }}>{h.title}</p>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                              {formatDateTime(h.timestamp || h.date)}
+                            </span>
+                          </div>
+                          <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{h.detail}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      ) : (
+        // ==================== INTERNAL MANAGEMENT VIEW LAYOUT ====================
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+            <div className="card" style={{ background: 'linear-gradient(135deg, rgba(102, 178, 194, 0.05) 0%, transparent 100%)', border: '1px solid var(--accent-color)' }}>
               <h4 style={{ margin: 0, fontSize: '0.75rem', color: 'var(--accent-color)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.2rem' }}>🤖 AI Site Intelligence</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Predictive Completion</span>
-                      <span style={{ fontWeight: '700' }}>{project?.readiness > 80 ? 'Within 3 Days' : '14+ Days (Est.)'}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Bottleneck Risk</span>
-                      <span style={{ color: (items.filter(i => i.status === 'failed').length > 0) ? 'var(--danger)' : 'var(--success)', fontWeight: '700' }}>
-                          {(items.filter(i => i.status === 'failed').length > 0) ? 'HIGH' : 'LOW'}
-                      </span>
-                  </div>
-                  <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: '1.4' }}>
-                      "AI suggests prioritizing <b>Opening Dimensions</b> verification to avoid structural rework."
-                  </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Predictive Completion</span>
+                  <span style={{ fontWeight: '700' }}>{project?.readiness > 80 ? 'Within 3 Days' : '14+ Days (Est.)'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Bottleneck Risk</span>
+                  <span style={{ color: ((items || []).filter(i => i.status === 'failed').length > 0) ? 'var(--danger)' : 'var(--success)', fontWeight: '700' }}>
+                    {((items || []).filter(i => i.status === 'failed').length > 0) ? 'HIGH' : 'LOW'}
+                  </span>
+                </div>
+                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: '1.4' }}>
+                  AI suggests prioritizing <strong style={{ color: 'var(--accent-color)' }}>Opening Dimensions</strong> verification to avoid structural rework.
+                </p>
               </div>
-          </div>
+            </div>
 
-          <div className="card">
+            <div className="card">
               <h3>Financial Pulse</h3>
               <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>₹{(outstanding / 100000).toFixed(2)}L Outstanding</div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>From ₹{(financials.totalValue / 100000).toFixed(2)}L Total Value</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>From ₹{(Number(financials.totalValue) / 100000).toFixed(2)}L Total Value</p>
+            </div>
           </div>
-      </div>
 
-      {!clientView && (
-        <div className="card" style={{ marginTop: '2rem' }}>
+          <div className="card" style={{ marginTop: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ margin: 0 }}>Site Checklist</h3>
-                <button className="btn btn-outline" onClick={() => setIsEditingChecklist(!isEditingChecklist)}>
-                    {isEditingChecklist ? 'Lock Checklist 🔒' : 'Edit Checklist 🔓'}
-                </button>
+              <h3 style={{ margin: 0 }}>Site Checklist</h3>
+              <button className="btn btn-outline" onClick={() => setIsEditingChecklist(!isEditingChecklist)}>
+                {isEditingChecklist ? 'Lock Checklist 🔒' : 'Edit Checklist 🔓'}
+              </button>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {(items || []).map(item => (
-                    <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.2rem', padding: '1.2rem', background: 'var(--bg-accent)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                        <button 
-                          onClick={() => isEditingChecklist && toggleStatus(item.id)}
-                          style={{ 
-                              width: '32px', height: '32px', borderRadius: '8px', 
-                              border: '2px solid ' + (item.status === 'passed' ? 'var(--success)' : (item.status === 'failed' ? 'var(--danger)' : 'var(--border-color)')),
-                              background: item.status === 'passed' ? 'rgba(50, 215, 75, 0.1)' : (item.status === 'failed' ? 'rgba(255, 69, 58, 0.1)' : 'transparent'),
-                              color: item.status === 'passed' ? 'var(--success)' : (item.status === 'failed' ? 'var(--danger)' : 'var(--text-secondary)'),
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              cursor: isEditingChecklist ? 'pointer' : 'default',
-                              fontSize: '1.2rem', fontWeight: '900', transition: 'all 0.2s ease'
-                          }}
-                        >
-                          {item.status === 'passed' ? '✓' : (item.status === 'failed' ? '✗' : '–')}
-                        </button>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '1rem' }}>{item.label}</div>
-                            
-                            {(item.notes || isEditingChecklist) && (
-                              <div style={{ marginTop: '0.4rem' }}>
-                                {isEditingChecklist ? (
-                                  <input 
-                                    type="text" 
-                                    value={item.notes || ''} 
-                                    onChange={(e) => handleNoteChange(item.id, e.target.value)}
-                                    placeholder="Add technical notes..."
-                                    style={{ width: '100%', background: 'var(--bg-accent)', border: 'none', borderBottom: '1px solid var(--accent-color)', color: 'var(--text-primary)', fontSize: '0.85rem', padding: '0.3rem 0', outline: 'none' }}
-                                  />
-                                ) : (
-                                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', opacity: 0.8 }}>
-                                    📝 {item.notes}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '700', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
-                          {item.category}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-      )}
-
-      {isLinkAuditModalOpen && (
-        <ModalOverlay>
-            <div className="card animate-fade-in" style={{ width: 'clamp(320px, 95%, 550px)', padding: '2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-color)' }}>🔗 Link Global Audit Report</h3>
-                    <button onClick={() => { setIsLinkAuditModalOpen(false); setAuditSearchQuery(''); }} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+              {(items || []).map(item => (
+                <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.2rem', padding: '1.2rem', background: 'var(--bg-accent)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                  <button 
+                    onClick={() => isEditingChecklist && toggleStatus(item.id)}
+                    style={{ 
+                      width: '32px', height: '32px', borderRadius: '8px', 
+                      border: '2px solid ' + (item.status === 'passed' ? 'var(--success)' : (item.status === 'failed' ? 'var(--danger)' : 'var(--border-color)')),
+                      background: item.status === 'passed' ? 'rgba(50, 215, 75, 0.1)' : (item.status === 'failed' ? 'rgba(255, 69, 58, 0.1)' : 'transparent'),
+                      color: item.status === 'passed' ? 'var(--success)' : (item.status === 'failed' ? 'var(--danger)' : 'var(--text-secondary)'),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: isEditingChecklist ? 'pointer' : 'default',
+                      fontSize: '1.2rem', fontWeight: '900', transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {item.status === 'passed' ? '✓' : (item.status === 'failed' ? '✗' : '–')}
+                  </button>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '1rem' }}>{item.label}</div>
+                    
+                    {(item.notes || isEditingChecklist) && (
+                      <div style={{ marginTop: '0.4rem' }}>
+                        {isEditingChecklist ? (
+                          <input 
+                            type="text" 
+                            value={item.notes || ''} 
+                            onChange={(e) => handleNoteChange(item.id, e.target.value)}
+                            placeholder="Add technical notes..."
+                            style={{ width: '100%', background: 'var(--bg-accent)', border: 'none', borderBottom: '1px solid var(--accent-color)', color: 'var(--text-primary)', fontSize: '0.85rem', padding: '0.3rem 0', outline: 'none' }}
+                          />
+                        ) : (
+                          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', opacity: 0.8 }}>
+                            📝 {item.notes}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '700', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}>
+                    {item.category}
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
 
+          {isLinkAuditModalOpen && (
+            <ModalOverlay>
+              <div className="card animate-fade-in" style={{ width: 'clamp(320px, 95%, 550px)', padding: '2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-color)' }}>🔗 Link Global Audit Report</h3>
+                  <button onClick={() => { setIsLinkAuditModalOpen(false); setAuditSearchQuery(''); }} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                </div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1.2rem', lineHeight: '1.4' }}>
-                    Search from all technical audit reports secured across the Meaven Intelligence network and link them to <strong>{project.name}</strong>.
+                  Search from all technical audit reports secured across the Meaven Intelligence network and link them to <strong>{project.name}</strong>.
                 </p>
-
                 <input 
-                    type="text" 
-                    placeholder="Search by Audit ID, Project, Client, or Location..."
-                    value={auditSearchQuery}
-                    onChange={(e) => setAuditSearchQuery(e.target.value)}
-                    style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff', fontSize: '0.85rem', marginBottom: '1.5rem', outline: 'none' }}
+                  type="text" 
+                  placeholder="Search by Audit ID, Project, Client, or Location..."
+                  value={auditSearchQuery}
+                  onChange={(e) => setAuditSearchQuery(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff', fontSize: '0.85rem', marginBottom: '1.5rem', outline: 'none' }}
                 />
-
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.8rem', maxHeight: '300px', paddingRight: '0.2rem' }}>
-                    {(() => {
-                        const query = auditSearchQuery.toLowerCase().trim();
-                        const filtered = globalAudits.filter(aud => {
-                            if (!aud) return false;
-                            return (
-                                (aud.auditId || '').toLowerCase().includes(query) ||
-                                (aud.projectInfo?.name || '').toLowerCase().includes(query) ||
-                                (aud.projectInfo?.client || '').toLowerCase().includes(query) ||
-                                (aud.projectInfo?.location || '').toLowerCase().includes(query)
-                            );
-                        });
-
-                        if (filtered.length === 0) {
-                            return (
-                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                                    No audit reports match your search query.
-                                </div>
-                            );
-                        }
-
-                        return filtered.map(aud => {
-                            const isAlreadyLinked = (project.auditHistory || []).some(a => a.auditId === aud.auditId);
-                            return (
-                                <div key={aud.auditId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <span style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{aud.auditId}</span>
-                                            <span style={{ fontSize: '0.6rem', color: 'var(--accent-color)', background: 'rgba(102,178,194,0.1)', padding: '0.1rem 0.3rem', borderRadius: '3px', fontWeight: '700' }}>{aud.readinessScore || aud.scores?.readiness}% READINESS</span>
-                                        </div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
-                                            Project: {aud.projectInfo?.name} • Client: {aud.projectInfo?.client}
-                                        </div>
-                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
-                                            Location: {aud.projectInfo?.location} • Date: {new Date(aud.timestamp).toLocaleDateString()}
-                                        </div>
-                                    </div>
-                                    {isAlreadyLinked ? (
-                                        <span style={{ fontSize: '0.65rem', color: 'var(--success)', fontWeight: '800', background: 'rgba(50,215,75,0.1)', padding: '0.3rem 0.6rem', borderRadius: '4px' }}>LINKED ✓</span>
-                                    ) : (
-                                        <button 
-                                            onClick={() => {
-                                                const updatedAudits = [...(project.auditHistory || []), aud];
-                                                onUpdateProject(project.id, { 
-                                                    auditHistory: updatedAudits,
-                                                    history: [
-                                                        ...(project.history || []),
-                                                        {
-                                                            id: Date.now(),
-                                                            type: 'success',
-                                                            title: 'Audit Linked Manually',
-                                                            detail: `Technical Audit ${aud.auditId} associated with this project site manually.`,
-                                                            timestamp: new Date().toISOString(),
-                                                            isClientVisible: true
-                                                        }
-                                                    ]
-                                                });
-                                                setIsLinkAuditModalOpen(false);
-                                                setAuditSearchQuery('');
-                                                alert(`Audit ${aud.auditId} successfully linked to ${project.name}!`);
-                                            }}
-                                            style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000', flexShrink: 0 }}
-                                        >
-                                            LINK REPORT
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        });
-                    })()}
+                  {(() => {
+                    const query = auditSearchQuery.toLowerCase().trim();
+                    const filtered = globalAudits.filter(aud => {
+                      if (!aud) return false;
+                      return (
+                        (aud.auditId || '').toLowerCase().includes(query) ||
+                        (aud.projectInfo?.name || '').toLowerCase().includes(query) ||
+                        (aud.projectInfo?.client || '').toLowerCase().includes(query) ||
+                        (aud.projectInfo?.location || '').toLowerCase().includes(query)
+                      );
+                    });
+                    if (filtered.length === 0) {
+                      return (
+                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                          No audit reports match your search query.
+                        </div>
+                      );
+                    }
+                    return filtered.map(aud => {
+                      const isAlreadyLinked = (project.auditHistory || []).some(a => a.auditId === aud.auditId);
+                      return (
+                        <div key={aud.auditId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{aud.auditId}</span>
+                              <span style={{ fontSize: '0.6rem', color: 'var(--accent-color)', background: 'rgba(102,178,194,0.1)', padding: '0.1rem 0.3rem', borderRadius: '3px', fontWeight: '700' }}>{aud.readinessScore || aud.scores?.readiness}% READINESS</span>
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
+                              Project: {aud.projectInfo?.name} • Client: {aud.projectInfo?.client}
+                            </div>
+                            <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                              Location: {aud.projectInfo?.location} • Date: {new Date(aud.timestamp).toLocaleDateString()}
+                            </div>
+                          </div>
+                          {isAlreadyLinked ? (
+                            <span style={{ fontSize: '0.65rem', color: 'var(--success)', fontWeight: '800', background: 'rgba(50,215,75,0.1)', padding: '0.3rem 0.6rem', borderRadius: '4px' }}>LINKED ✓</span>
+                          ) : (
+                            <button 
+                              onClick={() => {
+                                const updatedAudits = [...(project.auditHistory || []), aud];
+                                onUpdateProject(project.id, { 
+                                  auditHistory: updatedAudits,
+                                  history: [
+                                    ...(project.history || []),
+                                    {
+                                      id: Date.now(),
+                                      type: 'success',
+                                      title: 'Audit Linked Manually',
+                                      detail: `Technical Audit ${aud.auditId} associated with this project site manually.`,
+                                      timestamp: new Date().toISOString(),
+                                      isClientVisible: true
+                                    }
+                                  ]
+                                });
+                                setIsLinkAuditModalOpen(false);
+                                setAuditSearchQuery('');
+                                alert(`Audit ${aud.auditId} successfully linked to ${project.name}!`);
+                              }}
+                              style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000', flexShrink: 0 }}
+                            >
+                              LINK REPORT
+                            </button>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
                 <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setIsLinkAuditModalOpen(false); setAuditSearchQuery(''); }} className="btn btn-outline" style={{ fontSize: '0.75rem', padding: '0.5rem 1.5rem' }}>Close</button>
+                  <button onClick={() => { setIsLinkAuditModalOpen(false); setAuditSearchQuery(''); }} className="btn btn-outline" style={{ fontSize: '0.75rem', padding: '0.5rem 1.5rem' }}>Close</button>
                 </div>
-            </div>
-        </ModalOverlay>
-      )}
+              </div>
+            </ModalOverlay>
+          )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem', marginTop: '2rem' }}>
-          {/* Strategic Observations */}
-          <div className="card">
+          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem', marginTop: '2rem' }}>
+            {/* Strategic Observations */}
+            <div className="card">
               <h3 style={{ marginBottom: '1.5rem' }}>Strategic Site Observations</h3>
               <textarea 
-                  value={observations}
-                  onChange={(e) => {
-                      setObservations(e.target.value)
-                      syncToParent(null, null, e.target.value)
-                  }}
-                  readOnly={isReadOnly}
-                  placeholder="Record critical structural deviations, site accessibility issues, or technical blockers..."
-                  style={{ width: '100%', minHeight: '150px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem', color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.6', outline: 'none' }}
+                value={observations}
+                onChange={(e) => {
+                  setObservations(e.target.value)
+                  syncToParent(null, null, e.target.value)
+                }}
+                readOnly={isReadOnly}
+                placeholder="Record critical structural deviations, site accessibility issues, or technical blockers..."
+                style={{ width: '100%', minHeight: '150px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem', color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.6', outline: 'none' }}
               />
-          </div>
+            </div>
 
-          {/* Photo Evidence */}
-          <div className="card">
+            {/* Photo Evidence */}
+            <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                  <h3 style={{ margin: 0 }}>Site Evidence</h3>
-                  {!isReadOnly && (
-                    <label className="btn btn-outline" style={{ cursor: 'pointer', fontSize: '0.8rem' }}>
-                        + Add Photo
-                        <input type="file" hidden accept="image/*" onChange={handlePhotoUpload} />
-                    </label>
-                  )}
+                <h3 style={{ margin: 0 }}>Site Evidence</h3>
+                {!isReadOnly && (
+                  <label className="btn btn-outline" style={{ cursor: 'pointer', fontSize: '0.8rem' }}>
+                    + Add Photo
+                    <input type="file" hidden accept="image/*" onChange={handlePhotoUpload} />
+                  </label>
+                )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '1rem' }}>
-                  {allPhotos.map((photo, i) => {
-                      const isManualPhoto = i < (photos || []).length;
-                      return (
-                          <div key={i} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                              <img src={photo} alt={`Site evidence ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              {!isReadOnly && isManualPhoto && (
-                                <button 
-                                    onClick={() => {
-                                        const newPhotos = photos.filter((_, idx) => idx !== i)
-                                        setPhotos(newPhotos)
-                                        syncToParent(null, newPhotos, null)
-                                    }}
-                                    style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(255, 69, 58, 0.8)', border: 'none', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '0.6rem' }}
-                                >✕</button>
-                              )}
-                          </div>
-                      );
-                  })}
-                  {allPhotos.length === 0 && (
-                      <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.8rem', border: '1px dashed var(--border-color)', borderRadius: '12px' }}>
-                          No visual evidence uploaded yet.
-                      </div>
-                  )}
-              </div>
-          </div>
-      </div>
-
-      {/* Audit & QC Vaults */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }} className="stack-on-mobile">
-          {/* Technical Audit Vault */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                      <span style={{ fontSize: '1.2rem' }}>📑</span>
-                      <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>TECHNICAL AUDIT VAULT</h4>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
-                          {(project?.auditHistory || []).length} SECURED REPORTS
-                      </span>
-                      {onUpdateProject && (
-                          <button 
-                              onClick={() => setIsLinkAuditModalOpen(true)}
-                              style={{ background: 'rgba(102, 178, 194, 0.1)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '800', cursor: 'pointer' }}
-                          >
-                              🔗 LINK PAST AUDIT
-                          </button>
+                {allPhotos.map((photo, i) => {
+                  const isManualPhoto = i < (photos || []).length;
+                  return (
+                    <div key={i} style={{ position: 'relative', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                      <img src={photo} alt={"Site evidence " + i} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {!isReadOnly && isManualPhoto && (
+                        <button 
+                          onClick={() => {
+                            const newPhotos = photos.filter((_, idx) => idx !== i)
+                            setPhotos(newPhotos)
+                            syncToParent(null, newPhotos, null)
+                          }}
+                          style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(255, 69, 58, 0.8)', border: 'none', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '0.6rem' }}
+                        >✕</button>
                       )}
+                    </div>
+                  );
+                })}
+                {allPhotos.length === 0 && (
+                  <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.8rem', border: '1px dashed var(--border-color)', borderRadius: '12px' }}>
+                    No visual evidence uploaded yet.
                   </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Audit & QC Vaults */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }} className="stack-on-mobile">
+            {/* Technical Audit Vault */}
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>📑</span>
+                  <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>TECHNICAL AUDIT VAULT</h4>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+                    {(project?.auditHistory || []).length} SECURED REPORTS
+                  </span>
+                  {onUpdateProject && (
+                    <button 
+                      onClick={() => setIsLinkAuditModalOpen(true)}
+                      style={{ background: 'rgba(102, 178, 194, 0.1)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '800', cursor: 'pointer' }}
+                    >
+                      🔗 LINK PAST AUDIT
+                    </button>
+                  )}
+                </div>
               </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', maxHeight: '350px' }}>
-                    {(project?.auditHistory || []).length > 0 ? (
-                        project.auditHistory.map(audit => (
-                            <div key={audit.auditId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{audit.auditId}</div>
-                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                                        {new Date(audit.timestamp).toLocaleDateString()} • {audit.readinessScore || audit.scores?.readiness}% READINESS
-                                    </div>
-                                </div>
-                                <button 
-                                    onClick={() => setViewingAudit(audit)}
-                                    style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000' }}
-                                >
-                                    VIEW REPORT
-                                </button>
-                            </div>
-                        ))
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem', color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
-                            <span>📭</span>
-                            <p style={{ margin: '0.5rem 0 0 0' }}>No technical audits have been submitted for this project yet.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', maxHeight: '350px' }}>
+                {(project?.auditHistory || []).length > 0 ? (
+                  project.auditHistory.map(audit => (
+                    <div key={audit.auditId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{audit.auditId}</div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                          {new Date(audit.timestamp).toLocaleDateString()} • {audit.readinessScore || audit.scores?.readiness}% READINESS
                         </div>
-                    )}
-                </div>
+                      </div>
+                      <button 
+                        onClick={() => setViewingAudit(audit)}
+                        style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000' }}
+                      >
+                        VIEW REPORT
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem', color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
+                    <span>📭</span>
+                    <p style={{ margin: '0.5rem 0 0 0' }}>No technical audits have been submitted for this project yet.</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Post-Installation QC Vault */}
             <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                        <span style={{ fontSize: '1.2rem' }}>🔍</span>
-                        <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>QC & HANDOVER VALIDATION</h4>
-                    </div>
-                    <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
-                        {(project?.qcHistory || []).length} SECURED REPORTS
-                    </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🔍</span>
+                  <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>QC & HANDOVER VALIDATION</h4>
                 </div>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+                  {(project?.qcHistory || []).length} SECURED REPORTS
+                </span>
+              </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', maxHeight: '350px' }}>
-                    {(project?.qcHistory || []).length > 0 ? (
-                        project.qcHistory.map(qc => (
-                            <div key={qc.qcId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{qc.qcId}</div>
-                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                                        {new Date(qc.timestamp).toLocaleDateString()} • {qc.scores?.readiness}% READINESS
-                                    </div>
-                                </div>
-                                <button 
-                                    onClick={() => setViewingQC(qc)}
-                                    style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000' }}
-                                >
-                                    VIEW REPORT
-                                </button>
-                            </div>
-                        ))
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem', color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
-                            <span>📭</span>
-                            <p style={{ margin: '0.5rem 0 0 0' }}>No handover QC reports have been submitted for this project yet.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', maxHeight: '350px' }}>
+                {(project?.qcHistory || []).length > 0 ? (
+                  project.qcHistory.map(qc => (
+                    <div key={qc.qcId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{qc.qcId}</div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                          {new Date(qc.timestamp).toLocaleDateString()} • {qc.scores?.readiness}% READINESS
                         </div>
-                    )}
-                </div>
+                      </div>
+                      <button 
+                        onClick={() => setViewingQC(qc)}
+                        style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000' }}
+                      >
+                        VIEW REPORT
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem', color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
+                    <span>📭</span>
+                    <p style={{ margin: '0.5rem 0 0 0' }}>No handover QC reports have been submitted for this project yet.</p>
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
         </div>
+      )}
 
       {/* Render Read-Only Audits Overlay */}
       {viewingAudit && (
