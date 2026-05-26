@@ -336,14 +336,22 @@ function App() {
 
   // --- AUTO-PERSISTENCE (LOCAL + CLOUD) ---
   useEffect(() => { 
-    localStorage.setItem('projects', JSON.stringify(projects))
+    try {
+        localStorage.setItem('projects', JSON.stringify(projects))
+    } catch (err) {
+        console.warn("Storage quota exceeded or error occurred saving projects:", err)
+    }
     if (!isSyncing && projects.length > 0) {
         projects.forEach(p => supabase.from('projects').upsert({ id: String(p.id), name: p.name, data: p }).then(() => {}))
     }
   }, [projects, isSyncing])
 
   useEffect(() => { 
-    localStorage.setItem('vendors', JSON.stringify(vendors)) 
+    try {
+        localStorage.setItem('vendors', JSON.stringify(vendors)) 
+    } catch (err) {
+        console.warn("Storage quota exceeded or error occurred saving vendors:", err)
+    }
     if (!isSyncing && vendors.length > 0) {
         // Only upsert hub-created vendors (those with contracts or hub-created history)
         // Skip VendorIQ-only registrations to prevent overwriting their cloud data
@@ -354,7 +362,11 @@ function App() {
   }, [vendors, isSyncing])
 
   useEffect(() => { 
-    localStorage.setItem('portfolios', JSON.stringify(portfolios)) 
+    try {
+        localStorage.setItem('portfolios', JSON.stringify(portfolios)) 
+    } catch (err) {
+        console.warn("Storage quota exceeded or error occurred saving portfolios:", err)
+    }
     if (!isSyncing && portfolios.length > 0) {
         portfolios.forEach(p => supabase.from('portfolios').upsert({ id: String(p.id), name: p.name, data: p }).then(() => {}))
     }
@@ -517,10 +529,14 @@ function App() {
   }, [projects, isSyncing])
 
   useEffect(() => {
-    localStorage.setItem('meaven_projects', JSON.stringify(projects))
-    localStorage.setItem('meaven_vendors', JSON.stringify(vendors))
-    localStorage.setItem('meaven_portfolios', JSON.stringify(portfolios))
-    localStorage.setItem('meaven_readiness', JSON.stringify(readinessData))
+    try {
+        localStorage.setItem('meaven_projects', JSON.stringify(projects))
+        localStorage.setItem('meaven_vendors', JSON.stringify(vendors))
+        localStorage.setItem('meaven_portfolios', JSON.stringify(portfolios))
+        localStorage.setItem('meaven_readiness', JSON.stringify(readinessData))
+    } catch (err) {
+        console.warn("Storage quota exceeded or error occurred saving backup datasets:", err)
+    }
   }, [projects, vendors, portfolios, readinessData])
 
   useEffect(() => {
@@ -590,8 +606,21 @@ function App() {
     return () => clearTimeout(timeoutId);
   }, [projects.length, isSyncing]); // Run when project count changes or on mount
 
-  useEffect(() => { localStorage.setItem('readinessData', JSON.stringify(readinessData)) }, [readinessData])
-  useEffect(() => { localStorage.setItem('playbookProposals', JSON.stringify(playbookProposals)) }, [playbookProposals])
+  useEffect(() => { 
+    try {
+        localStorage.setItem('readinessData', JSON.stringify(readinessData)) 
+    } catch (e) {
+        console.warn("Storage quota exceeded or error saving readinessData:", e)
+    }
+  }, [readinessData])
+
+  useEffect(() => { 
+    try {
+        localStorage.setItem('playbookProposals', JSON.stringify(playbookProposals)) 
+    } catch (e) {
+        console.warn("Storage quota exceeded or error saving playbookProposals:", e)
+    }
+  }, [playbookProposals])
 
   useEffect(() => {
     if (user && projects.length > 0) {
