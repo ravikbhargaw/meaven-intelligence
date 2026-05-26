@@ -58,6 +58,33 @@ const compressImage = (base64Str, maxWidth = 800, maxHeight = 800, quality = 0.7
     });
 };
 
+const openImageWindow = (base64Data) => {
+    const newTab = window.open();
+    if (newTab) {
+        newTab.document.write(`
+            <html>
+                <head>
+                    <title>Attachment View</title>
+                    <style>
+                        body { margin: 0; background: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui, sans-serif; color: #fff; }
+                        img { max-width: 90%; max-height: 85vh; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+                        .container { text-align: center; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+                        .btn { padding: 8px 24px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+                        .btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <img src="${base64Data}" alt="Attachment" />
+                        <button class="btn" onclick="window.close()">Close Preview</button>
+                    </div>
+                </body>
+            </html>
+        `);
+        newTab.document.close();
+    }
+};
+
 const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '---';
@@ -890,7 +917,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                                                 {p.photo && (!Array.isArray(p.photos) || p.photos.length === 0) && (
                                                     <button 
-                                                        onClick={() => window.open(p.photo)} 
+                                                        onClick={() => openImageWindow(p.photo)} 
                                                         style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
                                                     >
                                                         Evidence 📎
@@ -899,7 +926,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                 {(Array.isArray(p.photos) ? p.photos : []).map((img, idx) => (
                                                     <button 
                                                         key={idx}
-                                                        onClick={() => window.open(img)} 
+                                                        onClick={() => openImageWindow(img)} 
                                                         style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
                                                     >
                                                         Evidence 📎 {idx + 1}
@@ -946,7 +973,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                                                         {p.photo && (!Array.isArray(p.photos) || p.photos.length === 0) && (
                                                             <button 
-                                                                onClick={() => window.open(p.photo)} 
+                                                                onClick={() => openImageWindow(p.photo)} 
                                                                 style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
                                                             >
                                                                 Evidence 📎
@@ -955,7 +982,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                         {(Array.isArray(p.photos) ? p.photos : []).map((img, idx) => (
                                                             <button 
                                                                 key={idx}
-                                                                onClick={() => window.open(img)} 
+                                                                onClick={() => openImageWindow(img)} 
                                                                 style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
                                                             >
                                                                 Evidence 📎 {idx + 1}
