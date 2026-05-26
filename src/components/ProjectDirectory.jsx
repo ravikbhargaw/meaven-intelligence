@@ -58,6 +58,43 @@ const compressImage = (base64Str, maxWidth = 800, maxHeight = 800, quality = 0.7
     });
 };
 
+const isPdf = (base64Str) => typeof base64Str === 'string' && base64Str.startsWith('data:application/pdf');
+
+const processFile = (file) => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const result = reader.result;
+            if (file.type === 'application/pdf') {
+                resolve(result);
+            } else {
+                compressImage(result).then(resolve);
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
+const openAttachmentWindow = (base64Data) => {
+    const newTab = window.open();
+    if (!newTab) return;
+    if (isPdf(base64Data)) {
+        newTab.document.write(`
+            <html>
+                <head><title>Bill / Invoice PDF</title>
+                <style>body{margin:0;background:#0d0d0d;display:flex;align-items:center;justify-content:center;height:100vh;}</style>
+                </head>
+                <body>
+                    <embed src="${base64Data}" type="application/pdf" width="100%" height="100%" style="position:fixed;top:0;left:0;width:100%;height:100%;" />
+                </body>
+            </html>`);
+        newTab.document.close();
+    } else {
+        openImageWindow(base64Data);
+        newTab.close();
+    }
+};
+
 const openImageWindow = (base64Data) => {
     const newTab = window.open();
     if (newTab) {
@@ -917,19 +954,19 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                                                 {p.photo && (!Array.isArray(p.photos) || p.photos.length === 0) && (
                                                     <button 
-                                                        onClick={() => openImageWindow(p.photo)} 
-                                                        style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                        onClick={() => isPdf(p.photo) ? openAttachmentWindow(p.photo) : openImageWindow(p.photo)} 
+                                                        style={{ background: isPdf(p.photo) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(p.photo) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(p.photo) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
                                                     >
-                                                        Evidence 📎
+                                                        {isPdf(p.photo) ? '📄 PDF' : 'Evidence 📎'}
                                                     </button>
                                                 )}
-                                                {(Array.isArray(p.photos) ? p.photos : []).map((img, idx) => (
+                                                {(Array.isArray(p.photos) ? p.photos : []).map((att, idx) => (
                                                     <button 
                                                         key={idx}
-                                                        onClick={() => openImageWindow(img)} 
-                                                        style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                        onClick={() => isPdf(att) ? openAttachmentWindow(att) : openImageWindow(att)} 
+                                                        style={{ background: isPdf(att) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(att) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(att) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
                                                     >
-                                                        Evidence 📎 {idx + 1}
+                                                        {isPdf(att) ? `📄 PDF ${idx + 1}` : `📎 Img ${idx + 1}`}
                                                     </button>
                                                 ))}
                                             </div>
@@ -973,19 +1010,19 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                                                         {p.photo && (!Array.isArray(p.photos) || p.photos.length === 0) && (
                                                             <button 
-                                                                onClick={() => openImageWindow(p.photo)} 
-                                                                style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                                onClick={() => isPdf(p.photo) ? openAttachmentWindow(p.photo) : openImageWindow(p.photo)} 
+                                                                style={{ background: isPdf(p.photo) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(p.photo) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(p.photo) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
                                                             >
-                                                                Evidence 📎
+                                                                {isPdf(p.photo) ? '📄 PDF' : 'Evidence 📎'}
                                                             </button>
                                                         )}
-                                                        {(Array.isArray(p.photos) ? p.photos : []).map((img, idx) => (
+                                                        {(Array.isArray(p.photos) ? p.photos : []).map((att, idx) => (
                                                             <button 
                                                                 key={idx}
-                                                                onClick={() => openImageWindow(img)} 
-                                                                style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                                onClick={() => isPdf(att) ? openAttachmentWindow(att) : openImageWindow(att)} 
+                                                                style={{ background: isPdf(att) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(att) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(att) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
                                                             >
-                                                                Evidence 📎 {idx + 1}
+                                                                {isPdf(att) ? `📄 PDF ${idx + 1}` : `📎 Img ${idx + 1}`}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -1289,31 +1326,16 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="ref" required placeholder="Transaction Ref" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENTS (UP TO 5 FILES, OPTIONAL)</label>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENTS (UP TO 5 — IMAGES OR PDFs, OPTIONAL)</label>
                             <input 
                                 type="file" 
-                                accept="image/*" 
+                                accept="image/*,application/pdf" 
                                 multiple
                                 onChange={(e) => {
                                     const files = Array.from(e.target.files).slice(0, 5);
-                                    const loadedScreenshots = [];
-                                    let loadedCount = 0;
-                                    if (files.length === 0) {
-                                        setPaymentScreenshots([]);
-                                        return;
-                                    }
-                                    files.forEach((file) => {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                            compressImage(reader.result).then(compressed => {
-                                                loadedScreenshots.push(compressed);
-                                                loadedCount++;
-                                                if (loadedCount === files.length) {
-                                                    setPaymentScreenshots(loadedScreenshots);
-                                                }
-                                            });
-                                        };
-                                        reader.readAsDataURL(file);
+                                    if (files.length === 0) { setPaymentScreenshots([]); return; }
+                                    Promise.all(files.map(processFile)).then(results => {
+                                        setPaymentScreenshots(results);
                                     });
                                 }} 
                                 style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }} 
@@ -1321,8 +1343,15 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             {paymentScreenshots.length > 0 && (
                                 <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                                     {paymentScreenshots.map((scr, idx) => (
-                                        <div key={idx} style={{ position: 'relative', width: '50px', height: '50px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                                            <img src={scr} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <div key={idx} style={{ position: 'relative', borderRadius: '4px', border: '1px solid var(--border-color)', overflow: 'hidden', flexShrink: 0 }}>
+                                            {isPdf(scr) ? (
+                                                <div style={{ width: '50px', height: '50px', background: 'rgba(255,149,0,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                                                    <span style={{ fontSize: '1.2rem' }}>📄</span>
+                                                    <span style={{ fontSize: '0.4rem', color: '#ff9500', fontWeight: '800' }}>PDF</span>
+                                                </div>
+                                            ) : (
+                                                <img src={scr} style={{ width: '50px', height: '50px', objectFit: 'cover', display: 'block' }} />
+                                            )}
                                             <button 
                                                 type="button" 
                                                 onClick={() => setPaymentScreenshots(prev => prev.filter((_, i) => i !== idx))}
@@ -1366,31 +1395,16 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="ref" required placeholder="Reference" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENTS (UP TO 5 FILES, OPTIONAL)</label>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENTS (UP TO 5 — IMAGES OR PDFs, OPTIONAL)</label>
                             <input 
                                 type="file" 
-                                accept="image/*" 
+                                accept="image/*,application/pdf" 
                                 multiple
                                 onChange={(e) => {
                                     const files = Array.from(e.target.files).slice(0, 5);
-                                    const loadedScreenshots = [];
-                                    let loadedCount = 0;
-                                    if (files.length === 0) {
-                                        setPayoutScreenshots([]);
-                                        return;
-                                    }
-                                    files.forEach((file) => {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                            compressImage(reader.result).then(compressed => {
-                                                loadedScreenshots.push(compressed);
-                                                loadedCount++;
-                                                if (loadedCount === files.length) {
-                                                    setPayoutScreenshots(loadedScreenshots);
-                                                }
-                                            });
-                                        };
-                                        reader.readAsDataURL(file);
+                                    if (files.length === 0) { setPayoutScreenshots([]); return; }
+                                    Promise.all(files.map(processFile)).then(results => {
+                                        setPayoutScreenshots(results);
                                     });
                                 }} 
                                 style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }} 
@@ -1398,8 +1412,15 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             {payoutScreenshots.length > 0 && (
                                 <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                                     {payoutScreenshots.map((scr, idx) => (
-                                        <div key={idx} style={{ position: 'relative', width: '50px', height: '50px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                                            <img src={scr} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <div key={idx} style={{ position: 'relative', borderRadius: '4px', border: '1px solid var(--border-color)', overflow: 'hidden', flexShrink: 0 }}>
+                                            {isPdf(scr) ? (
+                                                <div style={{ width: '50px', height: '50px', background: 'rgba(255,149,0,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                                                    <span style={{ fontSize: '1.2rem' }}>📄</span>
+                                                    <span style={{ fontSize: '0.4rem', color: '#ff9500', fontWeight: '800' }}>PDF</span>
+                                                </div>
+                                            ) : (
+                                                <img src={scr} style={{ width: '50px', height: '50px', objectFit: 'cover', display: 'block' }} />
+                                            )}
                                             <button 
                                                 type="button" 
                                                 onClick={() => setPayoutScreenshots(prev => prev.filter((_, i) => i !== idx))}
