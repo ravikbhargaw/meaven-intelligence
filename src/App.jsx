@@ -722,86 +722,97 @@ function App() {
   }
 
   const handleLogPayment = (projectId, amount, ref, date, photos) => {
-    setProjects(prev => prev.map(p => {
-        if (Number(p.id) === Number(projectId)) {
-            const financials = p.clientFinancials || { totalValue: 0, requests: [], received: [] }
-            const newPayment = { 
-                id: Date.now(), 
-                amount: parseInt(amount), 
-                ref, 
-                date, 
-                photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
-                photos: Array.isArray(photos) ? photos : (photos ? [photos] : [])
+    try {
+        setProjects(prev => (prev || []).map(p => {
+            if (p && Number(p.id) === Number(projectId)) {
+                const financials = p.clientFinancials || { totalValue: 0, requests: [], received: [] }
+                const parsedAmount = parseInt(amount) || 0
+                const newPayment = { 
+                    id: Date.now(), 
+                    amount: parsedAmount, 
+                    ref: ref || '', 
+                    date: date || new Date().toISOString().split('T')[0], 
+                    photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
+                    photos: Array.isArray(photos) ? photos : (photos ? [photos] : [])
+                }
+                return { 
+                    ...p, 
+                    clientFinancials: { ...financials, received: [...(financials.received || []), newPayment] },
+                    history: [...(p.history || []), { 
+                        id: Date.now() + 1, 
+                        type: 'success', 
+                        title: 'Payment Received', 
+                        detail: `₹${parsedAmount.toLocaleString()} credited. Ref: ${ref || ''}`, 
+                        timestamp: new Date().toISOString(),
+                        isClientVisible: false
+                    }]
+                }
             }
-            return { 
-                ...p, 
-                clientFinancials: { ...financials, received: [...(financials.received || []), newPayment] },
-                history: [...(p.history || []), { 
-                    id: Date.now() + 1, 
-                    type: 'success', 
-                    title: 'Payment Received', 
-                    detail: `₹${parseInt(amount).toLocaleString()} credited. Ref: ${ref}`, 
-                    timestamp: new Date().toISOString(),
-                    isClientVisible: false
-                }]
-            }
-        }
-        return p
-    }))
+            return p
+        }))
+    } catch (err) {
+        console.error("Error inside handleLogPayment:", err)
+    }
   }
 
   const handleLogPayout = (projectId, amount, ref, date, photos, vendorId) => {
-    // 1. Update Project Ledger
-    setProjects(prev => (prev || []).map(p => {
-        if (Number(p.id) === Number(projectId)) {
-            const newPayout = { 
-                id: Date.now(), 
-                amount: parseInt(amount), 
-                ref, 
-                date, 
-                photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
-                photos: Array.isArray(photos) ? photos : (photos ? [photos] : []),
-                vendorId 
-            }
-            return { 
-                ...p, 
-                payouts: [...(p.payouts || []), newPayout],
-                history: [...(p.history || []), { 
-                    id: Date.now() + 1, 
-                    type: 'warning', 
-                    title: 'Vendor Payout', 
-                    detail: `₹${parseInt(amount).toLocaleString()} debited. Ref: ${ref}`, 
-                    timestamp: new Date().toISOString(),
-                    isClientVisible: false
-                }]
-            }
-        }
-        return p
-    }))
-
-    // 2. Synchronize to Vendor Bench (Specific Contract)
-    if (vendorId) {
-        setVendors(prev => (prev || []).map(v => {
-            if (String(v.id) === String(vendorId)) {
-                const projectName = projects.find(p => p.id === projectId)?.name
-                return {
-                    ...v,
-                    contracts: (v.contracts || []).map(c => {
-                        if (c.projectName === projectName) {
-                            return {
-                                ...c,
-                                payments: [
-                                    ...(c.payments || []),
-                                    { id: Date.now(), amount: parseInt(amount), date, ref }
-                                ]
-                            }
-                        }
-                        return c
-                    })
+    try {
+        // 1. Update Project Ledger
+        setProjects(prev => (prev || []).map(p => {
+            if (p && Number(p.id) === Number(projectId)) {
+                const parsedAmount = parseInt(amount) || 0
+                const newPayout = { 
+                    id: Date.now(), 
+                    amount: parsedAmount, 
+                    ref: ref || '', 
+                    date: date || new Date().toISOString().split('T')[0], 
+                    photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
+                    photos: Array.isArray(photos) ? photos : (photos ? [photos] : []),
+                    vendorId: vendorId || ''
+                }
+                return { 
+                    ...p, 
+                    payouts: [...(p.payouts || []), newPayout],
+                    history: [...(p.history || []), { 
+                        id: Date.now() + 1, 
+                        type: 'warning', 
+                        title: 'Vendor Payout', 
+                        detail: `₹${parsedAmount.toLocaleString()} debited. Ref: ${ref || ''}`, 
+                        timestamp: new Date().toISOString(),
+                        isClientVisible: false
+                    }]
                 }
             }
-            return v
+            return p
         }))
+
+        // 2. Synchronize to Vendor Bench (Specific Contract)
+        if (vendorId) {
+            setVendors(prev => (prev || []).map(v => {
+                if (v && String(v.id) === String(vendorId)) {
+                    const projectObj = (projects || []).find(proj => proj && Number(proj.id) === Number(projectId))
+                    const projectName = projectObj ? projectObj.name : ''
+                    return {
+                        ...v,
+                        contracts: (v.contracts || []).map(c => {
+                            if (c && c.projectName === projectName) {
+                                return {
+                                    ...c,
+                                    payments: [
+                                        ...(c.payments || []),
+                                        { id: Date.now(), amount: parseInt(amount) || 0, date: date || new Date().toISOString().split('T')[0], ref: ref || '' }
+                                    ]
+                                }
+                            }
+                            return c
+                        })
+                    }
+                }
+                return v
+            }))
+        }
+    } catch (err) {
+        console.error("Error inside handleLogPayout:", err)
     }
   }
 

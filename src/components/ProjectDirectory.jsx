@@ -886,9 +886,9 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
                                         <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Ref: {p.ref}</span>
-                                        {((p.photos && p.photos.length > 0) || p.photo) && (
+                                        {((Array.isArray(p.photos) && p.photos.length > 0) || p.photo) && (
                                             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                                {p.photo && (!p.photos || p.photos.length === 0) && (
+                                                {p.photo && (!Array.isArray(p.photos) || p.photos.length === 0) && (
                                                     <button 
                                                         onClick={() => window.open(p.photo)} 
                                                         style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
@@ -896,7 +896,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                         Evidence 📎
                                                     </button>
                                                 )}
-                                                {(p.photos || []).map((img, idx) => (
+                                                {(Array.isArray(p.photos) ? p.photos : []).map((img, idx) => (
                                                     <button 
                                                         key={idx}
                                                         onClick={() => window.open(img)} 
@@ -942,9 +942,9 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                             )}
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
                                                 <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', opacity: 0.6 }}>Transaction Ref: {p.ref}</span>
-                                                {((p.photos && p.photos.length > 0) || p.photo) && (
+                                                {((Array.isArray(p.photos) && p.photos.length > 0) || p.photo) && (
                                                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                                        {p.photo && (!p.photos || p.photos.length === 0) && (
+                                                        {p.photo && (!Array.isArray(p.photos) || p.photos.length === 0) && (
                                                             <button 
                                                                 onClick={() => window.open(p.photo)} 
                                                                 style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
@@ -952,7 +952,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                                 Evidence 📎
                                                             </button>
                                                         )}
-                                                        {(p.photos || []).map((img, idx) => (
+                                                        {(Array.isArray(p.photos) ? p.photos : []).map((img, idx) => (
                                                             <button 
                                                                 key={idx}
                                                                 onClick={() => window.open(img)} 
