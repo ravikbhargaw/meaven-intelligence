@@ -63,6 +63,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   const [isSignOffModalOpen, setIsSignOffModalOpen] = useState(false)
   const [signOffEmail, setSignOffEmail] = useState({ subject: '', body: '', to: '' })
   const [showAllHistory, setShowAllHistory] = useState(false)
+  const [paymentScreenshot, setPaymentScreenshot] = useState(null)
+  const [payoutScreenshot, setPayoutScreenshot] = useState(null)
   
   useEffect(() => {
     if (activeProjectId) {
@@ -769,7 +771,17 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                         <span style={{ fontWeight: '800', color: 'var(--success)', fontSize: '0.85rem' }}>+ ₹{p.amount.toLocaleString()}</span>
                                         <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{formatDate(p.date)}</span>
                                     </div>
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Ref: {p.ref}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Ref: {p.ref}</span>
+                                        {p.photo && (
+                                            <button 
+                                                onClick={() => window.open(p.photo)} 
+                                                style={{ background: 'none', border: 'none', color: 'var(--accent-color)', padding: 0, fontSize: '0.65rem', cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                                            >
+                                                View Evidence 📎
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -802,7 +814,17 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                             ) : (
                                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>To: Unknown Partner</span>
                                             )}
-                                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', opacity: 0.6 }}>Transaction Ref: {p.ref}</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
+                                                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', opacity: 0.6 }}>Transaction Ref: {p.ref}</span>
+                                                {p.photo && (
+                                                    <button 
+                                                        onClick={() => window.open(p.photo)} 
+                                                        style={{ background: 'none', border: 'none', color: 'var(--accent-color)', padding: 0, fontSize: '0.65rem', cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                                                    >
+                                                        View Evidence 📎
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )
@@ -956,14 +978,33 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), null)
+                        onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), paymentScreenshot)
+                        setPaymentScreenshot(null)
                         setIsPaymentModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <input name="amount" type="number" required placeholder="Amount" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="ref" required placeholder="Transaction Ref" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENT / EVIDENCE (OPTIONAL)</label>
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setPaymentScreenshot(reader.result);
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }} 
+                                style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }} 
+                            />
+                        </div>
                         <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem' }}>
-                            <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
+                            <button type="button" onClick={() => { setIsPaymentModalOpen(false); setPaymentScreenshot(null); }} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
                             <button type="submit" className="btn btn-primary" style={{ flex: 1, background: 'var(--success)', color: '#000', fontSize: '0.75rem' }}>Confirm</button>
                         </div>
                     </form>
@@ -978,7 +1019,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onLogPayout(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), null, formData.get('vendorId'))
+                        onLogPayout(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), payoutScreenshot, formData.get('vendorId'))
+                        setPayoutScreenshot(null)
                         setIsPayoutModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <select name="vendorId" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
@@ -988,8 +1030,26 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         <input name="amount" type="number" required placeholder="Amount" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="ref" required placeholder="Reference" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENT / EVIDENCE (OPTIONAL)</label>
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setPayoutScreenshot(reader.result);
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }} 
+                                style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }} 
+                            />
+                        </div>
                         <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem' }}>
-                            <button type="button" onClick={() => setIsPayoutModalOpen(false)} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
+                            <button type="button" onClick={() => { setIsPayoutModalOpen(false); setPayoutScreenshot(null); }} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
                             <button type="submit" className="btn btn-primary" style={{ flex: 1, background: 'var(--danger)', color: '#fff', fontSize: '0.75rem' }}>Confirm</button>
                         </div>
                     </form>

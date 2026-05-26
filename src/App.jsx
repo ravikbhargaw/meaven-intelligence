@@ -218,6 +218,8 @@ function App() {
           address: d.address || d.location   || '',
           contact: d.contact || d.email      || '',
           name:    d.name    || v.name       || 'Unnamed Vendor',
+          // Capitalize and normalize status to prevent casing bugs
+          status:  d.status ? (d.status.charAt(0).toUpperCase() + d.status.slice(1).toLowerCase()) : 'Vetting',
           // Ensure hub-required arrays are always arrays (never undefined/object)
           contracts: Array.isArray(d.contracts) ? d.contracts : [],
           history:   Array.isArray(d.history)   ? d.history   : [],
@@ -367,6 +369,137 @@ function App() {
         setPortfolios(prev => [...(prev || []), ...newPortfolios])
     }
   }, [projects, portfolios, isSyncing])
+
+  // --- SELF-HEALING PROJECTS CASE-INSENSITIVE DEDUPLICATION ENGINE ---
+  useEffect(() => {
+    if (isSyncing || !projects || projects.length === 0) return
+
+    // Group projects by lowercase name
+    const grouped = {}
+    projects.forEach(p => {
+      if (!p || !p.name) return
+      const lower = p.name.toLowerCase().trim()
+      if (!grouped[lower]) grouped[lower] = []
+      grouped[lower].push(p)
+    })
+
+    let hasChange = false
+    const mergedProjects = []
+
+    Object.keys(grouped).forEach(lower => {
+      const list = grouped[lower]
+      if (list.length === 1) {
+        mergedProjects.push(list[0])
+      } else {
+        // We have duplicates! Let's merge them.
+        hasChange = true
+        // Sort: first by presence of clientFinancials (non-zero totalValue), then by ID (older first)
+        list.sort((a, b) => {
+          const aVal = a.clientFinancials?.totalValue || 0
+          const bVal = b.clientFinancials?.totalValue || 0
+          if (aVal !== bVal) return bVal - aVal
+          return a.id - b.id
+        })
+
+        const canonical = { ...list[0] }
+        
+        // Merge the rest into canonical
+        for (let i = 1; i < list.length; i++) {
+          const dup = list[i]
+          
+          // Merge audit history
+          const mergedAudits = [...(canonical.auditHistory || [])]
+          ;(dup.auditHistory || []).forEach(aud => {
+            if (!mergedAudits.some(a => a.auditId === aud.auditId)) {
+              mergedAudits.push(aud)
+            }
+          })
+          canonical.auditHistory = mergedAudits
+
+          // Merge QC history
+          const mergedQCs = [...(canonical.qcHistory || [])]
+          ;(dup.qcHistory || []).forEach(qc => {
+            if (!mergedQCs.some(q => q.qcId === qc.qcId)) {
+              mergedQCs.push(qc)
+            }
+          })
+          canonical.qcHistory = mergedQCs
+
+          // Merge payouts
+          const mergedPayouts = [...(canonical.payouts || [])]
+          ;(dup.payouts || []).forEach(po => {
+            if (!mergedPayouts.some(p => p.id === po.id || (p.ref === po.ref && p.amount === po.amount))) {
+              mergedPayouts.push(po)
+            }
+          })
+          canonical.payouts = mergedPayouts
+
+          // Merge vendor updates
+          const mergedUpdates = [...(canonical.vendorUpdates || [])]
+          ;(dup.vendorUpdates || []).forEach(up => {
+            if (!mergedUpdates.some(u => u.id === up.id)) {
+              mergedUpdates.push(up)
+            }
+          })
+          canonical.vendorUpdates = mergedUpdates
+
+          // Merge history
+          const mergedHistory = [...(canonical.history || [])]
+          ;(dup.history || []).forEach(h => {
+            if (!mergedHistory.some(x => x.id === h.id || (x.title === h.title && x.detail === h.detail))) {
+              mergedHistory.push(h)
+            }
+          })
+          canonical.history = mergedHistory
+
+          // Merge clientFinancials
+          const canonicalFin = canonical.clientFinancials || { totalValue: 0, requests: [], received: [] }
+          const dupFin = dup.clientFinancials || { totalValue: 0, requests: [], received: [] }
+          
+          const mergedReceived = [...(canonicalFin.received || [])]
+          ;(dupFin.received || []).forEach(rec => {
+            if (!mergedReceived.some(r => r.id === rec.id || (r.ref === rec.ref && r.amount === rec.amount))) {
+              mergedReceived.push(rec)
+            }
+          })
+
+          const mergedRequests = [...(canonicalFin.requests || [])]
+          ;(dupFin.requests || []).forEach(req => {
+            if (!mergedRequests.some(r => r.id === req.id)) {
+              mergedRequests.push(req)
+            }
+          })
+
+          canonical.clientFinancials = {
+            totalValue: Math.max(canonicalFin.totalValue || 0, dupFin.totalValue || 0),
+            requests: mergedRequests,
+            received: mergedReceived
+          }
+
+          if (!canonical.assignedVendor && dup.assignedVendor) {
+            canonical.assignedVendor = dup.assignedVendor
+          }
+
+          if (!canonical.readiness && dup.readiness) {
+            canonical.readiness = dup.readiness
+          }
+        }
+
+        mergedProjects.push(canonical)
+
+        // Delete duplicates from Supabase in the background
+        list.slice(1).forEach(dup => {
+          supabase.from('projects').delete().eq('id', String(dup.id)).then(({error}) => {
+            if (error) console.error("Could not delete duplicate project in Supabase:", error)
+          })
+        })
+      }
+    })
+
+    if (hasChange) {
+      setProjects(mergedProjects)
+    }
+  }, [projects, isSyncing])
 
   useEffect(() => {
     localStorage.setItem('meaven_projects', JSON.stringify(projects))
@@ -674,9 +807,10 @@ function App() {
 
     const projectName = payload.projectInfo?.name;
     if (projectName) {
-        const projectExists = projects.some(p => p.name === projectName);
+        const cleanName = projectName.trim().toLowerCase();
+        const existingProject = projects.find(p => p.name.trim().toLowerCase() === cleanName);
         
-        if (!projectExists) {
+        if (!existingProject) {
             // Create New Project based on Audit Data
             const newProject = {
                 id: Date.now(),
@@ -687,6 +821,7 @@ function App() {
                 startDate: new Date().toISOString().split('T')[0],
                 milestones: { measurementDate: null, siteReadiness: null, completion: null },
                 clientFinancials: { totalValue: 0, requests: [], received: [] },
+                auditHistory: [payload],
                 history: [
                     { 
                         id: Date.now(), 
@@ -709,7 +844,7 @@ function App() {
         } else {
             // Update Existing Project
             setProjects(prev => prev.map(p => {
-                if (p.name === projectName) {
+                if (p.name.trim().toLowerCase() === cleanName) {
                     return {
                         ...p,
                         readiness: payload.readinessScore,
@@ -747,8 +882,9 @@ function App() {
 
     const projectName = payload.projectInfo?.name;
     if (projectName) {
+        const cleanName = projectName.trim().toLowerCase();
         setProjects(prev => prev.map(p => {
-            if (p.name === projectName) {
+            if (p.name.trim().toLowerCase() === cleanName) {
                 const qcHistory = [...(p.qcHistory || []), payload];
                 
                 let nextStage = p.stageIndex !== undefined ? p.stageIndex : 1;
@@ -1267,6 +1403,7 @@ function App() {
                     onAssignVendor={handleAssignVendor}
                     onReassign={handleReassignProject}
                     userRole={user?.role}
+                    onDeleteVendor={handleRemoveVendor}
                   />
                 )}
 

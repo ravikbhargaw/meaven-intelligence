@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: selectedVendorIdProp, msaTemplate, onSelectVendor, onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly, userRole }) => {
+const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: selectedVendorIdProp, msaTemplate, onSelectVendor, onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly, userRole, onDeleteVendor }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isContractModalOpen, setIsContractModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
@@ -317,12 +317,20 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                         {/* Bank Details Section */}
                         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                <label style={{ fontSize: '0.6rem', color: 'var(--accent-color)', textTransform: 'uppercase', margin: 0, fontWeight: '800' }}>🏦 Settlement Bank Details</label>
+                                <label style={{ fontSize: '0.65rem', color: 'var(--accent-color)', textTransform: 'uppercase', margin: 0, fontWeight: '900', letterSpacing: '0.05em' }}>🏦 Settlement Bank Details</label>
                                 {selectedVendor.accountNumber && userRole !== 'SuperAdmin' && (
                                     <span style={{ fontSize: '0.5rem', color: 'var(--danger)', fontWeight: '800' }}>🔒 LOCKED (SUPERADMIN ONLY)</span>
                                 )}
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                            <div style={{ 
+                                background: 'rgba(102, 178, 194, 0.03)', 
+                                border: '1px solid rgba(102, 178, 194, 0.08)', 
+                                borderRadius: '10px', 
+                                padding: '1rem', 
+                                display: 'grid', 
+                                gridTemplateColumns: '1fr 1fr', 
+                                gap: '0.8rem' 
+                            }}>
                                 <div>
                                     <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Account Name</label>
                                     <input 
@@ -398,8 +406,24 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                         return (
                             <div style={{ marginTop: '1.5rem' }}>
                                 {selectedVendor.status === 'Certified' ? (
-                                    <div style={{ textAlign: 'center', padding: '0.8rem', background: 'rgba(50, 215, 75, 0.1)', borderRadius: '8px', border: '1px solid var(--success)', color: 'var(--success)', fontSize: '0.75rem', fontWeight: '800' }}>
-                                        ✨ MEAVEN CERTIFIED PARTNER
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                        <div style={{ textAlign: 'center', padding: '0.8rem', background: 'rgba(50, 215, 75, 0.1)', borderRadius: '8px', border: '1px solid var(--success)', color: 'var(--success)', fontSize: '0.75rem', fontWeight: '800' }}>
+                                            ✨ MEAVEN CERTIFIED PARTNER
+                                        </div>
+                                        {onDeleteVendor && (
+                                            <button 
+                                                onClick={() => {
+                                                    if (confirm(`⚠️ DANGER: Are you sure you want to permanently delete and archive partner "${selectedVendor.name}"? This action is irreversible.`)) {
+                                                        onDeleteVendor(selectedVendor.id);
+                                                        handleSetSelectedVendor(null);
+                                                    }
+                                                }}
+                                                className="btn btn-outline"
+                                                style={{ width: '100%', borderColor: 'var(--danger)', color: 'var(--danger)', fontSize: '0.75rem', padding: '0.6rem', fontWeight: '800' }}
+                                            >
+                                                🗑️ ARCHIVE & DELETE PARTNER
+                                            </button>
+                                        )}
                                     </div>
                                 ) : (
                                     <div title={!isEligible ? "Verification Requirements Incomplete: Ensure Phone, Address, PAN, and all 3 Mandatory Docs are present." : "Ready for Institutional Certification"}>
