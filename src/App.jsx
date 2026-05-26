@@ -692,11 +692,18 @@ function App() {
     setPortfolios(prev => [...(prev || []), newPortfolio]); setSelectedClient(newPortfolio.name); setIsProjectSelected(true); setActiveTab('dashboard');
   }
 
-  const handleLogPayment = (projectId, amount, ref, date, photo) => {
+  const handleLogPayment = (projectId, amount, ref, date, photos) => {
     setProjects(prev => prev.map(p => {
         if (Number(p.id) === Number(projectId)) {
             const financials = p.clientFinancials || { totalValue: 0, requests: [], received: [] }
-            const newPayment = { id: Date.now(), amount: parseInt(amount), ref, date, photo }
+            const newPayment = { 
+                id: Date.now(), 
+                amount: parseInt(amount), 
+                ref, 
+                date, 
+                photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
+                photos: Array.isArray(photos) ? photos : (photos ? [photos] : [])
+            }
             return { 
                 ...p, 
                 clientFinancials: { ...financials, received: [...(financials.received || []), newPayment] },
@@ -714,11 +721,19 @@ function App() {
     }))
   }
 
-  const handleLogPayout = (projectId, amount, ref, date, photo, vendorId) => {
+  const handleLogPayout = (projectId, amount, ref, date, photos, vendorId) => {
     // 1. Update Project Ledger
     setProjects(prev => (prev || []).map(p => {
         if (Number(p.id) === Number(projectId)) {
-            const newPayout = { id: Date.now(), amount: parseInt(amount), ref, date, photo, vendorId }
+            const newPayout = { 
+                id: Date.now(), 
+                amount: parseInt(amount), 
+                ref, 
+                date, 
+                photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
+                photos: Array.isArray(photos) ? photos : (photos ? [photos] : []),
+                vendorId 
+            }
             return { 
                 ...p, 
                 payouts: [...(p.payouts || []), newPayout],

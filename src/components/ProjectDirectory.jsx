@@ -64,8 +64,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   const [isSignOffModalOpen, setIsSignOffModalOpen] = useState(false)
   const [signOffEmail, setSignOffEmail] = useState({ subject: '', body: '', to: '' })
   const [showAllHistory, setShowAllHistory] = useState(false)
-  const [paymentScreenshot, setPaymentScreenshot] = useState(null)
-  const [payoutScreenshot, setPayoutScreenshot] = useState(null)
+  const [paymentScreenshots, setPaymentScreenshots] = useState([])
+  const [payoutScreenshots, setPayoutScreenshots] = useState([])
   const [globalAudits, setGlobalAudits] = useState([])
   const [isLinkAuditModalOpen, setIsLinkAuditModalOpen] = useState(false)
   const [auditSearchQuery, setAuditSearchQuery] = useState('')
@@ -851,13 +851,26 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
                                         <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Ref: {p.ref}</span>
-                                        {p.photo && (
-                                            <button 
-                                                onClick={() => window.open(p.photo)} 
-                                                style={{ background: 'none', border: 'none', color: 'var(--accent-color)', padding: 0, fontSize: '0.65rem', cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
-                                            >
-                                                View Evidence 📎
-                                            </button>
+                                        {((p.photos && p.photos.length > 0) || p.photo) && (
+                                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                                {p.photo && (!p.photos || p.photos.length === 0) && (
+                                                    <button 
+                                                        onClick={() => window.open(p.photo)} 
+                                                        style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                    >
+                                                        Evidence 📎
+                                                    </button>
+                                                )}
+                                                {(p.photos || []).map((img, idx) => (
+                                                    <button 
+                                                        key={idx}
+                                                        onClick={() => window.open(img)} 
+                                                        style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                    >
+                                                        Evidence 📎 {idx + 1}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -894,13 +907,26 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                             )}
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
                                                 <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', opacity: 0.6 }}>Transaction Ref: {p.ref}</span>
-                                                {p.photo && (
-                                                    <button 
-                                                        onClick={() => window.open(p.photo)} 
-                                                        style={{ background: 'none', border: 'none', color: 'var(--accent-color)', padding: 0, fontSize: '0.65rem', cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
-                                                    >
-                                                        View Evidence 📎
-                                                    </button>
+                                                {((p.photos && p.photos.length > 0) || p.photo) && (
+                                                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                                        {p.photo && (!p.photos || p.photos.length === 0) && (
+                                                            <button 
+                                                                onClick={() => window.open(p.photo)} 
+                                                                style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                            >
+                                                                Evidence 📎
+                                                            </button>
+                                                        )}
+                                                        {(p.photos || []).map((img, idx) => (
+                                                            <button 
+                                                                key={idx}
+                                                                onClick={() => window.open(img)} 
+                                                                style={{ background: 'rgba(102,178,194,0.1)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                            >
+                                                                Evidence 📎 {idx + 1}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -1193,33 +1219,58 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), paymentScreenshot)
-                        setPaymentScreenshot(null)
+                        onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), paymentScreenshots)
+                        setPaymentScreenshots([])
                         setIsPaymentModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <input name="amount" type="number" required placeholder="Amount" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="ref" required placeholder="Transaction Ref" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENT / EVIDENCE (OPTIONAL)</label>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENTS (UP TO 5 FILES, OPTIONAL)</label>
                             <input 
                                 type="file" 
                                 accept="image/*" 
+                                multiple
                                 onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    if (file) {
+                                    const files = Array.from(e.target.files).slice(0, 5);
+                                    const loadedScreenshots = [];
+                                    let loadedCount = 0;
+                                    if (files.length === 0) {
+                                        setPaymentScreenshots([]);
+                                        return;
+                                    }
+                                    files.forEach((file) => {
                                         const reader = new FileReader();
                                         reader.onloadend = () => {
-                                            setPaymentScreenshot(reader.result);
+                                            loadedScreenshots.push(reader.result);
+                                            loadedCount++;
+                                            if (loadedCount === files.length) {
+                                                setPaymentScreenshots(loadedScreenshots);
+                                            }
                                         };
                                         reader.readAsDataURL(file);
-                                    }
+                                    });
                                 }} 
                                 style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }} 
                             />
+                            {paymentScreenshots.length > 0 && (
+                                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                    {paymentScreenshots.map((scr, idx) => (
+                                        <div key={idx} style={{ position: 'relative', width: '50px', height: '50px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                            <img src={scr} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setPaymentScreenshots(prev => prev.filter((_, i) => i !== idx))}
+                                                style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(255,69,58,0.8)', border: 'none', color: '#fff', fontSize: '0.5rem', borderRadius: '50%', width: '14px', height: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            >✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem' }}>
-                            <button type="button" onClick={() => { setIsPaymentModalOpen(false); setPaymentScreenshot(null); }} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
+                            <button type="button" onClick={() => { setIsPaymentModalOpen(false); setPaymentScreenshots([]); }} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
                             <button type="submit" className="btn btn-primary" style={{ flex: 1, background: 'var(--success)', color: '#000', fontSize: '0.75rem' }}>Confirm</button>
                         </div>
                     </form>
@@ -1234,8 +1285,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onLogPayout(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), payoutScreenshot, formData.get('vendorId'))
-                        setPayoutScreenshot(null)
+                        onLogPayout(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), payoutScreenshots, formData.get('vendorId'))
+                        setPayoutScreenshots([])
                         setIsPayoutModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <select name="vendorId" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
@@ -1251,25 +1302,50 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="ref" required placeholder="Reference" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENT / EVIDENCE (OPTIONAL)</label>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>ATTACHMENTS (UP TO 5 FILES, OPTIONAL)</label>
                             <input 
                                 type="file" 
                                 accept="image/*" 
+                                multiple
                                 onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    if (file) {
+                                    const files = Array.from(e.target.files).slice(0, 5);
+                                    const loadedScreenshots = [];
+                                    let loadedCount = 0;
+                                    if (files.length === 0) {
+                                        setPayoutScreenshots([]);
+                                        return;
+                                    }
+                                    files.forEach((file) => {
                                         const reader = new FileReader();
                                         reader.onloadend = () => {
-                                            setPayoutScreenshot(reader.result);
+                                            loadedScreenshots.push(reader.result);
+                                            loadedCount++;
+                                            if (loadedCount === files.length) {
+                                                setPayoutScreenshots(loadedScreenshots);
+                                            }
                                         };
                                         reader.readAsDataURL(file);
-                                    }
+                                    });
                                 }} 
                                 style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }} 
                             />
+                            {payoutScreenshots.length > 0 && (
+                                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                    {payoutScreenshots.map((scr, idx) => (
+                                        <div key={idx} style={{ position: 'relative', width: '50px', height: '50px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                                            <img src={scr} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setPayoutScreenshots(prev => prev.filter((_, i) => i !== idx))}
+                                                style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(255,69,58,0.8)', border: 'none', color: '#fff', fontSize: '0.5rem', borderRadius: '50%', width: '14px', height: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            >✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem' }}>
-                            <button type="button" onClick={() => { setIsPayoutModalOpen(false); setPayoutScreenshot(null); }} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
+                            <button type="button" onClick={() => { setIsPayoutModalOpen(false); setPayoutScreenshots([]); }} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
                             <button type="submit" className="btn btn-primary" style={{ flex: 1, background: 'var(--danger)', color: '#fff', fontSize: '0.75rem' }}>Confirm</button>
                         </div>
                     </form>
