@@ -38,7 +38,7 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
   // New Contract Modal State
   const [linkMode, setLinkMode] = useState('existing') // 'existing' or 'new'
 
-  const categories = ['All', 'Glass', 'Aluminum', 'Hardware', 'Lighting', 'Logistics']
+  const categories = ['All', 'Service', 'Materials', 'Logistics']
   const statuses = ['All', 'Certified', 'Vetting']
 
   const filteredVendors = (vendors || []).filter(v => {

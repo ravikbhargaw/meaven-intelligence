@@ -220,6 +220,21 @@ function App() {
           name:    d.name    || v.name       || 'Unnamed Vendor',
           // Capitalize and normalize status to prevent casing bugs
           status:  d.status ? (d.status.charAt(0).toUpperCase() + d.status.slice(1).toLowerCase()) : 'Vetting',
+          // Capture and normalize vendor category/type from VendorIQ cased entries
+          category: (() => {
+              const rawType = (d.category || d.type || d.vendorType || d.vendor_type || 'Service').trim().toLowerCase();
+              if (rawType.includes('service')) return 'Service';
+              if (rawType.includes('material')) return 'Materials';
+              if (rawType.includes('logistics')) return 'Logistics';
+              
+              // Smart backward-compatible legacy mappings
+              const legacyMaterials = ['glass', 'aluminum', 'hardware', 'lighting'];
+              const legacyServices = ['civil', 'electrical', 'plumbing', 'carpentry', 'other', 'general'];
+              if (legacyMaterials.includes(rawType)) return 'Materials';
+              if (legacyServices.includes(rawType)) return 'Service';
+              
+              return 'Service';
+          })(),
           // Ensure hub-required arrays are always arrays (never undefined/object)
           contracts: Array.isArray(d.contracts) ? d.contracts : [],
           history:   Array.isArray(d.history)   ? d.history   : [],

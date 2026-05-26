@@ -26,7 +26,7 @@ const VendorPublicRegistration = () => {
         cancelledCheque: null
     })
 
-    const categories = ['Glass', 'Aluminum', 'Hardware', 'Lighting', 'Logistics', 'Civil', 'Electrical', 'Other']
+    const categories = ['Service', 'Materials', 'Logistics']
 
     const handleFileChange = (e, key) => {
         const file = e.target.files[0]

@@ -69,6 +69,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   const [globalAudits, setGlobalAudits] = useState([])
   const [isLinkAuditModalOpen, setIsLinkAuditModalOpen] = useState(false)
   const [auditSearchQuery, setAuditSearchQuery] = useState('')
+  const [serviceOnlyAssign, setServiceOnlyAssign] = useState(false)
   
   useEffect(() => {
     if (activeProjectId) {
@@ -149,6 +150,17 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   // Find linked vendor (Active only)
   // Find linked vendor (Robust detection)
   const linkedVendor = (vendors || []).find(v => 
+    v && (
+      v.name === selectedProject?.assignedVendor || 
+      (v.contracts || []).some(c => 
+          (c.projectName || '').toLowerCase().trim() === (selectedProject?.name || '').toLowerCase().trim() && 
+          (c.status === 'Active' || !c.status)
+      )
+    )
+  )
+
+  // Find all assigned vendors for this project (Active contracts or assignedVendor name match)
+  const assignedVendors = (vendors || []).filter(v => 
     v && (
       v.name === selectedProject?.assignedVendor || 
       (v.contracts || []).some(c => 
@@ -395,32 +407,59 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         </div>
                         
                         {/* Active Partner Row */}
-                        <div style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0 }}>Execution Partner</p>
-                                {linkedVendor ? (
-                                    <button onClick={() => setIsReassignModalOpen(true)} style={{ background: 'rgba(255, 69, 58, 0.08)', border: '1px solid var(--danger)', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.5rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>REPLACE PARTNER</button>
+                        <div style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0, fontWeight: '800' }}>Assigned Execution Partners</p>
+                                <button onClick={() => { setSelectedVendorId(''); setIsAssignModalOpen(true); }} style={{ background: 'var(--accent-color)', border: 'none', color: '#000', cursor: 'pointer', fontSize: '0.5rem', fontWeight: '800', padding: '0.25rem 0.6rem', borderRadius: '4px' }}>+ ASSIGN PARTNER</button>
+                            </div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                {assignedVendors.length > 0 ? (
+                                    assignedVendors.map(vendor => (
+                                        <div key={vendor.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                            <div 
+                                                onClick={() => { window.navigateToVendorBench?.(vendor.id); }}
+                                                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                            >
+                                                <span style={{ fontSize: '1rem' }}>🤝</span>
+                                                <div>
+                                                    <p style={{ fontSize: '0.8rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>{vendor.name}</p>
+                                                    <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', margin: 0 }}>Category: <span style={{ color: 'var(--accent-color)', fontWeight: '700' }}>{vendor.category}</span> • MI SCORE: {vendor.miScore || vendor.score || 85}%</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => { 
+                                                    window.oldVendorIdToReplace = vendor.id;
+                                                    setIsReassignModalOpen(true); 
+                                                }} 
+                                                style={{ background: 'rgba(255, 69, 58, 0.08)', border: '1px solid var(--danger)', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.5rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px' }}
+                                            >
+                                                REPLACE PARTNER
+                                            </button>
+                                        </div>
+                                    ))
                                 ) : (
-                                    <button onClick={() => { setSelectedVendorId(''); setIsAssignModalOpen(true); }} style={{ background: 'var(--accent-color)', border: 'none', color: '#000', cursor: 'pointer', fontSize: '0.5rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>+ ASSIGN PARTNER</button>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0' }}>
+                                        <span style={{ fontSize: '1.2rem', color: 'var(--danger)' }}>⚠️</span>
+                                        <p style={{ fontSize: '0.85rem', fontWeight: '800', margin: 0, color: 'var(--danger)' }}>UNASSIGNED</p>
+                                    </div>
                                 )}
                             </div>
-                            {linkedVendor ? (
-                                <div 
-                                    onClick={() => { window.navigateToVendorBench?.(linkedVendor.id); }}
-                                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                                >
-                                    <span style={{ fontSize: '1.2rem' }}>🤝</span>
-                                    <div>
-                                        <p style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0 }}>{linkedVendor.name}</p>
-                                        <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', margin: 0 }}>Category: {linkedVendor.category} • MI SCORE: {linkedVendor.score || 85}%</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '1.2rem', color: 'var(--danger)' }}>⚠️</span>
-                                    <p style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0, color: 'var(--danger)' }}>UNASSIGNED</p>
-                                </div>
-                            )}
+
+                            {/* MATERIAL-ONLY WARNING */}
+                            {(() => {
+                                const hasMaterials = assignedVendors.some(v => v.category === 'Materials');
+                                const hasService = assignedVendors.some(v => v.category === 'Service');
+                                if (hasMaterials && !hasService) {
+                                    return (
+                                        <div style={{ background: 'rgba(255, 69, 58, 0.05)', border: '1px solid var(--danger)', padding: '0.6rem 0.8rem', borderRadius: '8px', color: 'var(--danger)', fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem' }}>
+                                            <span>⚠️</span>
+                                            <span><strong>Material-Only Assigned:</strong> A Service division partner is strictly required to execute and complete this project site.</span>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
                         </div>
                         
                         {/* Timeline Health Row */}
@@ -890,12 +929,17 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
+                        let assignedCat = '';
+                        let assignedName = '';
+
                         if (isRegisteringNew) {
                             const newId = Date.now()
+                            assignedCat = formData.get('newCategory')
+                            assignedName = formData.get('newName')
                             onAddVendor({
                                 id: newId,
-                                name: formData.get('newName'),
-                                category: formData.get('newCategory'),
+                                name: assignedName,
+                                category: assignedCat,
                                 contact: formData.get('newContact'),
                                 phone: formData.get('newPhone'),
                                 status: 'Vetting',
@@ -904,16 +948,49 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             })
                             onAssignPartner(selectedProject.id, newId, formData.get('orderValue'))
                         } else {
+                            const vendor = vendors.find(v => String(v.id) === String(selectedVendorId))
+                            assignedCat = vendor?.category || ''
+                            assignedName = vendor?.name || ''
                             onAssignPartner(selectedProject.id, selectedVendorId, formData.get('orderValue'))
                         }
+                        
                         setIsAssignModalOpen(false)
                         setIsRegisteringNew(false)
                         setSelectedVendorId('')
                         setAssignOrderValue('')
+
+                        // Post-assignment: Check if project lacks Service partner after assigning Materials
+                        const currentAssigned = (vendors || []).filter(v => 
+                            v && (
+                                v.name === selectedProject?.assignedVendor || 
+                                (v.contracts || []).some(c => 
+                                    (c.projectName || '').toLowerCase().trim() === (selectedProject?.name || '').toLowerCase().trim() && 
+                                    (c.status === 'Active' || !c.status)
+                                )
+                            )
+                        )
+                        const hasService = currentAssigned.some(v => v.category === 'Service') || (assignedCat === 'Service')
+                        const isMaterialsOnly = (assignedCat === 'Materials') && !hasService
+                        
+                        if (isMaterialsOnly) {
+                            setTimeout(() => {
+                                const wantsService = window.confirm(
+                                    `Warning: You have assigned a Material partner (${assignedName}).\n\nWithout a Service category partner, this project cannot be completed.\n\nWould you like to assign a Service partner from the bench now?`
+                                );
+                                if (wantsService) {
+                                    setServiceOnlyAssign(true)
+                                    setIsAssignModalOpen(true)
+                                }
+                            }, 300);
+                        } else {
+                            setServiceOnlyAssign(false)
+                        }
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {!isRegisteringNew ? (
                             <div>
-                                <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>SELECT PARTNER</label>
+                                <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
+                                    {serviceOnlyAssign ? "⚠️ SELECT SERVICE PARTNER (STRICTLY REQUIRED)" : "SELECT PARTNER"}
+                                </label>
                                 <select 
                                     value={selectedVendorId}
                                     onChange={(e) => setSelectedVendorId(e.target.value)}
@@ -921,11 +998,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                     style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.8rem', color: 'var(--text-primary)' }}
                                 >
                                     <option value="" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>Choose from bench...</option>
-                                    {vendors.map((v, idx) => v && (
-                                        <option key={v.id || idx} value={v.id ? v.id.toString() : ''} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-                                            {v.name || 'Unnamed Partner'} ({v.category || 'General'})
-                                        </option>
-                                    ))}
+                                    {vendors
+                                        .filter(v => v && (!serviceOnlyAssign || v.category === 'Service'))
+                                        .map((v, idx) => v && (
+                                            <option key={v.id || idx} value={v.id ? v.id.toString() : ''} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+                                                {v.name || 'Unnamed Partner'} ({v.category || 'General'})
+                                            </option>
+                                        ))
+                                    }
                                 </select>
                             </div>
                         ) : (
@@ -933,11 +1013,9 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                 <input name="newName" required placeholder="Company Name" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
                                     <select name="newCategory" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
-                                        <option value="Civil">Civil</option>
-                                        <option value="Carpentry">Carpentry</option>
-                                        <option value="Electrical">Electrical</option>
-                                        <option value="Plumbing">Plumbing</option>
-                                        <option value="Glass">Glass</option>
+                                        <option value="Service">Service</option>
+                                        <option value="Materials">Materials</option>
+                                        <option value="Logistics">Logistics</option>
                                     </select>
                                     <input name="newPhone" required placeholder="Phone" style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                                 </div>
@@ -963,12 +1041,12 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onReassignPartner(selectedProject.id, linkedVendor?.id, formData.get('vendorId'), formData.get('orderValue'))
+                        onReassignPartner(selectedProject.id, window.oldVendorIdToReplace || linkedVendor?.id, formData.get('vendorId'), formData.get('orderValue'))
                         setIsReassignModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <select name="vendorId" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
                             <option value="">Select Replacement...</option>
-                            {vendors.filter(v => v && v.id !== linkedVendor?.id).map((v, idx) => (
+                            {vendors.filter(v => v && v.id !== (window.oldVendorIdToReplace || linkedVendor?.id)).map((v, idx) => (
                                 <option key={v.id || idx} value={v.id ? v.id.toString() : ''}>
                                     {v.name || 'Unnamed Partner'}
                                 </option>
@@ -1161,8 +1239,13 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         setIsPayoutModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <select name="vendorId" required style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
-                            <option value="">Select Vendor...</option>
-                            {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                            <option value="">Select Assigned Vendor...</option>
+                            {assignedVendors.map(v => (
+                                <option key={v.id} value={v.id}>{v.name} ({v.category})</option>
+                            ))}
+                            {assignedVendors.length === 0 && (
+                                <option value="" disabled>⚠️ No partners assigned to this project yet</option>
+                            )}
                         </select>
                         <input name="amount" type="number" required placeholder="Amount" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
