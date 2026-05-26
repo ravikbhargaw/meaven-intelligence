@@ -1342,6 +1342,7 @@ function App() {
                             isReadOnly={true}
                             clientView={true}
                             onBack={() => setActiveProjectId(null)}
+                            onUpdateProject={handleUpdateProject}
                           />
                         </div>
                       ) : (
@@ -1414,6 +1415,7 @@ function App() {
                     data={readinessData[activeProjectId]} 
                     onSelectProject={setActiveProjectId}
                     onUpdate={(data) => handleUpdateReadiness(activeProjectId, data)} 
+                    onUpdateProject={handleUpdateProject}
                   />
                 )}
                 {activeTab === 'audit' && (

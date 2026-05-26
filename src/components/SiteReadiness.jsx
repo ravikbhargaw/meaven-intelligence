@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import SiteReadinessAudit from './SiteReadinessAudit'
 import PostInstallationQC from './PostInstallationQC'
+import { supabase } from '../supabaseClient'
+
+const ModalOverlay = ({ children }) => (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'var(--bg-glass-heavy)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+        {children}
+    </div>
+)
 
 const SiteReadiness = ({ project, projects, portfolios = [], template = [], data, onUpdate, onUpdateMilestones, onProposePlaybookUpdate, userRole, isReadOnly, onBack, onLockLocation, onUpdateProject, onSelectProject, clientView }) => {
   const [items, setItems] = useState(data?.items || template || [])
@@ -16,6 +23,9 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
   const [isMigrating, setIsMigrating] = useState(false)
   const [viewingAudit, setViewingAudit] = useState(null)
   const [viewingQC, setViewingQC] = useState(null)
+  const [globalAudits, setGlobalAudits] = useState([])
+  const [isLinkAuditModalOpen, setIsLinkAuditModalOpen] = useState(false)
+  const [auditSearchQuery, setAuditSearchQuery] = useState('')
 
   const defaultTemplate = [
     { id: 1, label: 'Physical Site Measurement & Verification', status: 'pending', category: 'Civil', notes: '' },
@@ -37,6 +47,33 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
         setObservations('')
     }
   }, [project?.id, data])
+
+  useEffect(() => {
+    if (isLinkAuditModalOpen) {
+        // 1. Load from localstorage
+        const localAudits = JSON.parse(localStorage.getItem('execution_audits')) || [];
+        setGlobalAudits(localAudits);
+
+        // 2. Load from Supabase in background
+        if (supabase) {
+            supabase.from('site_audits').select('*').then(({ data, error }) => {
+                if (data && !error) {
+                    const cloudAudits = data.map(r => r.data).filter(Boolean);
+                    // Merge and deduplicate by auditId
+                    setGlobalAudits(prev => {
+                        const merged = [...prev];
+                        cloudAudits.forEach(ca => {
+                            if (!merged.some(ma => ma.auditId === ca.auditId)) {
+                                merged.push(ca);
+                            }
+                        });
+                        return merged;
+                    });
+                }
+            });
+        }
+    }
+  }, [isLinkAuditModalOpen]);
 
   const allPhotos = [
       ...(photos || []),
@@ -238,6 +275,104 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
         </div>
       )}
 
+      {isLinkAuditModalOpen && (
+        <ModalOverlay>
+            <div className="card animate-fade-in" style={{ width: 'clamp(320px, 95%, 550px)', padding: '2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-color)' }}>🔗 Link Global Audit Report</h3>
+                    <button onClick={() => { setIsLinkAuditModalOpen(false); setAuditSearchQuery(''); }} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                </div>
+
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '1.2rem', lineHeight: '1.4' }}>
+                    Search from all technical audit reports secured across the Meaven Intelligence network and link them to <strong>{project.name}</strong>.
+                </p>
+
+                <input 
+                    type="text" 
+                    placeholder="Search by Audit ID, Project, Client, or Location..."
+                    value={auditSearchQuery}
+                    onChange={(e) => setAuditSearchQuery(e.target.value)}
+                    style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff', fontSize: '0.85rem', marginBottom: '1.5rem', outline: 'none' }}
+                />
+
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.8rem', maxHeight: '300px', paddingRight: '0.2rem' }}>
+                    {(() => {
+                        const query = auditSearchQuery.toLowerCase().trim();
+                        const filtered = globalAudits.filter(aud => {
+                            if (!aud) return false;
+                            return (
+                                (aud.auditId || '').toLowerCase().includes(query) ||
+                                (aud.projectInfo?.name || '').toLowerCase().includes(query) ||
+                                (aud.projectInfo?.client || '').toLowerCase().includes(query) ||
+                                (aud.projectInfo?.location || '').toLowerCase().includes(query)
+                            );
+                        });
+
+                        if (filtered.length === 0) {
+                            return (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                                    No audit reports match your search query.
+                                </div>
+                            );
+                        }
+
+                        return filtered.map(aud => {
+                            const isAlreadyLinked = (project.auditHistory || []).some(a => a.auditId === aud.auditId);
+                            return (
+                                <div key={aud.auditId} style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <span style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-primary)' }}>{aud.auditId}</span>
+                                            <span style={{ fontSize: '0.6rem', color: 'var(--accent-color)', background: 'rgba(102,178,194,0.1)', padding: '0.1rem 0.3rem', borderRadius: '3px', fontWeight: '700' }}>{aud.readinessScore || aud.scores?.readiness}% READINESS</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
+                                            Project: {aud.projectInfo?.name} • Client: {aud.projectInfo?.client}
+                                        </div>
+                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                                            Location: {aud.projectInfo?.location} • Date: {new Date(aud.timestamp).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                    {isAlreadyLinked ? (
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--success)', fontWeight: '800', background: 'rgba(50,215,75,0.1)', padding: '0.3rem 0.6rem', borderRadius: '4px' }}>LINKED ✓</span>
+                                    ) : (
+                                        <button 
+                                            onClick={() => {
+                                                const updatedAudits = [...(project.auditHistory || []), aud];
+                                                onUpdateProject(project.id, { 
+                                                    auditHistory: updatedAudits,
+                                                    history: [
+                                                        ...(project.history || []),
+                                                        {
+                                                            id: Date.now(),
+                                                            type: 'success',
+                                                            title: 'Audit Linked Manually',
+                                                            detail: `Technical Audit ${aud.auditId} associated with this project site manually.`,
+                                                            timestamp: new Date().toISOString(),
+                                                            isClientVisible: true
+                                                        }
+                                                    ]
+                                                });
+                                                setIsLinkAuditModalOpen(false);
+                                                setAuditSearchQuery('');
+                                                alert(`Audit ${aud.auditId} successfully linked to ${project.name}!`);
+                                            }}
+                                            style={{ background: 'var(--accent-color)', border: 'none', borderRadius: '4px', padding: '0.4rem 0.8rem', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer', color: '#000', flexShrink: 0 }}
+                                        >
+                                            LINK REPORT
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        });
+                    })()}
+                </div>
+                <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={() => { setIsLinkAuditModalOpen(false); setAuditSearchQuery(''); }} className="btn btn-outline" style={{ fontSize: '0.75rem', padding: '0.5rem 1.5rem' }}>Close</button>
+                </div>
+            </div>
+        </ModalOverlay>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem', marginTop: '2rem' }}>
           {/* Strategic Observations */}
           <div className="card">
@@ -293,20 +428,29 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
           </div>
       </div>
 
-      {/* Client View Audit & QC Vaults */}
-      {clientView && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }} className="stack-on-mobile">
-            {/* Technical Audit Vault */}
-            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                        <span style={{ fontSize: '1.2rem' }}>📑</span>
-                        <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>TECHNICAL AUDIT VAULT</h4>
-                    </div>
-                    <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
-                        {(project?.auditHistory || []).length} SECURED REPORTS
-                    </span>
-                </div>
+      {/* Audit & QC Vaults */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }} className="stack-on-mobile">
+          {/* Technical Audit Vault */}
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                      <span style={{ fontSize: '1.2rem' }}>📑</span>
+                      <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>TECHNICAL AUDIT VAULT</h4>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-accent)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+                          {(project?.auditHistory || []).length} SECURED REPORTS
+                      </span>
+                      {onUpdateProject && (
+                          <button 
+                              onClick={() => setIsLinkAuditModalOpen(true)}
+                              style={{ background: 'rgba(102, 178, 194, 0.1)', border: '1px solid var(--accent-color)', color: 'var(--accent-color)', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '800', cursor: 'pointer' }}
+                          >
+                              🔗 LINK PAST AUDIT
+                          </button>
+                      )}
+                  </div>
+              </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', maxHeight: '350px' }}>
                     {(project?.auditHistory || []).length > 0 ? (
@@ -374,7 +518,6 @@ const SiteReadiness = ({ project, projects, portfolios = [], template = [], data
                 </div>
             </div>
         </div>
-      )}
 
       {/* Render Read-Only Audits Overlay */}
       {viewingAudit && (
