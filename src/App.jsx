@@ -13,6 +13,8 @@ import StrategicPricingEngine from './components/StrategicPricingEngine'
 import AdminPanel from './components/AdminPanel'
 import CommandCenter from './components/CommandCenter'
 import NewPortfolioModal from './components/NewPortfolioModal'
+import { parseMoney } from './utils/financialUtils'
+import BusinessExpenseLedger from './components/BusinessExpenseLedger'
 import ExecutiveSummary from './components/ExecutiveSummary'
 import ClientPortalGate from './components/ClientPortalGate'
 import AiAssistant from './components/AiAssistant'
@@ -24,6 +26,7 @@ import PostInstallationQC from './components/PostInstallationQC'
 import ExecutionOS from './components/ExecutionOS'
 import ExecutionPartnerSystem from './components/ExecutionPartnerSystem'
 import FounderControlTower from './components/FounderControlTower'
+import ExecutionAnalyticsDashboard from './components/ExecutionAnalyticsDashboard'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
 class ErrorBoundary extends React.Component {
@@ -146,6 +149,27 @@ function App() {
   const [navHistory, setNavHistory] = useState([])
   const [theme, setTheme] = useState(() => localStorage.getItem('meaven_theme') || 'dark')
   const [viewingAudit, setViewingAudit] = useState(null)
+
+  const [overheadConfig, setOverheadConfig] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meaven_overhead_config');
+      return saved ? JSON.parse(saved) : { salaries: 0, officeRent: 0, software: 0, fuel: 0, internet: 0, admin: 0, misc: 0 };
+    } catch (e) {
+      return { salaries: 0, officeRent: 0, software: 0, fuel: 0, internet: 0, admin: 0, misc: 0 };
+    }
+  });
+
+  const [overheadMethod, setOverheadMethod] = useState(() => {
+    return localStorage.getItem('meaven_overhead_method') || 'equal';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('meaven_overhead_config', JSON.stringify(overheadConfig));
+  }, [overheadConfig]);
+
+  useEffect(() => {
+    localStorage.setItem('meaven_overhead_method', overheadMethod);
+  }, [overheadMethod]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -712,6 +736,11 @@ function App() {
         vendorEndDate: null,
         milestones: { measurementDate: null, siteReadiness: null, completion: null }, 
         clientFinancials: { totalValue: 0, requests: [], received: [] }, 
+        readinessChecklist: {},
+        executionRisk: 'Low',
+        snagLogs: [],
+        timelineTracking: [],
+        lastActivityAt: new Date().toISOString(),
         history: [{ id: 1, type: 'info', title: 'Project Initialized', detail: `Project loop set for ${newProject.name}`, timestamp: new Date().toISOString() }] 
     }
     setProjects([...(projects || []), project]); setActiveProjectId(project.id); setIsNewProjectModalOpen(false);
@@ -721,28 +750,30 @@ function App() {
     setPortfolios(prev => [...(prev || []), newPortfolio]); setSelectedClient(newPortfolio.name); setIsProjectSelected(true); setActiveTab('dashboard');
   }
 
-  const handleLogPayment = (projectId, amount, ref, date, photos) => {
+  const handleLogPayment = (projectId, amount, ref, date, photos, type) => {
     try {
         setProjects(prev => (prev || []).map(p => {
             if (p && Number(p.id) === Number(projectId)) {
                 const financials = p.clientFinancials || { totalValue: 0, requests: [], received: [] }
-                const parsedAmount = parseInt(amount) || 0
+                const parsedAmount = parseMoney(amount) || 0
                 const newPayment = { 
                     id: Date.now(), 
                     amount: parsedAmount, 
                     ref: ref || '', 
                     date: date || new Date().toISOString().split('T')[0], 
                     photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
-                    photos: Array.isArray(photos) ? photos : (photos ? [photos] : [])
+                    photos: Array.isArray(photos) ? photos : (photos ? [photos] : []),
+                    type: type || ''
                 }
                 return { 
                     ...p, 
                     clientFinancials: { ...financials, received: [...(financials.received || []), newPayment] },
+                    lastActivityAt: new Date().toISOString(),
                     history: [...(p.history || []), { 
                         id: Date.now() + 1, 
                         type: 'success', 
                         title: 'Payment Received', 
-                        detail: `₹${parsedAmount.toLocaleString()} credited. Ref: ${ref || ''}`, 
+                        detail: `₹${parsedAmount.toLocaleString()} credited. Ref: ${ref || ''}${type ? ` (Type: ${type})` : ''}`, 
                         timestamp: new Date().toISOString(),
                         isClientVisible: false
                     }]
@@ -755,12 +786,12 @@ function App() {
     }
   }
 
-  const handleLogPayout = (projectId, amount, ref, date, photos, vendorId) => {
+  const handleLogPayout = (projectId, amount, ref, date, photos, vendorId, type) => {
     try {
         // 1. Update Project Ledger
         setProjects(prev => (prev || []).map(p => {
             if (p && Number(p.id) === Number(projectId)) {
-                const parsedAmount = parseInt(amount) || 0
+                const parsedAmount = parseMoney(amount) || 0
                 const newPayout = { 
                     id: Date.now(), 
                     amount: parsedAmount, 
@@ -768,16 +799,18 @@ function App() {
                     date: date || new Date().toISOString().split('T')[0], 
                     photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
                     photos: Array.isArray(photos) ? photos : (photos ? [photos] : []),
-                    vendorId: vendorId || ''
+                    vendorId: vendorId || '',
+                    type: type || ''
                 }
                 return { 
                     ...p, 
                     payouts: [...(p.payouts || []), newPayout],
+                    lastActivityAt: new Date().toISOString(),
                     history: [...(p.history || []), { 
                         id: Date.now() + 1, 
                         type: 'warning', 
                         title: 'Vendor Payout', 
-                        detail: `₹${parsedAmount.toLocaleString()} debited. Ref: ${ref || ''}`, 
+                        detail: `₹${parsedAmount.toLocaleString()} debited. Ref: ${ref || ''}${type ? ` (Type: ${type})` : ''}`, 
                         timestamp: new Date().toISOString(),
                         isClientVisible: false
                     }]
@@ -800,7 +833,7 @@ function App() {
                                     ...c,
                                     payments: [
                                         ...(c.payments || []),
-                                        { id: Date.now(), amount: parseInt(amount) || 0, date: date || new Date().toISOString().split('T')[0], ref: ref || '' }
+                                        { id: Date.now(), amount: parseMoney(amount) || 0, date: date || new Date().toISOString().split('T')[0], ref: ref || '', type: type || '' }
                                     ]
                                 }
                             }
@@ -813,6 +846,33 @@ function App() {
         }
     } catch (err) {
         console.error("Error inside handleLogPayout:", err)
+    }
+  }
+
+  const handleProjectAddExpense = (projectId, expense) => {
+    try {
+        setProjects(prev => (prev || []).map(p => {
+            if (p && Number(p.id) === Number(projectId)) {
+                const parsedAmount = parseMoney(expense.amount) || 0
+                const updatedExpenses = [...(p.expenses || []), { ...expense, amount: parsedAmount, id: Date.now() }]
+                return {
+                    ...p,
+                    expenses: updatedExpenses,
+                    lastActivityAt: new Date().toISOString(),
+                    history: [...(p.history || []), {
+                        id: Date.now() + 1,
+                        type: 'info',
+                        title: 'Expense Logged',
+                        detail: `${expense.description || 'Direct cost'} of ₹${parsedAmount.toLocaleString()} added.${expense.type ? ` (Type: ${expense.type})` : ''}`,
+                        timestamp: new Date().toISOString(),
+                        isClientVisible: false
+                    }]
+                }
+            }
+            return p
+        }))
+    } catch (err) {
+        console.error("Error inside handleProjectAddExpense:", err)
     }
   }
 
@@ -989,7 +1049,7 @@ function App() {
   };
 
   const handleAddVendor = (newVendor) => {
-    setVendors([...vendors, { ...newVendor, id: Date.now() }])
+    setVendors([...vendors, { ...newVendor, id: Date.now(), performanceMetrics: {} }])
   }
 
   const handleLockLocation = (projectId, coords) => {
@@ -1008,7 +1068,10 @@ function App() {
     const vendor = vendors.find(v => String(v.id) === String(vendorId))
     if (!vendor) return
 
-    setVendors(vendors.map(v => String(v.id) === String(vendorId) ? { ...v, contracts: [...(v.contracts || []), { id: Date.now(), projectName, orderValue: parseInt(orderValue), status: 'Active', payments: [] }] } : v))
+    const project = projects.find(p => p.name === projectName)
+    const projectId = project ? project.id : null
+
+    setVendors(vendors.map(v => String(v.id) === String(vendorId) ? { ...v, contracts: [...(v.contracts || []), { id: Date.now(), projectId, projectName, orderValue: parseMoney(orderValue), status: 'Active', payments: [] }] } : v))
     
     // TWO-WAY SYNC: Also update the project record
     setProjects(prev => prev.map(p => {
@@ -1016,6 +1079,7 @@ function App() {
             return {
                 ...p,
                 assignedVendor: vendor.name,
+                lastActivityAt: new Date().toISOString(),
                 history: [
                     ...(p.history || []),
                     {
@@ -1064,6 +1128,7 @@ function App() {
             return {
                 ...p,
                 assignedVendor: vendor.name,
+                lastActivityAt: new Date().toISOString(),
                 history: [
                     ...(p.history || []),
                     {
@@ -1087,8 +1152,9 @@ function App() {
                     ...(v.contracts || []),
                     {
                         id: Date.now(),
+                        projectId: project.id,
                         projectName: project.name,
-                        orderValue: parseInt(orderValue),
+                        orderValue: parseMoney(orderValue),
                         status: 'Active',
                         payments: []
                     }
@@ -1112,6 +1178,7 @@ function App() {
             return {
                 ...p,
                 assignedVendor: newVendor.name,
+                lastActivityAt: new Date().toISOString(),
                 history: [
                     ...(p.history || []),
                     {
@@ -1144,8 +1211,9 @@ function App() {
                     ...(v.contracts || []),
                     {
                         id: Date.now(),
+                        projectId: project.id,
                         projectName: project.name,
-                        orderValue: parseInt(orderValue),
+                        orderValue: parseMoney(orderValue),
                         status: 'Active',
                         payments: []
                     }
@@ -1289,6 +1357,7 @@ function App() {
                     <SidebarGroupHeader label="Executive Suite" />
                     <SidebarItem active={activeTab === 'strategy'} onClick={() => handleNavigate('strategy')} icon="🧠" label="Executive Strategy" />
                     <SidebarItem active={activeTab === 'reports'} onClick={() => handleNavigate('reports')} icon="📈" label="Intelligence Reports" />
+                    <SidebarItem active={activeTab === 'ledger'} onClick={() => handleNavigate('ledger')} icon="💳" label="Business Ledger" />
                     <SidebarItem active={activeTab === 'admin'} onClick={() => handleNavigate('admin')} icon="⚙️" label="Governance Console" />
                   </>
                 )}
@@ -1369,6 +1438,7 @@ function App() {
                           : activeTab === 'executionOS' ? 'Execution Infrastructure'
                           : activeTab === 'strategy' ? 'Executive Hub'
                           : activeTab === 'reports' ? 'Intel Reports'
+                          : activeTab === 'ledger' ? 'Business Ledger'
                           : 'Admin'}
                     </h1>
                   </div>
@@ -1447,6 +1517,7 @@ function App() {
                     activeProjectId={activeProjectId}
                     onSelectProject={(id) => setActiveProjectId(id)} 
                     onUpdateValue={handleUpdateProject}
+                    onAddExpense={handleProjectAddExpense}
                     onLogPayment={handleLogPayment}
                     onLogPayout={handleLogPayout}
                     onAddVendor={handleAddVendor}
@@ -1456,6 +1527,8 @@ function App() {
                     onToggleVisibility={handleToggleTimelineVisibility}
                     userRole={user?.role}
                     onViewAudit={(audit) => { setViewingAudit(audit); setActiveTab('audit'); }}
+                    overheadConfig={overheadConfig}
+                    overheadMethod={overheadMethod}
                   />
                 )}
 
@@ -1514,10 +1587,25 @@ function App() {
                       <PostInstallationQC projects={projects} onSubmitQC={handleQCReportSubmit} />
                   </div>
                 )}
-                {activeTab === 'executionOS' && <ExecutionOS />}
+                {activeTab === 'executionOS' && (
+                  <ExecutionAnalyticsDashboard 
+                    projects={projects} 
+                    vendors={vendors} 
+                    onNavigate={(tab) => handleNavigate(tab)} 
+                  />
+                )}
                 {activeTab === 'calculator' && !clientView && ( <StrategicPricingEngine projects={projects} onAddNote={handleProjectAddNote} /> )}
                 {activeTab === 'strategy' && ( <ExecutiveSummary projects={projects} vendors={vendors} onNavigate={(tab) => handleNavigate(tab)} /> )}
                 {activeTab === 'reports' && ( <IntelligenceReports projects={projects} vendors={vendors} portfolios={portfolios} /> )}
+                {activeTab === 'ledger' && ( 
+                  <BusinessExpenseLedger 
+                    overheadConfig={overheadConfig} 
+                    setOverheadConfig={setOverheadConfig} 
+                    overheadMethod={overheadMethod} 
+                    setOverheadMethod={setOverheadMethod} 
+                    projects={projects}
+                  /> 
+                )}
                 {activeTab === 'admin' && ( 
                   <AdminPanel 
                     users={users || []} 

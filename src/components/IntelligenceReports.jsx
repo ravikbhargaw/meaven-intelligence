@@ -1,9 +1,30 @@
 import React, { useState, useMemo } from 'react'
+import { parseMoney } from '../utils/financialUtils'
+import {
+    getProjectRevenue,
+    getProjectCollections,
+    getProjectOutstanding,
+    getProjectCogs,
+    getProjectMargin
+} from '../utils/projectFinancials'
 
 const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) => {
     const [reportType, setReportType] = useState('Master') // Master, Vendor, Project, Financial
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('All')
+
+    // Load business expenses from local storage for spend analytics
+    const businessExpenses = useMemo(() => {
+        const cached = localStorage.getItem('meaven_business_expenses')
+        if (cached) {
+            try {
+                return JSON.parse(cached)
+            } catch (e) {
+                console.error('Error parsing business expenses inside IntelligenceReports:', e)
+            }
+        }
+        return []
+    }, [])
 
     // --- DATA AGGREGATION ENGINE ---
     const reportsData = useMemo(() => {
@@ -16,12 +37,12 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
             
             const pfo = portfolios.find(pfo => pfo.name === p.client) || {}
             
-            const revenue = p.clientFinancials?.totalValue || 0
-            const collected = (p.clientFinancials?.received || []).reduce((s, r) => s + r.amount, 0)
-            const outstanding = revenue - collected
+            const revenue = getProjectRevenue(p)
+            const collected = getProjectCollections(p)
+            const outstanding = getProjectOutstanding(p)
             
             const payoutEntries = p.payouts || []
-            const totalPaid = payoutEntries.reduce((s, pay) => s + pay.amount, 0)
+            const totalPaid = payoutEntries.reduce((s, pay) => s + parseMoney(pay.amount), 0)
             
             // Partner Evolution Logic
             const allInvolvedVendors = vendors.filter(vend => 
@@ -34,11 +55,8 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
                 .join(', ')
 
             // COGS & Margin (Aggregated across all vendors)
-            const totalProjectCogs = allInvolvedVendors.reduce((sum, vend) => {
-                const projectContract = (vend.contracts || []).find(c => c.projectName === p.name)
-                return sum + (projectContract ? (Number(projectContract.orderValue) || 0) : 0)
-            }, 0)
-            const margin = revenue > 0 ? ((revenue - totalProjectCogs) / revenue * 100).toFixed(1) : 0
+            const totalProjectCogs = getProjectCogs(p, vendors)
+            const margin = getProjectMargin(p, vendors).toFixed(1)
             
             // SOS Count
             const sosCount = (p.history || []).filter(h => h.title?.includes('SOS') || h.detail?.includes('SOS')).length
@@ -82,7 +100,7 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
         // 2. VENDOR AUDIT
         const vendorReport = vendors.map(v => {
             const activeContracts = (v.contracts || []).filter(c => c.status === 'Active' || !c.status).length
-            const totalVolume = (v.contracts || []).reduce((s, c) => s + (c.orderValue || 0), 0)
+            const totalVolume = (v.contracts || []).reduce((s, c) => s + parseMoney(c.orderValue), 0)
             return {
                 name: v.name,
                 category: v.category,
@@ -146,6 +164,48 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
         return { master, vendorReport, projectReport, financials: sortedFinancials }
     }, [projects, vendors, portfolios])
 
+    // --- TRANSACTION SPEND ANALYTICS (EXCLUDING GST COMPLIANTLY) ---
+    const spendAnalytics = useMemo(() => {
+        let labour = 0
+        let transport = 0
+        let founder = 0
+        let officeBurn = 0
+
+        // 1. Scan direct project expenses
+        projects.forEach(p => {
+            (p.expenses || []).forEach(e => {
+                const amt = parseMoney(e.amount)
+                if (e.type === 'Labour') labour += amt
+                else if (e.type === 'Transport') transport += amt
+            });
+            // Also vendor payouts if typed
+            (p.payouts || []).forEach(pay => {
+                const amt = parseMoney(pay.amount)
+                if (pay.type === 'Labour') labour += amt
+                else if (pay.type === 'Transport') transport += amt
+            })
+        })
+
+        // 2. Scan business expenses (strictly excluding GST entries)
+        businessExpenses.forEach(e => {
+            const amt = parseMoney(e.amount)
+            if (e.type === 'GST' || e.category === 'Taxes/Compliance') {
+                return // Exclude GST analytics per Phase 2 guidelines
+            }
+            if (e.type === 'Salary' || e.category === 'Personnel' || e.type === 'Labour') {
+                labour += amt
+            } else if (e.type === 'Fuel' || e.type === 'Transport') {
+                transport += amt
+            } else if (e.type === 'Founder Expense') {
+                founder += amt
+            } else {
+                officeBurn += amt
+            }
+        })
+
+        return { labour, transport, founder, officeBurn }
+    }, [projects, businessExpenses])
+
     const handleExport = () => {
         let headers = []
         let rows = []
@@ -188,12 +248,12 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
 
     return (
         <div className="intelligence-reports animate-fade-in" style={{ padding: '0.5rem 0' }}>
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <div>
                     <h2 style={{ fontSize: '1.8rem', fontWeight: '900', margin: 0 }}>Intelligence Reports</h2>
                     <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Tactical Data Export Engine</p>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <div style={{ position: 'relative' }}>
                         <select 
                             value={reportType} 
@@ -213,9 +273,45 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
                 </div>
             </header>
 
+            {/* 💳 TRANSACTION SPEND ANALYTICS HUD */}
+            <div className="card" style={{ padding: '2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', marginBottom: '2.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <span style={{ fontSize: '1.2rem' }}>💳</span>
+                        <span style={{ fontWeight: '850', fontSize: '0.85rem', letterSpacing: '0.1em', color: 'var(--text-primary)', textTransform: 'uppercase' }}>Transaction Spend Analytics (Excl. GST)</span>
+                    </div>
+                    <span style={{ fontSize: '0.65rem', padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(102, 178, 194, 0.08)', color: 'var(--accent-color)', border: '1px solid var(--border-accent)', fontWeight: '750' }}>
+                        PHASE 2 COMPLIANT
+                    </span>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
+                    <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px' }}>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '800' }}>👷 Labour Spend</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: '900', color: 'var(--text-primary)', marginTop: '0.5rem' }}>{formatCurrency(spendAnalytics.labour)}</div>
+                        <div style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>Direct labor payouts + Personnel expense pools</div>
+                    </div>
+                    <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px' }}>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '800' }}>🚚 Transport Spend</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: '900', color: 'var(--text-primary)', marginTop: '0.5rem' }}>{formatCurrency(spendAnalytics.transport)}</div>
+                        <div style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>Project freight + Fuel dispatch accounts</div>
+                    </div>
+                    <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px' }}>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '800' }}>👔 Founder Expenses</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: '900', color: 'var(--text-primary)', marginTop: '0.5rem' }}>{formatCurrency(spendAnalytics.founder)}</div>
+                        <div style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>Founder travel, logistics, and capital outflows</div>
+                    </div>
+                    <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px' }}>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '800' }}>🏢 Office Burn</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: '900', color: 'var(--text-primary)', marginTop: '0.5rem' }}>{formatCurrency(spendAnalytics.officeBurn)}</div>
+                        <div style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>Office rent, SaaS tools, and administrative utilities</div>
+                    </div>
+                </div>
+            </div>
+
             {/* PREVIEW GRID */}
             <div className="card" style={{ padding: 0, overflow: 'hidden', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-                <div style={{ padding: '1rem 1.5rem', background: 'rgba(102, 178, 194, 0.05)', borderBottom: '1px solid rgba(102, 178, 194, 0.1)', display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ padding: '1rem 1.5rem', background: 'rgba(102, 178, 194, 0.05)', borderBottom: '1px solid rgba(102, 178, 194, 0.1)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
                     <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--accent-color)', letterSpacing: '0.1em' }}>LIVE PREVIEW: {reportType.toUpperCase()} DATASET</span>
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Showing {
                         reportType === 'Master' ? reportsData.master.length :
@@ -261,7 +357,7 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
                         </thead>
                         <tbody>
                             {reportType === 'Master' && reportsData.master.map(d => (
-                                <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }} className="cinematic-hover">
                                     <td style={{ padding: '1rem' }}>{d.name}</td>
                                     <td style={{ padding: '1rem' }}>{d.vendor}</td>
                                     <td style={{ padding: '1rem', color: 'var(--success)' }}>{formatCurrency(d.revenue)}</td>
@@ -270,7 +366,7 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
                                 </tr>
                             ))}
                             {reportType === 'Vendor' && reportsData.vendorReport.map((d, i) => (
-                                <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }} className="cinematic-hover">
                                     <td style={{ padding: '1rem' }}>{d.name}</td>
                                     <td style={{ padding: '1rem' }}>{d.category}</td>
                                     <td style={{ padding: '1rem', color: 'var(--accent-color)' }}>{d.status}</td>
@@ -279,7 +375,7 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
                                 </tr>
                             ))}
                             {reportType === 'Project' && reportsData.projectReport.map((d, i) => (
-                                <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }} className="cinematic-hover">
                                     <td style={{ padding: '1rem' }}>{d.name}</td>
                                     <td style={{ padding: '1rem' }}>{d.vendor}</td>
                                     <td style={{ padding: '1rem' }}>{d.startDate}</td>
@@ -288,7 +384,7 @@ const IntelligenceReports = ({ projects = [], vendors = [], portfolios = [] }) =
                                 </tr>
                             ))}
                             {reportType === 'Financial' && reportsData.financials.map((d, i) => (
-                                <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }} className="cinematic-hover">
                                     <td style={{ padding: '1rem' }}>{d.date}</td>
                                     <td style={{ padding: '1rem', color: d.type.includes('IN') ? 'var(--success)' : 'var(--danger)' }}>{d.type}</td>
                                     <td style={{ padding: '1rem' }}>{d.project}</td>

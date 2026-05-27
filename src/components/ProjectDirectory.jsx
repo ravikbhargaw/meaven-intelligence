@@ -1,6 +1,25 @@
 import { useState, useEffect } from 'react'
 import SiteReadiness from './SiteReadiness'
 import { supabase } from '../supabaseClient'
+import { parseMoney } from '../utils/financialUtils'
+import {
+  getProjectRevenue,
+  getProjectCollections,
+  getProjectOutstanding,
+  getProjectCogs,
+  getProjectExpenses,
+  getProjectProfit,
+  getProjectMargin
+} from '../utils/projectFinancials'
+import { getCollectionHealth, getVendorLiability, getProjectCashPosition, getProjectInactivityStatus } from '../utils/cashFlowAndControl'
+import { getAllocatedProjectOverhead, getTrueProjectProfit, getTrueProjectMargin } from '../utils/overheadAllocation'
+import {
+  calculateReadinessScore,
+  calculateExecutionRisk,
+  calculateVendorReliability,
+  calculateSnagImpact,
+  calculateTimelineReliability
+} from '../utils/executionIntelligence'
 
 // MOVE OUTSIDE to prevent re-mounting on every state change (which causes focus loss)
 const ModalOverlay = ({ children }) => (
@@ -122,7 +141,518 @@ const openImageWindow = (base64Data) => {
     }
 };
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit }) => {
+const ProjectExecutionTab = ({ selectedProject, vendors, assignedVendors, onUpdateValue, formatDate }) => {
+    const { readinessPercent, blockers, readyForExecution, readinessStatus } = calculateReadinessScore(selectedProject);
+    const { riskScore, riskLevel, topRiskFactors } = calculateExecutionRisk(selectedProject, vendors);
+    const { snagCount, potentialReworkExposure, criticalIssues, repeatIssuePatterns } = calculateSnagImpact(selectedProject);
+    const { timelineVariance, reliabilityScore, delayReasons } = calculateTimelineReliability(selectedProject);
+
+    const [snagType, setSnagType] = useState('Woodwork');
+    const [snagSeverity, setSnagSeverity] = useState('Medium');
+    const [snagDescription, setSnagDescription] = useState('');
+    const [snagExposureCost, setSnagExposureCost] = useState('');
+    const [responsibleVendorId, setResponsibleVendorId] = useState('');
+
+    const checklist = selectedProject?.readinessChecklist || {
+        measurementsLocked: false,
+        materialReady: false,
+        accessAvailable: false,
+        civil: false,
+        electrical: false,
+        ceiling: false,
+        flooring: false,
+        siteClearance: false
+    };
+
+    const handleCheckboxChange = (key) => {
+        const newChecklist = {
+            ...checklist,
+            [key]: !checklist[key]
+        };
+        onUpdateValue(selectedProject.id, {
+            readinessChecklist: newChecklist,
+            lastActivityAt: new Date().toISOString()
+        });
+    };
+
+    const handleLogSnag = (e) => {
+        e.preventDefault();
+        if (!snagDescription.trim()) return;
+
+        const newSnag = {
+            id: Date.now(),
+            type: snagType,
+            severity: snagSeverity,
+            description: snagDescription,
+            exposureCost: Number(snagExposureCost) || 0,
+            responsibleVendorId: responsibleVendorId || null,
+            resolved: false,
+            createdAt: new Date().toISOString()
+        };
+
+        const newSnags = [...(selectedProject.snags || []), newSnag];
+        onUpdateValue(selectedProject.id, {
+            snags: newSnags,
+            lastActivityAt: new Date().toISOString()
+        });
+
+        setSnagDescription('');
+        setSnagExposureCost('');
+        setResponsibleVendorId('');
+    };
+
+    const handleToggleResolve = (snagId) => {
+        const newSnags = (selectedProject.snags || []).map(s => 
+            s.id === snagId ? { ...s, resolved: !s.resolved } : s
+        );
+        onUpdateValue(selectedProject.id, {
+            snags: newSnags,
+            lastActivityAt: new Date().toISOString()
+        });
+    };
+
+    const handleRemoveSnag = (snagId) => {
+        if (!window.confirm("Are you sure you want to permanently delete this snag?")) return;
+        const newSnags = (selectedProject.snags || []).filter(s => s.id !== snagId);
+        onUpdateValue(selectedProject.id, {
+            snags: newSnags,
+            lastActivityAt: new Date().toISOString()
+        });
+    };
+
+    const criticalCheckpoints = [
+        { key: 'measurementsLocked', label: 'Measurements Locked' },
+        { key: 'materialReady', label: 'Materials Ready' },
+        { key: 'accessAvailable', label: 'Site Access Available' }
+    ];
+
+    const supplementalCheckpoints = [
+        { key: 'civil', label: 'Civil Readiness' },
+        { key: 'electrical', label: 'Electrical Readiness' },
+        { key: 'ceiling', label: 'Ceiling/Gypsum Readiness' },
+        { key: 'flooring', label: 'Flooring Readiness' },
+        { key: 'siteClearance', label: 'Site Clearance / Debris Removed' }
+    ];
+
+    return (
+         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.2rem' }}>
+                  <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.6rem' }}>
+                      <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>🛰️ Site Readiness</span>
+                              <span style={{
+                                  padding: '0.2rem 0.5rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.55rem',
+                                  fontWeight: '900',
+                                  background: readinessStatus === 'Ready' ? 'rgba(102, 178, 194, 0.1)' : readinessStatus === 'Partial Risk' ? 'rgba(255, 149, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                                  color: readinessStatus === 'Ready' ? 'var(--accent-color)' : readinessStatus === 'Partial Risk' ? '#ff9500' : 'var(--text-secondary)',
+                                  border: '1px solid ' + (readinessStatus === 'Ready' ? 'var(--accent-color)' : readinessStatus === 'Partial Risk' ? 'rgba(255, 149, 0, 0.3)' : 'var(--border-color)')
+                              }}>
+                                  {readinessStatus.toUpperCase()}
+                              </span>
+                          </div>
+                          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--text-primary)', marginTop: '0.4rem' }}>
+                              {readinessPercent}%
+                          </div>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem' }}>
+                          {blockers.length > 0 ? (
+                              <span style={{ color: '#ff9500' }}>⚠️ Blocked: {blockers.join(', ')}</span>
+                          ) : (
+                              <span style={{ color: 'var(--accent-color)' }}>✓ All Critical Blockers Clear</span>
+                          )}
+                      </div>
+                  </div>
+
+                  <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.6rem' }}>
+                      <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>⚡ Execution Risk</span>
+                              <span style={{
+                                  padding: '0.2rem 0.5rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.55rem',
+                                  fontWeight: '900',
+                                  background: riskLevel === 'High' ? 'rgba(255, 255, 255, 0.08)' : riskLevel === 'Moderate' ? 'rgba(255, 149, 0, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                                  color: riskLevel === 'High' ? 'var(--danger)' : riskLevel === 'Moderate' ? '#ff9500' : 'var(--text-secondary)',
+                                  border: '1px solid ' + (riskLevel === 'High' ? 'var(--danger)' : riskLevel === 'Moderate' ? 'rgba(255, 149, 0, 0.2)' : 'var(--border-color)')
+                              }}>
+                                  {riskLevel.toUpperCase()}
+                              </span>
+                          </div>
+                          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--text-primary)', marginTop: '0.4rem' }}>
+                              {riskScore}/100
+                          </div>
+                      </div>
+                      <div style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={topRiskFactors.length > 0 ? topRiskFactors.join(' | ') : 'No high-risk factors detected'}>
+                          {topRiskFactors.length > 0 ? topRiskFactors[0] : 'Operational signals stable'}
+                      </div>
+                  </div>
+
+                  <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.6rem' }}>
+                      <div>
+                          <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>🛠️ Rework Exposure</span>
+                          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: potentialReworkExposure > 0 ? 'var(--danger)' : 'var(--text-primary)', marginTop: '0.4rem' }}>
+                              ₹{potentialReworkExposure.toLocaleString('en-IN')}
+                          </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.65rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem' }}>
+                          <span>{snagCount} Total Snags Logged</span>
+                          {criticalIssues > 0 && <span style={{ color: 'var(--danger)', fontWeight: '700' }}>{criticalIssues} Critical</span>}
+                      </div>
+                  </div>
+
+                  <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.6rem' }}>
+                      <div>
+                          <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>📅 Timeline Predictability</span>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.4rem' }}>
+                              <span style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--text-primary)' }}>
+                                  {timelineVariance > 0 ? `+${timelineVariance}d` : 'Nominal'}
+                              </span>
+                              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Score: {reliabilityScore}%</span>
+                          </div>
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem' }}>
+                          Delay: <strong style={{ color: 'var(--text-primary)' }}>{selectedProject.primaryDelayReason || 'None'}</strong>
+                      </div>
+                  </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }} className="stack-on-mobile">
+                  <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      <div>
+                          <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.05em', fontWeight: '800' }}>🛰️ SITE READINESS ENGINE</h4>
+                          <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Verifies critical structural gates before releasing materials and partners.</p>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                          <h5 style={{ margin: 0, fontSize: '0.7rem', color: 'var(--danger)', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: '750' }}>⚠️ CRITICAL BLOCKER GATES (Must Pass)</h5>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                              {criticalCheckpoints.map(item => {
+                                  const isChecked = !!checklist[item.key];
+                                  return (
+                                      <label key={item.key} style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.8rem',
+                                          padding: '0.8rem',
+                                          background: isChecked ? 'rgba(102, 178, 194, 0.05)' : 'var(--bg-accent)',
+                                          border: isChecked ? '1px solid rgba(102, 178, 194, 0.2)' : '1px solid var(--border-color)',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.2s ease'
+                                      }} className="cinematic-hover">
+                                          <input
+                                              type="checkbox"
+                                              checked={isChecked}
+                                              onChange={() => handleCheckboxChange(item.key)}
+                                              style={{
+                                                  accentColor: 'var(--accent-color)',
+                                                  width: '16px',
+                                                  height: '16px',
+                                                  cursor: 'pointer'
+                                              }}
+                                          />
+                                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                              <span style={{ fontSize: '0.8rem', fontWeight: '700', color: isChecked ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{item.label}</span>
+                                              <span style={{ fontSize: '0.55rem', color: isChecked ? 'var(--accent-color)' : 'var(--text-secondary)' }}>
+                                                  {isChecked ? 'Gate Passed' : 'Active Blocker'}
+                                              </span>
+                                          </div>
+                                      </label>
+                                  );
+                              })}
+                          </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.2rem' }}>
+                          <h5 style={{ margin: 0, fontSize: '0.7rem', color: 'var(--accent-color)', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: '750' }}>✓ SUPPLEMENTAL PRE-REQUISITES (Score Weight)</h5>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                              {supplementalCheckpoints.map(item => {
+                                  const isChecked = !!checklist[item.key];
+                                  return (
+                                      <label key={item.key} style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.8rem',
+                                          padding: '0.8rem',
+                                          background: isChecked ? 'rgba(102, 178, 194, 0.03)' : 'var(--bg-accent)',
+                                          border: isChecked ? '1px solid rgba(102, 178, 194, 0.1)' : '1px solid var(--border-color)',
+                                          borderRadius: '8px',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.2s ease'
+                                      }} className="cinematic-hover">
+                                          <input
+                                              type="checkbox"
+                                              checked={isChecked}
+                                              onChange={() => handleCheckboxChange(item.key)}
+                                              style={{
+                                                  accentColor: 'var(--accent-color)',
+                                                  width: '16px',
+                                                  height: '16px',
+                                                  cursor: 'pointer'
+                                              }}
+                                          />
+                                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                              <span style={{ fontSize: '0.8rem', fontWeight: '700', color: isChecked ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{item.label}</span>
+                                              <span style={{ fontSize: '0.55rem', color: 'var(--text-secondary)' }}>
+                                                  {isChecked ? 'Ready' : 'Pending Verification'}
+                                              </span>
+                                          </div>
+                                      </label>
+                                  );
+                              })}
+                          </div>
+                      </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                      <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                          <div>
+                              <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.05em', fontWeight: '800' }}>🛠️ FRICTIONLESS SNAG LOGGER</h4>
+                              <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Track execution snags and potential rework leakage without affecting true profits.</p>
+                          </div>
+
+                          <form onSubmit={handleLogSnag} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', background: 'var(--bg-accent)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                                  <div>
+                                      <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Snag Type</label>
+                                      <select
+                                          value={snagType}
+                                          onChange={(e) => setSnagType(e.target.value)}
+                                          style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.4rem', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+                                      >
+                                          <option value="Woodwork">Woodwork</option>
+                                          <option value="Finishes">Finishes</option>
+                                          <option value="Electrical">Electrical</option>
+                                          <option value="Plumbing">Plumbing</option>
+                                          <option value="Other">Other</option>
+                                      </select>
+                                  </div>
+                                  <div>
+                                      <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Severity</label>
+                                      <select
+                                          value={snagSeverity}
+                                          onChange={(e) => setSnagSeverity(e.target.value)}
+                                          style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.4rem', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+                                      >
+                                          <option value="Low">Low</option>
+                                          <option value="Medium">Medium</option>
+                                          <option value="High">High</option>
+                                          <option value="Critical">Critical</option>
+                                      </select>
+                                  </div>
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '0.8rem' }}>
+                                  <div>
+                                      <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Rework Exposure Cost (₹)</label>
+                                      <input
+                                          type="number"
+                                          value={snagExposureCost}
+                                          onChange={(e) => setSnagExposureCost(e.target.value)}
+                                          placeholder="Ex: 12000"
+                                          style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.4rem', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+                                      />
+                                  </div>
+                                  <div>
+                                      <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Attribution Partner</label>
+                                      <select
+                                          value={responsibleVendorId}
+                                          onChange={(e) => setResponsibleVendorId(e.target.value)}
+                                          style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.4rem', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+                                      >
+                                          <option value="">General Site / None</option>
+                                          {assignedVendors.map((v, idx) => (
+                                              <option key={v.id || idx} value={v.id}>{v.name}</option>
+                                          ))}
+                                      </select>
+                                  </div>
+                              </div>
+
+                              <div>
+                                  <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Issue Description</label>
+                                  <input
+                                      type="text"
+                                      value={snagDescription}
+                                      onChange={(e) => setSnagDescription(e.target.value)}
+                                      placeholder="Ex: Laminate bubbling on wardrobe panel..."
+                                      required
+                                      style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.4rem', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+                                  />
+                              </div>
+
+                              <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem', fontSize: '0.75rem', fontWeight: '800', marginTop: '0.4rem' }}>
+                                  + LOG TACTICAL SNAG
+                              </button>
+                          </form>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '250px', overflowY: 'auto' }}>
+                              {(selectedProject.snags || []).length > 0 ? (
+                                  [...(selectedProject.snags || [])].reverse().map(snag => {
+                                      const vendor = vendors.find(v => String(v.id) === String(snag.responsibleVendorId));
+                                      return (
+                                          <div key={snag.id} style={{
+                                              background: snag.resolved ? 'rgba(255,255,255,0.01)' : 'var(--bg-accent)',
+                                              border: '1px solid var(--border-color)',
+                                              borderRadius: '8px',
+                                              padding: '0.8rem',
+                                              display: 'flex',
+                                              justifyContent: 'space-between',
+                                              alignItems: 'center',
+                                              opacity: snag.resolved ? 0.6 : 1,
+                                              transition: 'all 0.2s ease'
+                                          }}>
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: 1, marginRight: '1rem' }}>
+                                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                      <span style={{
+                                                          fontSize: '0.55rem',
+                                                          background: 'var(--bg-secondary)',
+                                                          color: 'var(--accent-color)',
+                                                          padding: '0.1rem 0.4rem',
+                                                          borderRadius: '4px',
+                                                          fontWeight: '800'
+                                                      }}>{snag.type.toUpperCase()}</span>
+                                                      <span style={{
+                                                          fontSize: '0.55rem',
+                                                          background: snag.severity === 'Critical' ? 'rgba(255,69,58,0.1)' : snag.severity === 'High' ? 'rgba(255,149,0,0.1)' : 'var(--bg-secondary)',
+                                                          color: snag.severity === 'Critical' ? 'var(--danger)' : snag.severity === 'High' ? '#ff9500' : 'var(--text-secondary)',
+                                                          padding: '0.1rem 0.4rem',
+                                                          borderRadius: '4px',
+                                                          fontWeight: '800'
+                                                      }}>{snag.severity}</span>
+                                                      {snag.exposureCost > 0 && (
+                                                          <span style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-primary)' }}>
+                                                              ₹{snag.exposureCost.toLocaleString('en-IN')}
+                                                          </span>
+                                                      )}
+                                                  </div>
+                                                  <p style={{ margin: 0, fontSize: '0.75rem', color: snag.resolved ? 'var(--text-secondary)' : 'var(--text-primary)', textDecoration: snag.resolved ? 'line-through' : 'none' }}>
+                                                      {snag.description}
+                                                  </p>
+                                                  <span style={{ fontSize: '0.55rem', color: 'var(--text-secondary)' }}>
+                                                      {vendor ? `Attributed to: ${vendor.name}` : 'General Site Issue'} • {formatDate(snag.createdAt || snag.id)}
+                                                  </span>
+                                              </div>
+                                              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                                  <button
+                                                      onClick={() => handleToggleResolve(snag.id)}
+                                                      style={{
+                                                          background: snag.resolved ? 'rgba(255,255,255,0.05)' : 'rgba(102,178,194,0.1)',
+                                                          border: snag.resolved ? '1px solid var(--border-color)' : '1px solid var(--accent-color)',
+                                                          color: snag.resolved ? 'var(--text-secondary)' : 'var(--accent-color)',
+                                                          padding: '0.3rem 0.6rem',
+                                                          borderRadius: '4px',
+                                                          fontSize: '0.6rem',
+                                                          fontWeight: '800',
+                                                          cursor: 'pointer'
+                                                      }}
+                                                  >
+                                                      {snag.resolved ? 'UNRESOLVE' : 'RESOLVE'}
+                                                  </button>
+                                                  <button
+                                                      onClick={() => handleRemoveSnag(snag.id)}
+                                                      style={{
+                                                          background: 'none',
+                                                          border: 'none',
+                                                          color: 'var(--danger)',
+                                                          fontSize: '0.9rem',
+                                                          cursor: 'pointer',
+                                                          padding: '0.2rem'
+                                                      }}
+                                                      title="Delete Snag"
+                                                  >
+                                                      ×
+                                                  </button>
+                                              </div>
+                                          </div>
+                                      );
+                                  })
+                              ) : (
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.7rem', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
+                                      <span>✓</span>
+                                      <p style={{ margin: '0.3rem 0 0 0', fontWeight: '700' }}>NO SNAGS REPORTED</p>
+                                      <p style={{ margin: 0, fontSize: '0.6rem' }}>This project has zero active execution or quality defects.</p>
+                                  </div>
+                              )}
+                          </div>
+                      </div>
+
+                      <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                          <div>
+                              <h4 style={{ margin: 0, color: 'var(--accent-color)', fontSize: '0.9rem', letterSpacing: '0.05em', fontWeight: '800' }}>📅 TIMELINE & DELAY ATTRIBUTION</h4>
+                              <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Log planning milestones and track deterministic delay liabilities.</p>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                              <div>
+                                  <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Planned Start Date</label>
+                                  <input
+                                      type="date"
+                                      value={selectedProject.startDate ? selectedProject.startDate.split('T')[0] : ''}
+                                      onChange={(e) => onUpdateValue(selectedProject.id, { startDate: e.target.value, lastActivityAt: new Date().toISOString() })}
+                                      style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem', color: '#fff', fontSize: '0.75rem' }}
+                                  />
+                              </div>
+                              <div>
+                                  <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Actual Start Date</label>
+                                  <input
+                                      type="date"
+                                      value={selectedProject.actualStartDate ? selectedProject.actualStartDate.split('T')[0] : ''}
+                                      onChange={(e) => onUpdateValue(selectedProject.id, { actualStartDate: e.target.value, lastActivityAt: new Date().toISOString() })}
+                                      style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem', color: '#fff', fontSize: '0.75rem' }}
+                                  />
+                              </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                              <div>
+                                  <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Planned Completion</label>
+                                  <input
+                                      type="date"
+                                      value={selectedProject.endDate ? selectedProject.endDate.split('T')[0] : ''}
+                                      onChange={(e) => onUpdateValue(selectedProject.id, { endDate: e.target.value, lastActivityAt: new Date().toISOString() })}
+                                      style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem', color: '#fff', fontSize: '0.75rem' }}
+                                  />
+                              </div>
+                              <div>
+                                  <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Actual Completion</label>
+                                  <input
+                                      type="date"
+                                      value={selectedProject.actualCompletionDate ? selectedProject.actualCompletionDate.split('T')[0] : ''}
+                                      onChange={(e) => onUpdateValue(selectedProject.id, { actualCompletionDate: e.target.value, lastActivityAt: new Date().toISOString() })}
+                                      style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem', color: '#fff', fontSize: '0.75rem' }}
+                                  />
+                              </div>
+                          </div>
+
+                          <div>
+                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Primary Delay Attribution</label>
+                              <select
+                                  value={selectedProject.primaryDelayReason || 'None'}
+                                  onChange={(e) => onUpdateValue(selectedProject.id, { primaryDelayReason: e.target.value === 'None' ? null : e.target.value, lastActivityAt: new Date().toISOString() })}
+                                  style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem', color: '#fff', fontSize: '0.75rem' }}
+                              >
+                                  <option value="None">None / On Schedule</option>
+                                  <option value="Client Delay">Client Delay</option>
+                                  <option value="Vendor Delay">Vendor Delay</option>
+                                  <option value="Internal Delay">Internal Delay</option>
+                                  <option value="Material Delay">Material Delay</option>
+                              </select>
+                              <span style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', marginTop: '0.3rem', display: 'block' }}>
+                                  Attributing delay triggers timeline variances displayed on Execution OS automatically.
+                              </span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+         </div>
+    );
+};
+
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit, overheadConfig, overheadMethod }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '---';
     const date = new Date(dateStr);
@@ -308,25 +838,27 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
     setAssignOrderValue('')
   }
 
-  const getPL = (p) => {
-    if (!p) return { revenue: 0, cogs: 0, expenses: 0, profit: 0, margin: 0 }
-    const revenue = p.clientFinancials?.totalValue || 0
-    const vendorList = vendors || []
-    const cogs = vendorList.reduce((sum, v) => {
-        const projectContract = (v.contracts || []).find(c => c.projectName === p.name && c.status === 'Active')
-        return sum + (projectContract ? (parseInt(projectContract.orderValue) || 0) : 0)
-    }, 0)
-    const expenses = (p.expenses || []).reduce((sum, e) => sum + (parseInt(e.amount) || 0), 0)
-    const profit = revenue - cogs - expenses
-    const margin = revenue > 0 ? (profit / revenue) * 100 : 0
-    return { revenue, cogs, expenses, profit, margin }
-  }
-
   if (selectedProject) {
-    const pl = getPL(selectedProject)
+    const pl = {
+      revenue: getProjectRevenue(selectedProject),
+      cogs: getProjectCogs(selectedProject, vendors),
+      expenses: getProjectExpenses(selectedProject),
+      profit: getProjectProfit(selectedProject, vendors),
+      margin: getProjectMargin(selectedProject, vendors)
+    }
+    
+    // Phase 2 Operational & Cash Flow Calculations
+    const trueOverhead = getAllocatedProjectOverhead(selectedProject, overheadConfig, overheadMethod, projects)
+    const trueProfit = getTrueProjectProfit(selectedProject, vendors, overheadConfig, overheadMethod, projects)
+    const trueMargin = getTrueProjectMargin(selectedProject, vendors, overheadConfig, overheadMethod, projects)
+    const cashFlow = getProjectCashPosition(selectedProject)
+    const collectionHealth = getCollectionHealth(selectedProject)
+    const vendorLiability = getVendorLiability(selectedProject, vendors)
+    const inactivity = getProjectInactivityStatus(selectedProject)
+    
     const financials = selectedProject.clientFinancials || { totalValue: 0, requests: [], received: [] }
-    const totalReceived = (financials.received || []).reduce((sum, r) => sum + r.amount, 0)
-    const outstanding = pl.revenue - totalReceived
+    const totalReceived = getProjectCollections(selectedProject)
+    const outstanding = getProjectOutstanding(selectedProject)
     const linkedVendor = (vendors || []).find(v => v && (v.contracts || []).some(c => c.projectName === selectedProject.name && (c.status === 'Active' || !c.status)));
 
     return (
@@ -343,18 +875,22 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     💎 FINANCIAL DEEP-DIVE
                 </div>
             </div>
-            <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '0.4rem', borderRadius: '12px', gap: '0.4rem', border: '1px solid var(--border-color)', width: '100%', maxWidth: '400px' }}>
+            <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '0.4rem', borderRadius: '12px', gap: '0.4rem', border: '1px solid var(--border-color)', width: '100%', maxWidth: '500px' }}>
                 <button 
                     onClick={() => setActiveSubTab('overview')}
-                    style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'overview' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'overview' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                    style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'overview' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'overview' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                 >Overview</button>
                 <button 
                     onClick={() => setActiveSubTab('financials')}
-                    style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'financials' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'financials' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                    style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'financials' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'financials' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                 >P&L Intel</button>
                 <button 
+                    onClick={() => setActiveSubTab('execution')}
+                    style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'execution' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'execution' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                >Readiness & Snags</button>
+                <button 
                     onClick={() => { window.location.hash = '#calculator'; window.dispatchEvent(new CustomEvent('navigate', { detail: 'calculator' })); }}
-                    style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid var(--accent-color)', background: 'none', color: 'var(--accent-color)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                    style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid var(--accent-color)', background: 'none', color: 'var(--accent-color)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                 >🧮 TECH CALC</button>
             </div>
         </div>
@@ -425,12 +961,163 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                 <div style={{ fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: '900', color: pl.margin > 30 ? 'var(--success)' : 'var(--accent-color)', lineHeight: 1 }}>
                     {pl.margin.toFixed(1)}%
                 </div>
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: '800' }}>Project EBITDA</span>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: '800' }}>Net Project Profit</span>
             </div>
         </div>
 
         {activeSubTab === 'overview' ? (
             <div className="animate-fade-in">
+                {/* 🚀 PHASE 2: OPERATIONAL & CASH INTELLIGENCE COCKPIT */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.2rem', marginBottom: '2.5rem' }}>
+                    
+                    {/* WIDGET 1: Financial Truths */}
+                    <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>💼 Net vs True Profitability</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Net Profit (EBITDA):</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-primary)' }}>₹{pl.profit.toLocaleString('en-IN')} ({pl.margin.toFixed(1)}%)</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Allocated Overhead:</span>
+                                <span style={{ fontSize: '0.72rem', fontWeight: '750', color: 'var(--danger)' }}>- ₹{Math.round(trueOverhead).toLocaleString('en-IN')}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border-color)', paddingTop: '0.3rem', marginTop: '0.2rem' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '750', color: 'var(--accent-color)' }}>True Project Profit:</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '900', color: trueProfit >= 0 ? 'var(--success)' : 'var(--danger)' }}>₹{Math.round(trueProfit).toLocaleString('en-IN')} ({trueMargin.toFixed(1)}%)</span>
+                            </div>
+                        </div>
+                        <div style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Allocation Method: <strong style={{ color: 'var(--accent-color)' }}>{overheadMethod === 'weighted' ? 'Revenue Weighted Proportional' : 'Equal Share'}</strong></div>
+                    </div>
+
+                    {/* WIDGET 2: Cash Flow Engine */}
+                    <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>💳 Cash Position Engine</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Collections Received:</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--success)' }}>+ ₹{cashFlow.collections.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Vendor Payouts:</span>
+                                <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--danger)' }}>- ₹{cashFlow.payouts.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Direct Site Expenses:</span>
+                                <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--danger)' }}>- ₹{cashFlow.expenses.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border-color)', paddingTop: '0.3rem', marginTop: '0.2rem' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '750', color: 'var(--accent-color)' }}>Net Cash Position:</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '900', color: cashFlow.netCashPosition >= 0 ? 'var(--success)' : 'var(--danger)' }}>₹{cashFlow.netCashPosition.toLocaleString('en-IN')}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* WIDGET 3: Collection Due Aging */}
+                    <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.6rem' }}>
+                        <div>
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>📅 Collection Due Aging</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.4rem' }}>
+                                <span style={{ fontSize: '1.2rem', fontWeight: '900', color: 'var(--text-primary)' }}>₹{collectionHealth.outstanding.toLocaleString('en-IN')}</span>
+                                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Outstanding</span>
+                            </div>
+                            {selectedProject.clientFinancials?.dueDate && (
+                                <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                    Due: <strong style={{ color: 'var(--text-primary)' }}>{formatDate(selectedProject.clientFinancials.dueDate)}</strong> ({collectionHealth.daysOutstanding} days outstanding)
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem' }}>
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>RISK INDEX</span>
+                            <span style={{
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '4px',
+                                fontSize: '0.55rem',
+                                fontWeight: '900',
+                                background: collectionHealth.agingBucket === 'Unspecified' ? 'rgba(255,255,255,0.05)' :
+                                            collectionHealth.agingBucket === 'Healthy' ? 'rgba(50,215,75,0.08)' :
+                                            collectionHealth.agingBucket === 'Watch' ? 'rgba(255,149,0,0.08)' : 'rgba(255,69,58,0.08)',
+                                color: collectionHealth.agingBucket === 'Unspecified' ? 'var(--text-secondary)' :
+                                       collectionHealth.agingBucket === 'Healthy' ? 'var(--success)' :
+                                       collectionHealth.agingBucket === 'Watch' ? '#ff9500' : 'var(--danger)',
+                                border: '1px solid ' + (
+                                       collectionHealth.agingBucket === 'Unspecified' ? 'var(--border-color)' :
+                                       collectionHealth.agingBucket === 'Healthy' ? 'rgba(50,215,75,0.2)' :
+                                       collectionHealth.agingBucket === 'Watch' ? 'rgba(255,149,0,0.2)' : 'rgba(255,69,58,0.2)'
+                                )
+                            }}>
+                                {collectionHealth.agingBucket.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* WIDGET 4: Vendor Liability */}
+                    <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.6rem' }}>
+                        <div>
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>🤝 Vendor Dues Aging</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.4rem' }}>
+                                <span style={{ fontSize: '1.2rem', fontWeight: '900', color: 'var(--text-primary)' }}>₹{vendorLiability.outstanding.toLocaleString('en-IN')}</span>
+                                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Unpaid liability</span>
+                            </div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                Committed: ₹{vendorLiability.committed.toLocaleString('en-IN')} | Paid: ₹{vendorLiability.paid.toLocaleString('en-IN')}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem' }}>
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>LIABILITY STATE</span>
+                            <span style={{
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '4px',
+                                fontSize: '0.55rem',
+                                fontWeight: '900',
+                                background: vendorLiability.agingBucket === 'Healthy' ? 'rgba(50,215,75,0.08)' :
+                                            vendorLiability.agingBucket === 'Watch' ? 'rgba(255,149,0,0.08)' : 'rgba(255,69,58,0.08)',
+                                color: vendorLiability.agingBucket === 'Healthy' ? 'var(--success)' :
+                                       vendorLiability.agingBucket === 'Watch' ? '#ff9500' : 'var(--danger)',
+                                border: '1px solid ' + (
+                                       vendorLiability.agingBucket === 'Healthy' ? 'rgba(50,215,75,0.2)' :
+                                       vendorLiability.agingBucket === 'Watch' ? 'rgba(255,149,0,0.2)' : 'rgba(255,69,58,0.2)'
+                                )
+                            }}>
+                                {vendorLiability.agingBucket.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* WIDGET 5: Operational Activity Pulse */}
+                    <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.6rem' }}>
+                        <div>
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>🛰️ Operational Activity Pulse</span>
+                            <div style={{ fontSize: '1.1rem', fontWeight: '900', color: 'var(--text-primary)', marginTop: '0.4rem' }}>
+                                {inactivity.daysSinceLastActivity === 0 ? 'Active Today' : `${inactivity.daysSinceLastActivity} days ago`}
+                            </div>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                Last transaction: <strong style={{ color: 'var(--text-primary)' }}>{selectedProject.lastActivityAt ? formatDateTime(selectedProject.lastActivityAt) : 'No transactions logged'}</strong>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem' }}>
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>PULSE STATUS</span>
+                            <span style={{
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '4px',
+                                fontSize: '0.55rem',
+                                fontWeight: '900',
+                                background: inactivity.inactivityStatus === 'Active' ? 'rgba(50,215,75,0.08)' :
+                                            inactivity.inactivityStatus === 'Slow' ? 'rgba(255,149,0,0.08)' : 'rgba(255,69,58,0.08)',
+                                color: inactivity.inactivityStatus === 'Active' ? 'var(--success)' :
+                                       inactivity.inactivityStatus === 'Slow' ? '#ff9500' : 'var(--danger)',
+                                border: '1px solid ' + (
+                                       inactivity.inactivityStatus === 'Active' ? 'rgba(50,215,75,0.2)' :
+                                       inactivity.inactivityStatus === 'Slow' ? 'rgba(255,149,0,0.2)' : 'rgba(255,69,58,0.2)'
+                                )
+                            }}>
+                                {inactivity.inactivityStatus.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '2rem', marginBottom: '2.5rem' }} className="stack-on-mobile">
                     {/* Left Card: Consolidated Dashboard */}
                     <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -452,7 +1139,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                 onUpdateValue(selectedProject.id, { 
                                                     clientFinancials: { 
                                                         ...(selectedProject.clientFinancials || {}), 
-                                                        totalValue: parseInt(e.target.value) 
+                                                        totalValue: parseMoney(e.target.value) 
                                                     } 
                                                 }); 
                                             }
@@ -464,7 +1151,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                     onUpdateValue(selectedProject.id, { 
                                                         clientFinancials: { 
                                                             ...(selectedProject.clientFinancials || {}), 
-                                                            totalValue: parseInt(e.target.value) 
+                                                            totalValue: parseMoney(e.target.value) 
                                                         } 
                                                     }); 
                                                 }
@@ -502,6 +1189,74 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             <div style={{ background: 'rgba(255, 69, 58, 0.03)', padding: '0.8rem', borderRadius: '10px', border: '1px solid rgba(255, 69, 58, 0.15)' }}>
                                 <p style={{ fontSize: '0.6rem', color: 'var(--danger)', textTransform: 'uppercase', marginBottom: '0.3rem', margin: 0 }}>Outstanding</p>
                                 <p style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>₹{(outstanding / 100000).toFixed(2)}L</p>
+                            </div>
+                        </div>
+                        
+                        {/* 📅 CLIENT BILLING & AGING CONFIGURATION PANEL */}
+                        <div style={{ background: 'var(--bg-accent)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0, fontWeight: '800', letterSpacing: '0.05em' }}>📅 Client Billing Rules & Aging Control</p>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Collection Status</label>
+                                    <select 
+                                        value={selectedProject.clientFinancials?.collectionStatus || 'Unspecified'}
+                                        onChange={(e) => {
+                                            onUpdateValue(selectedProject.id, {
+                                                clientFinancials: {
+                                                    ...(selectedProject.clientFinancials || {}),
+                                                    collectionStatus: e.target.value
+                                                }
+                                            });
+                                        }}
+                                        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.4rem', color: '#fff', fontSize: '0.75rem', width: '100%' }}
+                                    >
+                                        <option value="Unspecified">Unspecified</option>
+                                        <option value="Healthy">Healthy</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Overdue">Overdue</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Payment Terms</label>
+                                    <select 
+                                        value={selectedProject.clientFinancials?.paymentTerms || ''}
+                                        onChange={(e) => {
+                                            onUpdateValue(selectedProject.id, {
+                                                clientFinancials: {
+                                                    ...(selectedProject.clientFinancials || {}),
+                                                    paymentTerms: e.target.value
+                                                }
+                                            });
+                                        }}
+                                        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.4rem', color: '#fff', fontSize: '0.75rem', width: '100%' }}
+                                    >
+                                        <option value="">Select Terms</option>
+                                        <option value="NET 15">NET 15</option>
+                                        <option value="NET 30">NET 30</option>
+                                        <option value="NET 45">NET 45</option>
+                                        <option value="NET 60">NET 60</option>
+                                        <option value="Immediate">Immediate</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.3rem' }}>Collection Due Date</label>
+                                    <input 
+                                        type="date"
+                                        value={selectedProject.clientFinancials?.dueDate || ''}
+                                        onChange={(e) => {
+                                            onUpdateValue(selectedProject.id, {
+                                                clientFinancials: {
+                                                    ...(selectedProject.clientFinancials || {}),
+                                                    dueDate: e.target.value
+                                                }
+                                            });
+                                        }}
+                                        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.4rem', color: '#fff', fontSize: '0.75rem', width: '100%', outline: 'none' }}
+                                    />
+                                </div>
                             </div>
                         </div>
                         
@@ -907,7 +1662,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                 </div>
                 {/* PROJECT SIGN-OFF WORKFLOW */}
             </div>
-        ) : (
+        ) : activeSubTab === 'financials' ? (
             <div className="animate-fade-in">
                 <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginBottom: '2rem' }}>
                     <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', gridColumn: '1 / -1' }}>
@@ -929,7 +1684,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                 <p style={{ margin: '0.2rem 0 0 0', fontSize: '1.2rem', fontWeight: '800' }}>₹{(pl.expenses / 100000).toFixed(2)}L</p>
                             </div>
                             <div style={{ borderLeft: '3px solid var(--success)', paddingLeft: '1rem' }}>
-                                <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>EBITDA</p>
+                                <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Net Project Profit</p>
                                 <p style={{ margin: '0.2rem 0 0 0', fontSize: '1.2rem', fontWeight: '800', color: 'var(--success)' }}>₹{(pl.profit / 100000).toFixed(2)}L</p>
                             </div>
                         </div>
@@ -1036,6 +1791,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     </div>
                 </div>
             </div>
+        ) : (
+            <ProjectExecutionTab
+                selectedProject={selectedProject}
+                vendors={vendors}
+                assignedVendors={assignedVendors}
+                onUpdateValue={onUpdateValue}
+                formatDate={formatDate}
+            />
         )}
 
         {/* MODALS */}
@@ -1196,13 +1959,22 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         const formData = new FormData(e.currentTarget)
                         onAddExpense(selectedProject.id, {
                             description: formData.get('description'),
-                            amount: parseInt(formData.get('amount')),
-                            date: formData.get('date')
+                            amount: parseMoney(formData.get('amount')),
+                            date: formData.get('date'),
+                            type: formData.get('type')
                         })
                         setIsExpenseModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <input name="description" required placeholder="Description" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="amount" type="number" required placeholder="Amount (INR)" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
+                        <select name="type" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
+                            <option value="">Select Type (Optional)</option>
+                            <option value="Material">Material</option>
+                            <option value="Labour">Labour</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Miscellaneous">Miscellaneous</option>
+                            <option value="Refund">Refund</option>
+                        </select>
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem' }}>
                             <button type="button" onClick={() => setIsExpenseModalOpen(false)} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
@@ -1318,11 +2090,18 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), paymentScreenshots)
+                        onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), paymentScreenshots, formData.get('type'))
                         setPaymentScreenshots([])
                         setIsPaymentModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <input name="amount" type="number" required placeholder="Amount" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
+                        <select name="type" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
+                            <option value="">Select Type (Optional)</option>
+                            <option value="Advance">Advance</option>
+                            <option value="Milestone">Milestone</option>
+                            <option value="Final">Final</option>
+                            <option value="Miscellaneous">Miscellaneous</option>
+                        </select>
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="ref" required placeholder="Transaction Ref" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <div>
@@ -1378,7 +2157,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onLogPayout(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), payoutScreenshots, formData.get('vendorId'))
+                        onLogPayout(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), payoutScreenshots, formData.get('vendorId'), formData.get('type'))
                         setPayoutScreenshots([])
                         setIsPayoutModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -1392,6 +2171,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             )}
                         </select>
                         <input name="amount" type="number" required placeholder="Amount" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
+                        <select name="type" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
+                            <option value="">Select Type (Optional)</option>
+                            <option value="Vendor Advance">Vendor Advance</option>
+                            <option value="Material">Material</option>
+                            <option value="Labour">Labour</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Miscellaneous">Miscellaneous</option>
+                        </select>
                         <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <input name="ref" required placeholder="Reference" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
                         <div>
@@ -1519,7 +2306,13 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
       </div>
       <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
         {(filteredProjects || []).map(p => {
-          const pl = getPL(p)
+          const pl = {
+            revenue: getProjectRevenue(p),
+            cogs: getProjectCogs(p, vendors),
+            expenses: getProjectExpenses(p),
+            profit: getProjectProfit(p, vendors),
+            margin: getProjectMargin(p, vendors)
+          }
           return (
             <div key={p.id} className="card project-card" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '1rem' }} onClick={() => setSelectedProjectId(p.id)}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

@@ -103,7 +103,7 @@ const ExecutiveSummary = ({ projects = [], vendors = [], onNavigate }) => {
                 <MetricCard 
                     label="Operating Margin" 
                     value={`${stats.projectedMargin}%`} 
-                    subtext="Tactical EBITDA"
+                    subtext="Net Project Profit"
                     color="var(--success)"
                     onClick={() => onNavigate('projects')}
                 />
