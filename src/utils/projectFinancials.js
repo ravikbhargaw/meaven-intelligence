@@ -48,7 +48,7 @@ export const getProjectOutstanding = (project) => {
 export const getProjectCogs = (project, vendors, includeInactive = false) => {
   if (!project) return 0;
   const vendorList = vendors || [];
-  return vendorList.reduce((sum, v) => {
+  const calculatedCogs = vendorList.reduce((sum, v) => {
     const projectContracts = (v.contracts || []).filter(c => {
       // 1. Lowercase & trimmed matching to prevent typo and spacing errors
       const nameMatch = c.projectName && project.name && c.projectName.toLowerCase().trim() === project.name.toLowerCase().trim();
@@ -71,6 +71,10 @@ export const getProjectCogs = (project, vendors, includeInactive = false) => {
     
     return sum + vendorProjectSum;
   }, 0);
+
+  // Profitability Adjustment Layer (optional manual cost offset)
+  const adjustment = parseMoney(project.financialAdjustments?.manualVendorCost || 0);
+  return calculatedCogs + adjustment;
 };
 
 /**
@@ -82,7 +86,11 @@ export const getProjectCogs = (project, vendors, includeInactive = false) => {
 export const getProjectExpenses = (project) => {
   if (!project) return 0;
   const expenses = project.expenses || [];
-  return expenses.reduce((sum, e) => sum + parseMoney(e.amount), 0);
+  const calculatedExpenses = expenses.reduce((sum, e) => sum + parseMoney(e.amount), 0);
+
+  // Profitability Adjustment Layer (optional manual cost offset)
+  const adjustment = parseMoney(project.financialAdjustments?.manualDirectExpense || 0);
+  return calculatedExpenses + adjustment;
 };
 
 /**

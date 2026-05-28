@@ -683,6 +683,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false)
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false)
   const [isEditingValue, setIsEditingValue] = useState(false)
   const [isRegisteringNew, setIsRegisteringNew] = useState(false)
   const [noteText, setNoteText] = useState('')
@@ -972,7 +973,15 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     
                     {/* WIDGET 1: Financial Truths */}
                     <div className="card cinematic-hover" style={{ padding: '1.2rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>💼 Net vs True Profitability</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: '800', letterSpacing: '0.1em', textTransform: 'uppercase' }}>💼 Net vs True Profitability</span>
+                            <button 
+                                onClick={() => setIsAdjustModalOpen(true)}
+                                style={{ background: 'none', border: 'none', color: 'var(--accent-color)', fontSize: '0.6rem', fontWeight: '800', cursor: 'pointer', padding: 0 }}
+                            >
+                                [ Adjust Costs ]
+                            </button>
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Net Profit (EBITDA):</span>
@@ -987,7 +996,17 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                 <span style={{ fontSize: '0.8rem', fontWeight: '900', color: trueProfit >= 0 ? 'var(--success)' : 'var(--danger)' }}>₹{Math.round(trueProfit).toLocaleString('en-IN')} ({trueMargin.toFixed(1)}%)</span>
                             </div>
                         </div>
-                        <div style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Allocation Method: <strong style={{ color: 'var(--accent-color)' }}>{overheadMethod === 'weighted' ? 'Revenue Weighted Proportional' : 'Equal Share'}</strong></div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            <div style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Allocation Method: <strong style={{ color: 'var(--accent-color)' }}>{overheadMethod === 'weighted' ? 'Revenue Weighted Proportional' : 'Equal Share'}</strong></div>
+                            {selectedProject.financialAdjustments && (
+                                (selectedProject.financialAdjustments.manualVendorCost && Number(selectedProject.financialAdjustments.manualVendorCost) !== 0) ||
+                                (selectedProject.financialAdjustments.manualDirectExpense && Number(selectedProject.financialAdjustments.manualDirectExpense) !== 0)
+                            ) && (
+                                <div style={{ fontSize: '0.55rem', color: '#ff9500', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '0.1rem' }}>
+                                    * Includes manual adjustments
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* WIDGET 2: Cash Flow Engine */}
@@ -1916,6 +1935,93 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.8rem' }}>
                             <button type="button" onClick={() => { setIsAssignModalOpen(false); setIsRegisteringNew(false); }} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
                             <button type="submit" className="btn btn-primary" style={{ flex: 1, fontSize: '0.75rem' }}>Confirm</button>
+                        </div>
+                    </form>
+                </div>
+            </ModalOverlay>
+        )}
+
+        {isAdjustModalOpen && (
+            <ModalOverlay>
+                <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+                    <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.1rem' }}>Adjust Operational Costs</h3>
+                    <p style={{ margin: '0 0 1.5rem 0', color: 'var(--text-secondary)', fontSize: '0.7rem' }}>
+                        Temporary operational override for missing or incomplete vendor mappings and expenses.
+                    </p>
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const manualVendorCost = parseMoney(formData.get('manualVendorCost'));
+                        const manualDirectExpense = parseMoney(formData.get('manualDirectExpense'));
+                        const adjustmentNote = formData.get('adjustmentNote').trim();
+
+                        onUpdateValue(selectedProject.id, {
+                            financialAdjustments: {
+                                manualVendorCost,
+                                manualDirectExpense,
+                                adjustmentNote,
+                                adjustedBy: userRole || 'Executive Operator',
+                                adjustedAt: new Date().toISOString()
+                            },
+                            lastActivityAt: new Date().toISOString()
+                        });
+                        setIsAdjustModalOpen(false);
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                        <div>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.4rem' }}>
+                                Manual Vendor Cost Adjustment (INR)
+                            </label>
+                            <input 
+                                name="manualVendorCost" 
+                                type="number" 
+                                defaultValue={selectedProject.financialAdjustments?.manualVendorCost || ''} 
+                                placeholder="e.g. 50000 or -25000"
+                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff', fontSize: '0.85rem' }} 
+                            />
+                            <span style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', marginTop: '0.2rem', display: 'block' }}>
+                                Sums directly to calculated vendor COGS. Use negative to offset.
+                            </span>
+                        </div>
+
+                        <div>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.4rem' }}>
+                                Manual Direct Expense Adjustment (INR)
+                            </label>
+                            <input 
+                                name="manualDirectExpense" 
+                                type="number" 
+                                defaultValue={selectedProject.financialAdjustments?.manualDirectExpense || ''} 
+                                placeholder="e.g. 15000 or -10000"
+                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff', fontSize: '0.85rem' }} 
+                            />
+                            <span style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', marginTop: '0.2rem', display: 'block' }}>
+                                Sums directly to direct site expenses. Use negative to offset.
+                            </span>
+                        </div>
+
+                        <div>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '0.4rem' }}>
+                                Adjustment Note / Rationale
+                            </label>
+                            <textarea 
+                                name="adjustmentNote" 
+                                required
+                                placeholder="Provide operational reason for auditing trail..."
+                                defaultValue={selectedProject.financialAdjustments?.adjustmentNote || ''}
+                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem', color: '#fff', fontSize: '0.85rem', minHeight: '80px', fontFamily: 'inherit' }}
+                            />
+                        </div>
+
+                        {selectedProject.financialAdjustments?.adjustedBy && (
+                            <div style={{ background: 'var(--bg-accent)', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.6rem', color: 'var(--text-secondary)' }}>
+                                Last Adjusted By: <strong style={{ color: 'var(--accent-color)' }}>{selectedProject.financialAdjustments.adjustedBy}</strong><br/>
+                                Last Adjusted At: <strong>{new Date(selectedProject.financialAdjustments.adjustedAt).toLocaleString()}</strong>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.5rem' }}>
+                            <button type="button" onClick={() => setIsAdjustModalOpen(false)} className="btn btn-outline" style={{ flex: 1, fontSize: '0.75rem' }}>Cancel</button>
+                            <button type="submit" className="btn btn-primary" style={{ flex: 1, fontSize: '0.75rem', fontWeight: '800' }}>Save Adjustment</button>
                         </div>
                     </form>
                 </div>
