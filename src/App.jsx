@@ -149,6 +149,36 @@ function App() {
   const [navHistory, setNavHistory] = useState([])
   const [theme, setTheme] = useState(() => localStorage.getItem('meaven_theme') || 'dark')
   const [viewingAudit, setViewingAudit] = useState(null)
+  const [executionAudits, setExecutionAudits] = useState(() => {
+    return JSON.parse(localStorage.getItem('execution_audits')) || [];
+  });
+  const [isCreatingAudit, setIsCreatingAudit] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'audit') {
+        const local = JSON.parse(localStorage.getItem('execution_audits')) || [];
+        setExecutionAudits(local);
+        
+        // Sync in background if Supabase is connected
+        if (supabase) {
+            supabase.from('site_audits').select('*').then(({ data, error }) => {
+                if (data && !error) {
+                    const cloudAudits = data.map(r => r.data).filter(Boolean);
+                    setExecutionAudits(prev => {
+                        const merged = [...prev];
+                        cloudAudits.forEach(ca => {
+                            if (!merged.some(ma => ma.auditId === ca.auditId)) {
+                                merged.push(ca);
+                            }
+                        });
+                        localStorage.setItem('execution_audits', JSON.stringify(merged));
+                        return merged;
+                    });
+                }
+            });
+        }
+    }
+  }, [activeTab]);
 
   const [overheadConfig, setOverheadConfig] = useState(() => {
     try {
@@ -1013,7 +1043,9 @@ function App() {
             }));
         }
     }
-    setViewingAudit(payload); // Open the report after submission
+    setExecutionAudits(existingAudits);
+    setIsCreatingAudit(false);
+    setViewingAudit(null);
   }
 
   const handleQCReportSubmit = (payload) => {
@@ -1580,24 +1612,122 @@ function App() {
                   />
                 )}
                 {activeTab === 'audit' && (
-                  <div className="card animate-fade-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', minHeight: '80vh' }}>
-                      {viewingAudit && (
-                          <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--accent-color)' }}>{viewingAudit.auditId} | TECHNICAL REPORT</h2>
-                              <button 
-                                  onClick={() => { setViewingAudit(null); handleBack(); }}
-                                  style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
-                              >
-                                  CLOSE REVIEW
-                              </button>
+                  <div className="animate-fade-in" style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      {!isCreatingAudit && !viewingAudit ? (
+                          <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '2rem', flex: 1 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                                  <div>
+                                      <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900' }}>Validation Ledger</h2>
+                                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                          Technical readiness audits and inspection reports.
+                                      </p>
+                                  </div>
+                                  <button 
+                                      onClick={() => setIsCreatingAudit(true)}
+                                      className="btn btn-primary"
+                                      style={{ 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          gap: '0.5rem', 
+                                          background: 'var(--accent-color)', 
+                                          color: '#000', 
+                                          fontWeight: '800', 
+                                          padding: '0.75rem 1.5rem',
+                                          borderRadius: '8px',
+                                          border: 'none',
+                                          cursor: 'pointer',
+                                          fontSize: '0.8rem'
+                                      }}
+                                  >
+                                      ➕ INITIATE NEW VALIDATION
+                                  </button>
+                              </div>
+
+                              {executionAudits.length === 0 ? (
+                                  <div style={{ padding: '4rem 2rem', textTransform: 'uppercase', textAlign: 'center', border: '1px dashed var(--border-color)', borderRadius: '12px', background: 'rgba(255,255,255,0.01)', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.1em' }}>
+                                      📁 No Technical Audits Lodged Yet. Click Above to Begin.
+                                  </div>
+                              ) : (
+                                  <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                                      {executionAudits.map((aud) => {
+                                          const score = aud.readinessScore || 0;
+                                          const scoreColor = score >= 80 ? 'var(--success)' : score >= 50 ? '#ffcc00' : '#ff453a';
+                                          return (
+                                              <div 
+                                                  key={aud.auditId} 
+                                                  onClick={() => setViewingAudit(aud)}
+                                                  className="card hover-scale"
+                                                  style={{ 
+                                                      background: 'var(--bg-accent)', 
+                                                      border: '1px solid var(--border-color)', 
+                                                      borderRadius: '12px', 
+                                                      padding: '1.5rem', 
+                                                      cursor: 'pointer',
+                                                      transition: 'all 0.3s ease',
+                                                      display: 'flex',
+                                                      flexDirection: 'column',
+                                                      justifyContent: 'space-between',
+                                                      minHeight: '180px'
+                                                  }}
+                                              >
+                                                  <div>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.8rem' }}>
+                                                          <span style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent-color)', fontFamily: 'monospace', background: 'rgba(102, 178, 194, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                                              {aud.auditId}
+                                                          </span>
+                                                          <span style={{ fontSize: '0.75rem', fontWeight: '800', color: scoreColor }}>
+                                                              {score}% Score
+                                                          </span>
+                                                      </div>
+                                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                          <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.1rem', fontWeight: '800', color: '#fff' }}>
+                                                              {aud.projectInfo?.name || 'Unnamed Project'}
+                                                          </h3>
+                                                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                              Auditor Name: <strong style={{ color: 'var(--accent-color)' }}>{aud.projectInfo?.inspectedBy || 'Lead Auditor'}</strong>
+                                                          </p>
+                                                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                              Client/Contact: <strong style={{ color: 'var(--text-primary)' }}>{aud.projectInfo?.client || 'Direct Client'}</strong>
+                                                          </p>
+                                                      </div>
+                                                  </div>
+                                                  <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                                                          {aud.projectInfo?.inspectionDate || aud.timestamp?.split('T')[0] || 'Unknown Date'}
+                                                      </span>
+                                                      <span style={{ fontSize: '0.7rem', color: 'var(--accent-color)', fontWeight: '800' }}>
+                                                          VIEW REPORT →
+                                                      </span>
+                                                  </div>
+                                              </div>
+                                          );
+                                      })}
+                                  </div>
+                              )}
+                          </div>
+                      ) : (
+                          <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', minHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.1)' }}>
+                                  <h2 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--accent-color)', fontWeight: '800' }}>
+                                      {viewingAudit ? `${viewingAudit.auditId} | TECHNICAL REPORT` : 'NEW SITE VALIDATION AUDIT'}
+                                  </h2>
+                                  <button 
+                                      onClick={() => { setViewingAudit(null); setIsCreatingAudit(false); }}
+                                      style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
+                                  >
+                                      ← BACK TO LEDGER
+                                  </button>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                  <SiteReadinessAudit 
+                                    projects={projects} 
+                                    onSubmitAudit={handleExecutionAuditSubmit} 
+                                    initialData={viewingAudit}
+                                    readOnly={!!viewingAudit}
+                                  />
+                              </div>
                           </div>
                       )}
-                      <SiteReadinessAudit 
-                        projects={projects} 
-                        onSubmitAudit={handleExecutionAuditSubmit} 
-                        initialData={viewingAudit}
-                        readOnly={!!viewingAudit}
-                      />
                   </div>
                 )}
                 {activeTab === 'postQC' && (
