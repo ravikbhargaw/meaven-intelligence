@@ -40,14 +40,38 @@ const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors =
   // Build a concise but complete data snapshot for the AI context
   const buildContext = () => {
     const projectSummaries = projects.map(p => {
+      // Mirror exact formula from projectFinancials.js
+      // Revenue: use baseAmount (GST-exclusive) if available, else totalValue
+      const revenue = (p.clientFinancials?.baseAmount > 0)
+        ? (p.clientFinancials?.baseAmount || 0)
+        : (p.clientFinancials?.totalValue || 0);
       const totalValue = p.clientFinancials?.totalValue || 0;
+
+      // Collections
       const received = (p.clientFinancials?.received || []).reduce((s, r) => s + (r.amount || 0), 0);
-      const outstanding = totalValue - received;
-      const totalPayouts = (p.payouts || []).reduce((s, r) => s + (r.amount || 0), 0);
+      const outstanding = revenue - received;
+
+      // COGS: sum vendor contract baseAmount (or orderValue) matched to this project
+      const cogs = vendors.reduce((sum, v) => {
+        const matched = (v.contracts || []).filter(c => {
+          const nameMatch = c.projectName && p.name && c.projectName.toLowerCase().trim() === p.name.toLowerCase().trim();
+          const idMatch = c.projectId && p.id && String(c.projectId) === String(p.id);
+          return (nameMatch || idMatch) && (c.status === 'Active' || !c.status);
+        });
+        return sum + matched.reduce((s, c) => {
+          const base = (c.baseAmount > 0) ? (c.baseAmount || 0) : (c.orderValue || 0);
+          return s + base;
+        }, 0);
+      }, 0);
+
+      // Expenses
       const totalExpenses = (p.expenses || []).reduce((s, r) => s + (r.amount || 0), 0);
-      const grossProfit = received - totalPayouts - totalExpenses;
-      const ebitda = totalValue > 0 ? ((grossProfit / totalValue) * 100).toFixed(1) : 0;
-      return `Project: ${p.name} | Status: ${p.status || 'Unknown'} | Contract: ₹${(totalValue/100000).toFixed(2)}L | Collected: ₹${(received/100000).toFixed(2)}L | Outstanding: ₹${(outstanding/100000).toFixed(2)}L | Vendor Payouts: ₹${(totalPayouts/100000).toFixed(2)}L | EBITDA: ${ebitda}% | Readiness: ${p.readiness || 0}%`;
+
+      // Net Profit % — same as UI
+      const netProfit = revenue - cogs - totalExpenses;
+      const margin = revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : 0;
+
+      return `Project: ${p.name} | Status: ${p.status || 'Unknown'} | Contract (excl. GST): ₹${(revenue/100000).toFixed(2)}L | Total incl. GST: ₹${(totalValue/100000).toFixed(2)}L | Collected: ₹${(received/100000).toFixed(2)}L | Outstanding: ₹${(outstanding/100000).toFixed(2)}L | Vendor COGS: ₹${(cogs/100000).toFixed(2)}L | Expenses: ₹${(totalExpenses/100000).toFixed(2)}L | Net Profit: ₹${(netProfit/100000).toFixed(2)}L | Net Profit %: ${margin}% | Readiness: ${p.readiness || 0}%`;
     }).join('\n');
 
     const vendorSummaries = vendors.map(v => {
