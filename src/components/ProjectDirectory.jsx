@@ -653,6 +653,7 @@ const ProjectExecutionTab = ({ selectedProject, vendors, assignedVendors, onUpda
 };
 
 const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit, overheadConfig, overheadMethod, onInitializeProject, onUpdateContractValue }) => {
+  const isReadOnly = userRole === 'Client';
   const formatDate = (dateStr) => {
     if (!dateStr) return '---';
     const date = new Date(dateStr);
