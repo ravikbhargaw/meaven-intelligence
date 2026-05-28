@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -92,16 +92,18 @@ ${buildContext()}`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
           contents: [
             {
-              parts: [
-                { text: `${systemPrompt}\n\nUser question: ${content}` }
-              ]
+              role: 'user',
+              parts: [{ text: content }]
             }
           ],
           generationConfig: {
             temperature: 0.4,
-            maxOutputTokens: 300,
+            maxOutputTokens: 400,
           }
         })
       });
