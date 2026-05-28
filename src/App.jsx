@@ -1694,9 +1694,10 @@ function App() {
         )}
         {isNewProjectModalOpen && (
             <NewProjectModal
-                portfolios={portfolios}
-                onCreateProject={handleCreateProject}
+                isOpen={isNewProjectModalOpen}
+                onCreate={handleCreateProject}
                 onClose={() => setIsNewProjectModalOpen(false)}
+                portfolios={portfolios}
             />
         )}
         {isNewPortfolioModalOpen && (
