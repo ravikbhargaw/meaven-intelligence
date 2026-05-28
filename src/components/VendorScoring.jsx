@@ -1,5 +1,54 @@
 import { useState, useEffect } from 'react'
 
+const isPdf = (base64Str) => typeof base64Str === 'string' && base64Str.startsWith('data:application/pdf');
+
+const openAttachmentWindow = (base64Data) => {
+    const newTab = window.open();
+    if (!newTab) return;
+    if (isPdf(base64Data)) {
+        newTab.document.write(`
+            <html>
+                <head><title>Bill / Invoice PDF</title>
+                <style>body{margin:0;background:#0d0d0d;display:flex;align-items:center;justify-content:center;height:100vh;}</style>
+                </head>
+                <body>
+                    <embed src="${base64Data}" type="application/pdf" width="100%" height="100%" style="position:fixed;top:0;left:0;width:100%;height:100%;" />
+                </body>
+            </html>`);
+        newTab.document.close();
+    } else {
+        openImageWindow(base64Data);
+        newTab.close();
+    }
+};
+
+const openImageWindow = (base64Data) => {
+    const newTab = window.open();
+    if (newTab) {
+        newTab.document.write(`
+            <html>
+                <head>
+                    <title>Attachment View</title>
+                    <style>
+                        body { margin: 0; background: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui, sans-serif; color: #fff; }
+                        img { max-width: 90%; max-height: 85vh; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+                        .container { text-align: center; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+                        .btn { padding: 8px 24px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+                        .btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <img src="${base64Data}" alt="Attachment" />
+                        <button class="btn" onclick="window.close()">Close Preview</button>
+                    </div>
+                </body>
+            </html>
+        `);
+        newTab.document.close();
+    }
+};
+
 const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: selectedVendorIdProp, msaTemplate, onSelectVendor, onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly, userRole, onDeleteVendor }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isContractModalOpen, setIsContractModalOpen] = useState(false)
@@ -568,8 +617,37 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                         <p style={{ margin: 0, fontWeight: '700', fontSize: '1.1rem', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(p.amount / 100000).toFixed(2)}L</p>
                                         <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.date} | Ref: {p.ref}</p>
                                     </div>
-                                    {p.screenshot && (
-                                        <button onClick={() => window.open(p.screenshot)} style={{ fontSize: '0.7rem', color: 'var(--accent-color)' }}>View Evidence 📎</button>
+                                    {((Array.isArray(p.photos) && p.photos.length > 0) || p.photo || p.screenshot) && (
+                                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                            {p.screenshot && !p.photo && (!p.photos || p.photos.length === 0) && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => isPdf(p.screenshot) ? openAttachmentWindow(p.screenshot) : openImageWindow(p.screenshot)} 
+                                                    style={{ background: isPdf(p.screenshot) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(p.screenshot) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(p.screenshot) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                >
+                                                    {isPdf(p.screenshot) ? '📄 PDF' : 'Evidence 📎'}
+                                                </button>
+                                            )}
+                                            {p.photo && (!Array.isArray(p.photos) || p.photos.length === 0) && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => isPdf(p.photo) ? openAttachmentWindow(p.photo) : openImageWindow(p.photo)} 
+                                                    style={{ background: isPdf(p.photo) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(p.photo) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(p.photo) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                >
+                                                    {isPdf(p.photo) ? '📄 PDF' : 'Evidence 📎'}
+                                                </button>
+                                            )}
+                                            {(Array.isArray(p.photos) ? p.photos : []).map((att, idx) => (
+                                                <button 
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => isPdf(att) ? openAttachmentWindow(att) : openImageWindow(att)} 
+                                                    style={{ background: isPdf(att) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(att) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(att) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                >
+                                                    {isPdf(att) ? `📄 PDF ${idx + 1}` : `📎 Img ${idx + 1}`}
+                                                </button>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             )) : <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '2rem' }}>No payments logged for this contract yet.</p>}

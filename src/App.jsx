@@ -879,7 +879,9 @@ function App() {
                                             gstAmount: parsedGst,
                                             date: date || new Date().toISOString().split('T')[0], 
                                             ref: ref || '', 
-                                            type: type || '' 
+                                            type: type || '',
+                                            photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
+                                            photos: Array.isArray(photos) ? photos : (photos ? [photos] : [])
                                         }
                                     ]
                                 }
@@ -1110,7 +1112,83 @@ function App() {
   }
 
   const handleAddVendorPayment = (vendorId, contractId, payment) => {
-    setVendors(vendors.map(v => String(v.id) === String(vendorId) ? { ...v, contracts: v.contracts.map(c => String(c.id) === String(contractId) ? { ...c, payments: [...(c.payments || []), { ...payment, id: Date.now() }] } : c) } : v))
+    // 1. Update vendors state
+    setVendors(prevVendors => (prevVendors || []).map(v => {
+        if (String(v.id) === String(vendorId)) {
+            return {
+                ...v,
+                contracts: (v.contracts || []).map(c => {
+                    if (String(c.id) === String(contractId)) {
+                        return {
+                            ...c,
+                            payments: [
+                                ...(c.payments || []),
+                                { 
+                                    ...payment, 
+                                    id: Date.now(),
+                                    photo: payment.screenshot || null,
+                                    photos: payment.screenshot ? [payment.screenshot] : []
+                                }
+                            ]
+                        }
+                    }
+                    return c
+                })
+            }
+        }
+        return v
+    }))
+
+    // 2. TWO-WAY SYNC: Synchronize payout to the linked Project
+    try {
+        const vendor = (vendors || []).find(v => String(v.id) === String(vendorId))
+        if (vendor) {
+            const contract = (vendor.contracts || []).find(c => String(c.id) === String(contractId))
+            if (contract) {
+                const projectName = contract.projectName
+                const project = (projects || []).find(p => p.name === projectName)
+                if (project) {
+                    const parsedAmount = Number(payment.amount) || 0
+                    const newPayout = {
+                        id: Date.now(),
+                        amount: parsedAmount,
+                        baseAmount: parsedAmount,
+                        gstAmount: 0,
+                        ref: payment.ref || '',
+                        date: payment.date || new Date().toISOString().split('T')[0],
+                        photo: payment.screenshot || null,
+                        photos: payment.screenshot ? [payment.screenshot] : [],
+                        vendorId: String(vendorId),
+                        type: 'Material/Service'
+                    }
+
+                    setProjects(prev => (prev || []).map(p => {
+                        if (p.name === projectName) {
+                            return {
+                                ...p,
+                                payouts: [...(p.payouts || []), newPayout],
+                                lastActivityAt: new Date().toISOString(),
+                                history: [
+                                    ...(p.history || []),
+                                    {
+                                        id: Date.now() + 2,
+                                        type: 'warning',
+                                        title: 'Vendor Payout',
+                                        detail: `₹${parsedAmount.toLocaleString()} debited via Partner Bench. Ref: ${payment.ref || ''}`,
+                                        timestamp: new Date().toISOString(),
+                                        isClientVisible: false
+                                    }
+                                ]
+                            }
+                        }
+                        return p
+                    }))
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Error in handleAddVendorPayment sync:", err)
+    }
   }
 
   const handleAddVendorContract = (vendorId, projectName, orderValue) => {
