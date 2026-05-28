@@ -815,3 +815,88 @@ button {
   margin-bottom: 0.8rem !important;
 }
 
+/* ==========================================================================
+   Knowledge Hub Drawer & Backdrop
+   ========================================================================== */
+
+.kh-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1800;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kh-backdrop.kh-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.kh-drawer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  bottom: 20px;
+  width: 420px;
+  background: var(--bg-glass-heavy);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  z-index: 1801;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -20px 0 50px rgba(0, 0, 0, 0.5);
+  transform: translateX(calc(100% + 40px));
+  transition: var(--transition-premium);
+  overflow: hidden;
+}
+
+.kh-drawer.kh-open {
+  transform: translateX(0);
+}
+
+.kh-collapsible:last-child {
+  border-bottom: none !important;
+}
+
+.kh-collapsible button:hover span {
+  color: var(--accent-color) !important;
+}
+
+#kh-close-btn {
+  transition: all 0.2s ease;
+}
+
+#kh-close-btn:hover {
+  background: var(--border-color) !important;
+  color: var(--text-primary) !important;
+  transform: scale(1.05);
+}
+
+#kh-search-input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#kh-search-input:focus {
+  box-shadow: 0 0 10px rgba(102, 178, 194, 0.15);
+}
+
+/* Micro-animations and responsive hiding */
+@media (max-width: 480px) {
+  .kh-drawer {
+    width: calc(100% - 40px);
+    left: 20px;
+    right: 20px;
+  }
+  .kh-tab-label {
+    display: none;
+  }
+}

@@ -27,6 +27,7 @@ import ExecutionOS from './components/ExecutionOS'
 import ExecutionPartnerSystem from './components/ExecutionPartnerSystem'
 import FounderControlTower from './components/FounderControlTower'
 import ExecutionAnalyticsDashboard from './components/ExecutionAnalyticsDashboard'
+import KnowledgeHub from './components/KnowledgeHub'
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
 class ErrorBoundary extends React.Component {
@@ -149,6 +150,7 @@ function App() {
   const [navHistory, setNavHistory] = useState([])
   const [theme, setTheme] = useState(() => localStorage.getItem('meaven_theme') || 'dark')
   const [viewingAudit, setViewingAudit] = useState(null)
+  const [isHubOpen, setIsHubOpen] = useState(false)
   const [executionAudits, setExecutionAudits] = useState(() => {
     return JSON.parse(localStorage.getItem('execution_audits')) || [];
   });
@@ -1679,6 +1681,23 @@ function App() {
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                    {!clientView && (
+                        <button 
+                            onClick={() => setIsHubOpen(true)} 
+                            className="btn btn-outline" 
+                            style={{ 
+                                padding: '0.5rem 1rem', 
+                                fontSize: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.3rem',
+                                borderColor: 'rgba(102, 178, 194, 0.4)',
+                                color: 'var(--accent-color)'
+                            }}
+                        >
+                            ? Help
+                        </button>
+                    )}
                     <button onClick={() => { setIsProjectSelected(false); setSelectedClient(''); setIsClientAuthorized(false); }} className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem' }}>⟳ Switch</button>
                 </div>
               </header>
@@ -2017,6 +2036,12 @@ function App() {
             <PinModal
                 onVerify={handlePinVerify}
                 onClose={() => { setShowPinModal(false); setClientView(false); setActiveTab('dashboard'); }}
+            />
+        )}
+        {!clientView && (
+            <KnowledgeHub
+                isOpen={isHubOpen}
+                onClose={() => setIsHubOpen(false)}
             />
         )}
         <AiAssistant 
