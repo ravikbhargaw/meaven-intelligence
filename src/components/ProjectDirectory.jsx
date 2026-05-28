@@ -1841,9 +1841,16 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             {(selectedProject.clientFinancials?.received || []).map(p => (
                                 <div key={p.id} style={{ padding: '0.8rem', background: 'var(--bg-accent)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                                        <span style={{ fontWeight: '800', color: 'var(--success)', fontSize: '0.85rem' }}>+ ₹{p.amount.toLocaleString()}</span>
+                                        <span style={{ fontWeight: '800', color: 'var(--success)', fontSize: '0.85rem' }}>+ ₹{p.amount.toLocaleString('en-IN')}</span>
                                         <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{formatDate(p.date)}</span>
                                     </div>
+                                    {(p.gstAmount > 0 || (p.baseAmount && p.baseAmount !== p.amount)) && (
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'flex', gap: '0.5rem', opacity: 0.85 }}>
+                                            <span>Base: <span style={{ color: 'var(--success)', fontWeight: '600' }}>₹{Math.round(p.baseAmount).toLocaleString('en-IN')}</span></span>
+                                            <span>•</span>
+                                            <span>GST: <span style={{ color: 'var(--accent-color)', fontWeight: '600' }}>₹{Math.round(p.gstAmount).toLocaleString('en-IN')}</span></span>
+                                        </div>
+                                    )}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
                                         <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Ref: {p.ref}</span>
                                         {((Array.isArray(p.photos) && p.photos.length > 0) || p.photo) && (
@@ -1885,9 +1892,16 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                 return (
                                     <div key={p.id} style={{ padding: '0.8rem', background: 'var(--bg-accent)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                                            <span style={{ fontWeight: '800', color: 'var(--danger)', fontSize: '0.85rem' }}>- ₹{p.amount.toLocaleString()}</span>
+                                            <span style={{ fontWeight: '800', color: 'var(--danger)', fontSize: '0.85rem' }}>- ₹{p.amount.toLocaleString('en-IN')}</span>
                                             <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{formatDate(p.date)}</span>
                                         </div>
+                                        {(p.gstAmount > 0 || (p.baseAmount && p.baseAmount !== p.amount)) && (
+                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'flex', gap: '0.5rem', opacity: 0.85 }}>
+                                                <span>Base: <span style={{ color: 'var(--success)', fontWeight: '600' }}>₹{Math.round(p.baseAmount).toLocaleString('en-IN')}</span></span>
+                                                <span>•</span>
+                                                <span>GST: <span style={{ color: 'var(--accent-color)', fontWeight: '600' }}>₹{Math.round(p.gstAmount).toLocaleString('en-IN')}</span></span>
+                                            </div>
+                                        )}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                             {vendor ? (
                                                 <div 

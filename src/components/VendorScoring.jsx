@@ -670,8 +670,20 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                 return (
                                     <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-standard)', border: '1px solid var(--border-color)' }}>
                                         <div>
-                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '1.1rem', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(p.amount / 100000).toFixed(2)}L</p>
-                                            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.date} | Ref: {p.ref}</p>
+                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '1.1rem', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{p.amount.toLocaleString('en-IN')}</p>
+                                            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                                                <span>{p.date}</span>
+                                                <span style={{ margin: '0 0.4rem' }}>|</span>
+                                                <span>Ref: {p.ref}</span>
+                                                {(activeGst > 0 || (activeBase && activeBase !== p.amount)) && (
+                                                    <>
+                                                        <span style={{ margin: '0 0.4rem' }}>|</span>
+                                                        <span style={{ color: 'var(--success)', fontWeight: '700' }}>Base: ₹{Math.round(activeBase).toLocaleString('en-IN')}</span>
+                                                        <span style={{ margin: '0 0.4rem' }}>|</span>
+                                                        <span style={{ color: 'var(--accent-color)', fontWeight: '700' }}>GST: ₹{Math.round(activeGst).toLocaleString('en-IN')}</span>
+                                                    </>
+                                                )}
+                                            </p>
                                         </div>
                                         {((Array.isArray(activePhotos) && activePhotos.length > 0) || activePhoto || activeScreenshot) && (
                                             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
