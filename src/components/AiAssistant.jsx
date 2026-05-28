@@ -53,7 +53,7 @@ const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors =
     const vendorSummaries = vendors.map(v => {
       const activeContracts = (v.contracts || []).filter(c => c.status === 'Active');
       const totalOrder = (v.contracts || []).reduce((s, c) => s + (c.orderValue || 0), 0);
-      const totalPaid = (v.contracts || []).reduce((s, c) => (c.payments || []).reduce((ss, p) => ss + (p.amount || 0), ss), 0);
+      const totalPaid = (v.contracts || []).reduce((s, c) => (c.payments || []).reduce((ss, p) => ss + (p.amount || 0), s), 0);
       return `Vendor: ${v.name} | Score: ${v.score || 'N/A'} | Active Contracts: ${activeContracts.length} | Total Order Value: ₹${(totalOrder/100000).toFixed(2)}L | Total Paid: ₹${(totalPaid/100000).toFixed(2)}L`;
     }).join('\n');
 
