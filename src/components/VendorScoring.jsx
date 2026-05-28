@@ -666,6 +666,8 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
                                 const activePhotos = p.photos || matchedPayout?.photos || [];
                                 const activePhoto = p.photo || matchedPayout?.photo || null;
                                 const activeScreenshot = p.screenshot || matchedPayout?.screenshot || null;
+                                const activeBase = p.baseAmount || matchedPayout?.baseAmount || 0;
+                                const activeGst = p.gstAmount || matchedPayout?.gstAmount || 0;
 
                                 return (
                                     <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-standard)', border: '1px solid var(--border-color)' }}>
