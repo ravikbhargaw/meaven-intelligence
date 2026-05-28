@@ -974,12 +974,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     >
                         📋 Copy Vendor Execution Link
                     </button>
-                    <button 
-                        onClick={() => { if(confirm(`Flush Project ${selectedProject.name}?`)) { onRemoveProject(selectedProject.id); setSelectedProjectId(null); } }} 
-                        style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.6rem', cursor: 'pointer', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}
-                    >
-                        🗑️ Flush Individual Loop
-                    </button>
+                    {userRole === 'SuperAdmin' && (
+                        <button 
+                            onClick={() => { if(confirm(`Flush Project ${selectedProject.name}?`)) { onRemoveProject(selectedProject.id); setSelectedProjectId(null); } }} 
+                            style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.6rem', cursor: 'pointer', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}
+                        >
+                            🗑️ Flush Individual Loop
+                        </button>
+                    )}
                 </div>
             </div>
             <div style={{ textAlign: 'right' }}>

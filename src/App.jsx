@@ -1293,7 +1293,39 @@ function App() {
         return p
     }))
   }
-  const handleRemoveProject = (id) => setProjects(prev => prev.filter(p => p.id !== id))
+  const handleRemoveProject = (id) => {
+    try {
+        const projectToDelete = projects.find(p => Number(p.id) === Number(id));
+        if (projectToDelete) {
+            const cleanProjName = projectToDelete.name.trim().toLowerCase();
+            
+            // 1. Remove matching contracts/payments from all vendors to prevent duplicacy
+            setVendors(prevVendors => prevVendors.map(v => {
+                if (!v.contracts) return v;
+                const remainingContracts = v.contracts.filter(c => 
+                    Number(c.projectId) !== Number(id) && 
+                    (c.projectName || '').trim().toLowerCase() !== cleanProjName
+                );
+                return {
+                    ...v,
+                    contracts: remainingContracts
+                };
+            }));
+
+            // 2. Explicitly delete from Supabase projects table
+            if (supabase) {
+                supabase.from('projects').delete().eq('id', String(id)).then(({ error }) => {
+                    if (error) console.error("Cloud Sync Error during Project Deletion:", error);
+                });
+            }
+        }
+        
+        // 3. Delete project from local state
+        setProjects(prev => prev.filter(p => p.id !== id));
+    } catch (e) {
+        console.error("Error deleting project:", e);
+    }
+  }
   const handleRemoveVendor = (id) => setVendors(prev => prev.filter(v => v.id !== id))
   const handleRemovePortfolio = (id) => setPortfolios(prev => prev.filter(p => p.id !== id))
   
