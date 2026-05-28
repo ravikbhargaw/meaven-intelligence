@@ -49,12 +49,14 @@ const openImageWindow = (base64Data) => {
     }
 };
 
-const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: selectedVendorIdProp, msaTemplate, onSelectVendor, onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly, userRole, onDeleteVendor }) => {
+const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: selectedVendorIdProp, msaTemplate, onSelectVendor, onAddVendor, onUpdateVendor, onAddPayment, onAddNote, onAddContract, onAddProject, onBack, isReadOnly, userRole, onDeleteVendor, onUpdateContractValue }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isContractModalOpen, setIsContractModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [selectedVendorId, setSelectedVendorId] = useState(null)
   const [activeContractId, setActiveContractId] = useState(null)
+  const [isEditingContract, setIsEditingContract] = useState(false)
+  const [editOrderVal, setEditOrderVal] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState('All')
   const [filterStatus, setFilterStatus] = useState('All')
@@ -596,8 +598,49 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.8rem', marginBottom: '2rem' }}>
                             <div style={{ padding: '0.8rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
-                                <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Contract</p>
-                                <p style={{ fontSize: '1.1rem', fontWeight: '800', margin: '0.2rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.order / 100000).toFixed(2)}L</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                                    <p style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0 }}>Contract</p>
+                                    {!isReadOnly && !isEditingContract && (
+                                        <button 
+                                            onClick={() => {
+                                                setEditOrderVal(selectedContract.orderValue || '');
+                                                setIsEditingContract(true);
+                                            }}
+                                            style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.55rem', padding: 0, fontWeight: '700' }}
+                                        >
+                                            ✏️ Edit
+                                        </button>
+                                    )}
+                                </div>
+                                {isEditingContract ? (
+                                    <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', marginTop: '0.2rem' }}>
+                                        <input 
+                                            type="number"
+                                            value={editOrderVal}
+                                            onChange={(e) => setEditOrderVal(e.target.value)}
+                                            style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', padding: '0.2rem 0.4rem', width: '90px' }}
+                                        />
+                                        <button 
+                                            onClick={() => {
+                                                if (onUpdateContractValue) {
+                                                    onUpdateContractValue(selectedVendor.id, selectedContract.id, editOrderVal);
+                                                }
+                                                setIsEditingContract(false);
+                                            }}
+                                            style={{ background: 'var(--success)', border: 'none', borderRadius: '4px', color: '#000', padding: '0.2rem 0.4rem', fontSize: '0.65rem', cursor: 'pointer', fontWeight: '800' }}
+                                        >
+                                            ✓
+                                        </button>
+                                        <button 
+                                            onClick={() => setIsEditingContract(false)}
+                                            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: '#fff', padding: '0.2rem 0.4rem', fontSize: '0.65rem', cursor: 'pointer' }}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p style={{ fontSize: '1.1rem', fontWeight: '800', margin: '0.2rem 0', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(contractFin.order / 100000).toFixed(2)}L</p>
+                                )}
                             </div>
                             <div style={{ padding: '0.8rem', background: 'rgba(50, 215, 75, 0.05)', borderRadius: '8px' }}>
                                 <p style={{ fontSize: '0.55rem', color: 'var(--success)', textTransform: 'uppercase' }}>Paid</p>

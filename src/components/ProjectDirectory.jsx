@@ -652,7 +652,7 @@ const ProjectExecutionTab = ({ selectedProject, vendors, assignedVendors, onUpda
     );
 };
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit, overheadConfig, overheadMethod, onInitializeProject }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit, overheadConfig, overheadMethod, onInitializeProject, onUpdateContractValue }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '---';
     const date = new Date(dateStr);
@@ -708,6 +708,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   const [isLinkAuditModalOpen, setIsLinkAuditModalOpen] = useState(false)
   const [auditSearchQuery, setAuditSearchQuery] = useState('')
   const [serviceOnlyAssign, setServiceOnlyAssign] = useState(false)
+  const [editingContractId, setEditingContractId] = useState(null)
+  const [editContractVal, setEditContractVal] = useState('')
   
   useEffect(() => {
     if (activeProjectId) {
@@ -1352,8 +1354,11 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                             </div>
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                                {assignedVendors.length > 0 ? (
-                                    assignedVendors.map(vendor => (
+                                {assignedVendors.length > 0 ? assignedVendors.map(vendor => {
+                                    const contract = (vendor.contracts || []).find(c => c && (Number(c.projectId) === Number(selectedProject.id) || c.projectName === selectedProject.name));
+                                    const isEditing = contract && editingContractId === contract.id;
+                                    
+                                    return (
                                         <div key={vendor.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                             <div 
                                                 onClick={() => { window.navigateToVendorBench?.(vendor.id); }}
@@ -1362,7 +1367,57 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                 <span style={{ fontSize: '1rem' }}>🤝</span>
                                                 <div>
                                                     <p style={{ fontSize: '0.8rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>{vendor.name}</p>
-                                                    <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', margin: 0 }}>Category: <span style={{ color: 'var(--accent-color)', fontWeight: '700' }}>{vendor.category}</span> • MI SCORE: {vendor.miScore || vendor.score || 85}%</p>
+                                                    <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                                        <span>Category: <span style={{ color: 'var(--accent-color)', fontWeight: '700' }}>{vendor.category}</span> • MI SCORE: {vendor.miScore || vendor.score || 85}%</span>
+                                                        {contract && (
+                                                            <>
+                                                                <span>•</span>
+                                                                {isEditing ? (
+                                                                    <span style={{ display: 'flex', gap: '0.2rem', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                                                                        <input 
+                                                                            type="number"
+                                                                            value={editContractVal}
+                                                                            onChange={(e) => setEditContractVal(e.target.value)}
+                                                                            style={{ background: 'var(--bg-accent)', border: '1px solid var(--accent-color)', borderRadius: '4px', color: '#fff', fontSize: '0.65rem', padding: '0.1rem 0.2rem', width: '70px' }}
+                                                                        />
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                if (onUpdateContractValue) {
+                                                                                    onUpdateContractValue(vendor.id, contract.id, editContractVal);
+                                                                                }
+                                                                                setEditingContractId(null);
+                                                                            }}
+                                                                            style={{ background: 'var(--success)', border: 'none', borderRadius: '4px', color: '#000', padding: '0.1rem 0.3rem', fontSize: '0.55rem', cursor: 'pointer', fontWeight: '800' }}
+                                                                        >
+                                                                            ✓
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => setEditingContractId(null)}
+                                                                            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', color: '#fff', padding: '0.1rem 0.3rem', fontSize: '0.55rem', cursor: 'pointer' }}
+                                                                        >
+                                                                            ✕
+                                                                        </button>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                        <span>CONTRACT: <span style={{ color: '#fff', fontWeight: '800' }}>₹{(contract.orderValue / 100000).toFixed(2)}L</span></span>
+                                                                        {!isReadOnly && (
+                                                                            <span 
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setEditContractVal(contract.orderValue || '');
+                                                                                    setEditingContractId(contract.id);
+                                                                                }}
+                                                                                style={{ color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.55rem', fontWeight: '800', marginLeft: '0.2rem' }}
+                                                                            >
+                                                                                ✏️ Edit
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <button 
@@ -1375,14 +1430,15 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                 REPLACE PARTNER
                                             </button>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0' }}>
-                                        <span style={{ fontSize: '1.2rem', color: 'var(--danger)' }}>⚠️</span>
-                                        <p style={{ fontSize: '0.85rem', fontWeight: '800', margin: 0, color: 'var(--danger)' }}>UNASSIGNED</p>
-                                    </div>
-                                )}
-                            </div>
+                                    );
+                                })
+                            : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0' }}>
+                                    <span style={{ fontSize: '1.2rem', color: 'var(--danger)' }}>⚠️</span>
+                                    <p style={{ fontSize: '0.85rem', fontWeight: '800', margin: 0, color: 'var(--danger)' }}>UNASSIGNED</p>
+                                </div>
+                            )}
+                        </div>
 
                             {/* MATERIAL-ONLY WARNING */}
                             {(() => {

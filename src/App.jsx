@@ -1244,6 +1244,64 @@ function App() {
     }))
   }
 
+  const handleUpdateVendorContractValue = (vendorId, contractId, newOrderValue) => {
+    try {
+        const parsedValue = parseMoney(newOrderValue) || 0;
+        
+        // 1. Update vendors contracts state
+        setVendors(prev => (prev || []).map(v => {
+            if (String(v.id) === String(vendorId)) {
+                return {
+                    ...v,
+                    contracts: (v.contracts || []).map(c => {
+                        if (String(c.id) === String(contractId)) {
+                            return {
+                                ...c,
+                                orderValue: parsedValue
+                            }
+                        }
+                        return c
+                    })
+                }
+            }
+            return v
+        }))
+
+        // 2. Synchronize to Project history log and last activity
+        setVendors(currentVendors => {
+            const vendor = (currentVendors || []).find(v => String(v.id) === String(vendorId))
+            if (vendor) {
+                const contract = (vendor.contracts || []).find(c => String(c.id) === String(contractId))
+                if (contract) {
+                    const projectName = contract.projectName
+                    setProjects(prev => (prev || []).map(p => {
+                        if (p.name === projectName) {
+                            return {
+                                ...p,
+                                lastActivityAt: new Date().toISOString(),
+                                history: [
+                                    ...(p.history || []),
+                                    {
+                                        id: Date.now(),
+                                        type: 'system',
+                                        title: 'Contract Value Adjusted',
+                                        detail: `${vendor.name}'s project contract value adjusted to ₹${parsedValue.toLocaleString('en-IN')}.`,
+                                        date: new Date().toISOString().split('T')[0]
+                                    }
+                                ]
+                            }
+                        }
+                        return p
+                    }))
+                }
+            }
+            return currentVendors;
+        });
+    } catch (err) {
+        console.error("Error in handleUpdateVendorContractValue:", err)
+    }
+  }
+
   const handleAssignVendor = (projectId, vendorId, orderValue) => {
     const vendor = vendors.find(v => String(v.id) === String(vendorId))
     const project = projects.find(p => String(p.id) === String(projectId))
@@ -1688,6 +1746,7 @@ function App() {
                     onAddVendor={handleAddVendor}
                     onAssignPartner={handleAssignVendor}
                     onReassignPartner={handleReassignProject}
+                    onUpdateContractValue={handleUpdateVendorContractValue}
                     onAddNote={handleProjectAddNote}
                     onToggleVisibility={handleToggleTimelineVisibility}
                     userRole={user?.role}
@@ -1708,6 +1767,7 @@ function App() {
                     onSelectVendor={setSelectedVendorId}
                     onAddContract={handleAddVendorContract} 
                     onAddPayment={handleAddVendorPayment} 
+                    onUpdateContractValue={handleUpdateVendorContractValue}
                     onUpdateVendor={handleUpdateVendor}
                     onAddVendor={handleAddVendor}
                     onAddNote={handleVendorAddNote}
