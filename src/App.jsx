@@ -1546,6 +1546,7 @@ function App() {
                     onViewAudit={(audit) => { setViewingAudit(audit); setActiveTab('audit'); }}
                     overheadConfig={overheadConfig}
                     overheadMethod={overheadMethod}
+                    onInitializeProject={() => setIsNewProjectModalOpen(true)}
                   />
                 )}
 

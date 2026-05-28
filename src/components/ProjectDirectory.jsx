@@ -652,7 +652,7 @@ const ProjectExecutionTab = ({ selectedProject, vendors, assignedVendors, onUpda
     );
 };
 
-const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit, overheadConfig, overheadMethod }) => {
+const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], activeProjectId, onSelectProject, onAddExpense, onUpdateValue, onLogPayment, onLogPayout, onAddVendor, onAssignPartner, onReassignPartner, onAddNote, onToggleVisibility, userRole, onRemoveProject, onViewAudit, overheadConfig, overheadMethod, onInitializeProject }) => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '---';
     const date = new Date(dateStr);
@@ -2520,7 +2520,7 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
             🏦 STRATEGIC PORTFOLIO HUB
         </div>
       </div>
-      <div style={{ marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <input 
           type="text" 
           placeholder="Search by project name or client..." 
@@ -2528,6 +2528,27 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{ width: '100%', maxWidth: '400px', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.75rem 1rem', color: '#fff' }}
         />
+        {onInitializeProject && userRole !== 'Client' && (
+          <button 
+            onClick={onInitializeProject} 
+            className="btn btn-primary" 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              fontSize: '0.8rem', 
+              padding: '0.75rem 1.5rem', 
+              fontWeight: '800',
+              borderRadius: '8px',
+              background: 'var(--accent-color)',
+              color: '#000',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            ➕ INITIALIZE PROJECT LOOP
+          </button>
+        )}
       </div>
       <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
         {(filteredProjects || []).map(p => {
