@@ -1387,7 +1387,7 @@ function App() {
                   <>
                     <SidebarGroupHeader label="Site Execution" />
                     {(user?.role === 'SuperAdmin' || user?.role === 'Admin') && <SidebarItem active={activeTab === 'projects'} onClick={() => handleNavigate('projects')} icon="📁" label="Operations Hub" />}
-                    <SidebarItem active={activeTab === 'audit'} onClick={() => handleNavigate('audit')} icon="📋" label="Execution Audit" />
+                     <SidebarItem active={activeTab === 'audit'} onClick={() => handleNavigate('audit')} icon="📋" label="Site Audit" />
                     <SidebarItem active={activeTab === 'postQC'} onClick={() => handleNavigate('postQC')} icon="🔍" label="Post-Install QC" />
                   </>
                 )}
@@ -1488,6 +1488,9 @@ function App() {
                           : activeTab === 'strategy' ? 'Executive Hub'
                           : activeTab === 'reports' ? 'Intel Reports'
                           : activeTab === 'ledger' ? 'Business Ledger'
+                          : activeTab === 'audit' ? 'Site Audit'
+                          : activeTab === 'postQC' ? 'Post-Install QC'
+                          : activeTab === 'readiness' ? 'Site Readiness'
                           : 'Admin'}
                     </h1>
                   </div>
