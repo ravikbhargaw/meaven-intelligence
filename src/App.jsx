@@ -1617,6 +1617,7 @@ function App() {
                     overheadConfig={overheadConfig}
                     overheadMethod={overheadMethod}
                     onInitializeProject={() => setIsNewProjectModalOpen(true)}
+                    onRemoveProject={handleRemoveProject}
                   />
                 )}
 
