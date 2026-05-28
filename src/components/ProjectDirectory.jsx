@@ -689,6 +689,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   const [editGstRate, setEditGstRate] = useState(18)
   const [paymentBase, setPaymentBase] = useState(0)
   const [paymentGst, setPaymentGst] = useState(0)
+  const [receiptAmountReceived, setReceiptAmountReceived] = useState(0)
+  const [receiptGstRate, setReceiptGstRate] = useState(18)
   const [payoutBase, setPayoutBase] = useState(0)
   const [payoutGst, setPayoutGst] = useState(0)
   const [isRegisteringNew, setIsRegisteringNew] = useState(false)
@@ -717,6 +719,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
     if (isPaymentModalOpen) {
       setPaymentBase(0)
       setPaymentGst(0)
+      setReceiptAmountReceived(0)
+      setReceiptGstRate(18)
     }
   }, [isPaymentModalOpen])
 
@@ -2255,40 +2259,50 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        const finalAmount = paymentBase + paymentGst
-                        onLogPayment(selectedProject.id, finalAmount, formData.get('ref'), formData.get('date'), paymentScreenshots, formData.get('type'), paymentBase, paymentGst)
+                        const baseCalculated = receiptGstRate === 0 ? receiptAmountReceived : (receiptAmountReceived / (1 + receiptGstRate / 100))
+                        const gstCalculated = receiptAmountReceived - baseCalculated
+                        onLogPayment(selectedProject.id, receiptAmountReceived, formData.get('ref'), formData.get('date'), paymentScreenshots, formData.get('type'), baseCalculated, gstCalculated)
                         setPaymentScreenshots([])
                         setIsPaymentModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600' }}>BASE AMOUNT RECEIVED</label>
-                            <input 
-                                type="number" 
-                                step="any" 
-                                required 
-                                placeholder="Base Amount (INR)" 
-                                value={paymentBase || ''} 
-                                onChange={(e) => setPaymentBase(parseMoney(e.target.value))} 
-                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} 
-                            />
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600' }}>GST INCLUDED (DROPDOWN)</label>
+                            <select 
+                                value={receiptGstRate} 
+                                onChange={(e) => setReceiptGstRate(Number(e.target.value))}
+                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}
+                            >
+                                <option value={0}>0%</option>
+                                <option value={5}>5%</option>
+                                <option value={18}>18%</option>
+                                <option value={28}>28%</option>
+                            </select>
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600' }}>GST AMOUNT RECEIVED</label>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600' }}>AMOUNT RECEIVED</label>
                             <input 
                                 type="number" 
                                 step="any" 
                                 required 
-                                placeholder="GST Amount (INR)" 
-                                value={paymentGst || ''} 
-                                onChange={(e) => setPaymentGst(parseMoney(e.target.value))} 
+                                placeholder="Amount Received" 
+                                value={receiptAmountReceived || ''} 
+                                onChange={(e) => setReceiptAmountReceived(parseMoney(e.target.value))} 
                                 style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} 
                             />
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(52, 199, 89, 0.1)', border: '1px solid rgba(52, 199, 89, 0.2)', padding: '0.8rem', borderRadius: '8px', marginTop: '0.2rem' }}>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>FINAL AMOUNT RECEIVED (AUTO)</span>
-                            <span style={{ fontSize: '0.95rem', color: 'var(--success)', fontWeight: '800' }}>
-                                ₹{(paymentBase + paymentGst).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                            </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', background: 'rgba(52, 199, 89, 0.1)', border: '1px solid rgba(52, 199, 89, 0.2)', padding: '0.8rem', borderRadius: '8px', marginTop: '0.2rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>GST AMOUNT (amount received / {(1 + receiptGstRate / 100).toFixed(2)})</span>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--success)', fontWeight: '800' }}>
+                                    ₹{(receiptGstRate === 0 ? receiptAmountReceived : (receiptAmountReceived / (1 + receiptGstRate / 100))).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.4rem' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>TAX PORTION (Calculated)</span>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: '700' }}>
+                                    ₹{(receiptAmountReceived - (receiptGstRate === 0 ? receiptAmountReceived : (receiptAmountReceived / (1 + receiptGstRate / 100)))).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
                         </div>
                         <select name="type" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
                             <option value="">Select Type (Optional)</option>
