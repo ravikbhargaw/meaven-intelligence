@@ -1321,7 +1321,10 @@ function App() {
         }
         
         // 3. Delete project from local state
-        setProjects(prev => prev.filter(p => p.id !== id));
+        setProjects(prev => prev.filter(p => Number(p.id) !== Number(id)));
+        if (Number(activeProjectId) === Number(id)) {
+            setActiveProjectId(null);
+        }
     } catch (e) {
         console.error("Error deleting project:", e);
     }
