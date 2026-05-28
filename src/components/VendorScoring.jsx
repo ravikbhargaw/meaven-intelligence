@@ -611,46 +611,60 @@ const VendorScoring = ({ vendors, projects, portfolios = [], selectedVendorId: s
 
                         <h4 style={{ fontSize: '0.9rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Recent Project Transactions</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                            {(selectedContract.payments || []).length > 0 ? selectedContract.payments.map(p => (
-                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-standard)', border: '1px solid var(--border-color)' }}>
-                                    <div>
-                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '1.1rem', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(p.amount / 100000).toFixed(2)}L</p>
-                                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.date} | Ref: {p.ref}</p>
-                                    </div>
-                                    {((Array.isArray(p.photos) && p.photos.length > 0) || p.photo || p.screenshot) && (
-                                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                                            {p.screenshot && !p.photo && (!p.photos || p.photos.length === 0) && (
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => isPdf(p.screenshot) ? openAttachmentWindow(p.screenshot) : openImageWindow(p.screenshot)} 
-                                                    style={{ background: isPdf(p.screenshot) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(p.screenshot) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(p.screenshot) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
-                                                >
-                                                    {isPdf(p.screenshot) ? '📄 PDF' : 'Evidence 📎'}
-                                                </button>
-                                            )}
-                                            {p.photo && (!Array.isArray(p.photos) || p.photos.length === 0) && (
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => isPdf(p.photo) ? openAttachmentWindow(p.photo) : openImageWindow(p.photo)} 
-                                                    style={{ background: isPdf(p.photo) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(p.photo) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(p.photo) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
-                                                >
-                                                    {isPdf(p.photo) ? '📄 PDF' : 'Evidence 📎'}
-                                                </button>
-                                            )}
-                                            {(Array.isArray(p.photos) ? p.photos : []).map((att, idx) => (
-                                                <button 
-                                                    key={idx}
-                                                    type="button"
-                                                    onClick={() => isPdf(att) ? openAttachmentWindow(att) : openImageWindow(att)} 
-                                                    style={{ background: isPdf(att) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(att) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(att) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
-                                                >
-                                                    {isPdf(att) ? `📄 PDF ${idx + 1}` : `📎 Img ${idx + 1}`}
-                                                </button>
-                                            ))}
+                            {(selectedContract.payments || []).length > 0 ? selectedContract.payments.map(p => {
+                                // Dynamic Self-Healing Fallback: Check projects for historical attachments if they aren't synced in local payment
+                                const projObj = (projects || []).find(proj => proj && (proj.name === selectedContract.projectName || Number(proj.id) === Number(selectedContract.projectId)));
+                                const matchedPayout = projObj ? (projObj.payouts || []).find(pay => 
+                                    pay && 
+                                    (Number(pay.amount) === Number(p.amount) || Number(pay.baseAmount) === Number(p.amount)) && 
+                                    (String(pay.ref) === String(p.ref) || String(pay.date) === String(p.date))
+                                ) : null;
+
+                                const activePhotos = p.photos || matchedPayout?.photos || [];
+                                const activePhoto = p.photo || matchedPayout?.photo || null;
+                                const activeScreenshot = p.screenshot || matchedPayout?.screenshot || null;
+
+                                return (
+                                    <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-standard)', border: '1px solid var(--border-color)' }}>
+                                        <div>
+                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '1.1rem', filter: isReadOnly ? 'blur(6px)' : 'none' }}>₹{(p.amount / 100000).toFixed(2)}L</p>
+                                            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{p.date} | Ref: {p.ref}</p>
                                         </div>
-                                    )}
-                                </div>
-                            )) : <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '2rem' }}>No payments logged for this contract yet.</p>}
+                                        {((Array.isArray(activePhotos) && activePhotos.length > 0) || activePhoto || activeScreenshot) && (
+                                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                                {activeScreenshot && !activePhoto && (!activePhotos || activePhotos.length === 0) && (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => isPdf(activeScreenshot) ? openAttachmentWindow(activeScreenshot) : openImageWindow(activeScreenshot)} 
+                                                        style={{ background: isPdf(activeScreenshot) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(activeScreenshot) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(activeScreenshot) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                    >
+                                                        {isPdf(activeScreenshot) ? '📄 PDF' : 'Evidence 📎'}
+                                                    </button>
+                                                )}
+                                                {activePhoto && (!Array.isArray(activePhotos) || activePhotos.length === 0) && (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => isPdf(activePhoto) ? openAttachmentWindow(activePhoto) : openImageWindow(activePhoto)} 
+                                                        style={{ background: isPdf(activePhoto) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(activePhoto) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(activePhoto) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                    >
+                                                        {isPdf(activePhoto) ? '📄 PDF' : 'Evidence 📎'}
+                                                    </button>
+                                                )}
+                                                {(Array.isArray(activePhotos) ? activePhotos : []).map((att, idx) => (
+                                                    <button 
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => isPdf(att) ? openAttachmentWindow(att) : openImageWindow(att)} 
+                                                        style={{ background: isPdf(att) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', border: '1px solid ' + (isPdf(att) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), borderRadius: '4px', color: isPdf(att) ? '#ff9500' : 'var(--accent-color)', padding: '0.2rem 0.5rem', fontSize: '0.6rem', cursor: 'pointer', fontWeight: '800' }}
+                                                    >
+                                                        {isPdf(att) ? `📄 PDF ${idx + 1}` : `📎 Img ${idx + 1}`}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }) : <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', padding: '2rem' }}>No payments logged for this contract yet.</p>}
                         </div>
                     </div>
                 ) : (
