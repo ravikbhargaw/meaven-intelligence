@@ -49,16 +49,27 @@ export const getProjectCogs = (project, vendors, includeInactive = false) => {
   if (!project) return 0;
   const vendorList = vendors || [];
   return vendorList.reduce((sum, v) => {
-    const contract = (v.contracts || []).find(c => {
-      if (c.projectName !== project.name) return false;
+    const projectContracts = (v.contracts || []).filter(c => {
+      // 1. Lowercase & trimmed matching to prevent typo and spacing errors
+      const nameMatch = c.projectName && project.name && c.projectName.toLowerCase().trim() === project.name.toLowerCase().trim();
+      
+      // 2. Future-safe Dual-Key projectId matching
+      const idMatch = c.projectId && project.id && String(c.projectId) === String(project.id);
+      
+      if (!nameMatch && !idMatch) return false;
+      
       if (includeInactive) return true;
       return c.status === 'Active' || !c.status;  // default: Active-only
     });
-    if (!contract) return sum;
-    const base = parseMoney(contract.baseAmount) > 0
-      ? parseMoney(contract.baseAmount)
-      : parseMoney(contract.orderValue);
-    return sum + base;
+    
+    const vendorProjectSum = projectContracts.reduce((vSum, c) => {
+      const base = parseMoney(c.baseAmount) > 0
+        ? parseMoney(c.baseAmount)
+        : parseMoney(c.orderValue);
+      return vSum + base;
+    }, 0);
+    
+    return sum + vendorProjectSum;
   }, 0);
 };
 
