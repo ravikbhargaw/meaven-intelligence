@@ -1617,7 +1617,7 @@ function App() {
                           <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '2rem', flex: 1 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                                   <div>
-                                      <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900' }}>Validation Ledger</h2>
+                                      <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900' }}>Site Audit Hub</h2>
                                       <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                                           Technical readiness audits and inspection reports.
                                       </p>
@@ -1715,7 +1715,7 @@ function App() {
                                       onClick={() => { setViewingAudit(null); setIsCreatingAudit(false); }}
                                       style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
                                   >
-                                      ← BACK TO LEDGER
+                                      ← BACK TO HUB
                                   </button>
                               </div>
                               <div style={{ flex: 1 }}>
