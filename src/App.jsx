@@ -750,15 +750,19 @@ function App() {
     setPortfolios(prev => [...(prev || []), newPortfolio]); setSelectedClient(newPortfolio.name); setIsProjectSelected(true); setActiveTab('dashboard');
   }
 
-  const handleLogPayment = (projectId, amount, ref, date, photos, type) => {
+  const handleLogPayment = (projectId, amount, ref, date, photos, type, baseAmount, gstAmount) => {
     try {
         setProjects(prev => (prev || []).map(p => {
             if (p && Number(p.id) === Number(projectId)) {
                 const financials = p.clientFinancials || { totalValue: 0, requests: [], received: [] }
                 const parsedAmount = parseMoney(amount) || 0
+                const parsedBase = parseMoney(baseAmount) || parsedAmount
+                const parsedGst = parseMoney(gstAmount) || 0
                 const newPayment = { 
                     id: Date.now(), 
                     amount: parsedAmount, 
+                    baseAmount: parsedBase,
+                    gstAmount: parsedGst,
                     ref: ref || '', 
                     date: date || new Date().toISOString().split('T')[0], 
                     photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
@@ -773,7 +777,7 @@ function App() {
                         id: Date.now() + 1, 
                         type: 'success', 
                         title: 'Payment Received', 
-                        detail: `₹${parsedAmount.toLocaleString()} credited. Ref: ${ref || ''}${type ? ` (Type: ${type})` : ''}`, 
+                        detail: `₹${parsedAmount.toLocaleString()} credited (Base: ₹${parsedBase.toLocaleString()}, GST: ₹${parsedGst.toLocaleString()}). Ref: ${ref || ''}${type ? ` (Type: ${type})` : ''}`, 
                         timestamp: new Date().toISOString(),
                         isClientVisible: false
                     }]
@@ -786,15 +790,20 @@ function App() {
     }
   }
 
-  const handleLogPayout = (projectId, amount, ref, date, photos, vendorId, type) => {
+  const handleLogPayout = (projectId, amount, ref, date, photos, vendorId, type, baseAmount, gstAmount) => {
     try {
+        const parsedAmount = parseMoney(amount) || 0
+        const parsedBase = parseMoney(baseAmount) || parsedAmount
+        const parsedGst = parseMoney(gstAmount) || 0
+
         // 1. Update Project Ledger
         setProjects(prev => (prev || []).map(p => {
             if (p && Number(p.id) === Number(projectId)) {
-                const parsedAmount = parseMoney(amount) || 0
                 const newPayout = { 
                     id: Date.now(), 
                     amount: parsedAmount, 
+                    baseAmount: parsedBase,
+                    gstAmount: parsedGst,
                     ref: ref || '', 
                     date: date || new Date().toISOString().split('T')[0], 
                     photo: Array.isArray(photos) ? (photos[0] || null) : (photos || null),
@@ -810,7 +819,7 @@ function App() {
                         id: Date.now() + 1, 
                         type: 'warning', 
                         title: 'Vendor Payout', 
-                        detail: `₹${parsedAmount.toLocaleString()} debited. Ref: ${ref || ''}${type ? ` (Type: ${type})` : ''}`, 
+                        detail: `₹${parsedAmount.toLocaleString()} debited (Base: ₹${parsedBase.toLocaleString()}, GST: ₹${parsedGst.toLocaleString()}). Ref: ${ref || ''}${type ? ` (Type: ${type})` : ''}`, 
                         timestamp: new Date().toISOString(),
                         isClientVisible: false
                     }]
@@ -833,7 +842,15 @@ function App() {
                                     ...c,
                                     payments: [
                                         ...(c.payments || []),
-                                        { id: Date.now(), amount: parseMoney(amount) || 0, date: date || new Date().toISOString().split('T')[0], ref: ref || '', type: type || '' }
+                                        { 
+                                            id: Date.now(), 
+                                            amount: parsedAmount, 
+                                            baseAmount: parsedBase,
+                                            gstAmount: parsedGst,
+                                            date: date || new Date().toISOString().split('T')[0], 
+                                            ref: ref || '', 
+                                            type: type || '' 
+                                        }
                                     ]
                                 }
                             }

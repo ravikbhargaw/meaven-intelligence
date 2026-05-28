@@ -685,6 +685,12 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false)
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false)
   const [isEditingValue, setIsEditingValue] = useState(false)
+  const [editBaseAmount, setEditBaseAmount] = useState(0)
+  const [editGstRate, setEditGstRate] = useState(18)
+  const [paymentBase, setPaymentBase] = useState(0)
+  const [paymentGst, setPaymentGst] = useState(0)
+  const [payoutBase, setPayoutBase] = useState(0)
+  const [payoutGst, setPayoutGst] = useState(0)
   const [isRegisteringNew, setIsRegisteringNew] = useState(false)
   const [noteText, setNoteText] = useState('')
   
@@ -706,6 +712,20 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
         setSelectedProjectId(activeProjectId)
     }
   }, [activeProjectId])
+
+  useEffect(() => {
+    if (isPaymentModalOpen) {
+      setPaymentBase(0)
+      setPaymentGst(0)
+    }
+  }, [isPaymentModalOpen])
+
+  useEffect(() => {
+    if (isPayoutModalOpen) {
+      setPayoutBase(0)
+      setPayoutGst(0)
+    }
+  }, [isPayoutModalOpen])
 
   useEffect(() => {
     if (isLinkAuditModalOpen) {
@@ -1148,49 +1168,88 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         {/* Financial Metrics Row */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                             {/* Contract Value */}
-                            <div style={{ background: 'var(--bg-accent)', padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                                <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.3rem', margin: 0 }}>Contract Value</p>
+                            <div style={{ background: 'var(--bg-accent)', padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', margin: 0 }}>Contract Value</p>
                                 {isEditingValue ? (
-                                    <input 
-                                        autoFocus type="number" defaultValue={pl.revenue || ''}
-                                        onBlur={(e) => { 
-                                            if (e.target.value && e.target.value !== '0') {
-                                                onUpdateValue(selectedProject.id, { 
-                                                    clientFinancials: { 
-                                                        ...(selectedProject.clientFinancials || {}), 
-                                                        totalValue: parseMoney(e.target.value) 
-                                                    } 
-                                                }); 
-                                            }
-                                            setIsEditingValue(false); 
-                                        }}
-                                        onKeyDown={(e) => { 
-                                            if (e.key === 'Enter') { 
-                                                if (e.target.value && e.target.value !== '0') {
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.4rem' }}>
+                                        <div>
+                                            <label style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.1rem' }}>BASE VALUE (INR)</label>
+                                            <input 
+                                                autoFocus
+                                                type="number" 
+                                                value={editBaseAmount || ''} 
+                                                onChange={(e) => setEditBaseAmount(parseMoney(e.target.value))}
+                                                placeholder="Base Amount"
+                                                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0.3rem', color: 'var(--text-primary)', fontSize: '0.75rem', width: '100%' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.1rem' }}>GST RATE</label>
+                                            <select 
+                                                value={editGstRate} 
+                                                onChange={(e) => setEditGstRate(Number(e.target.value))}
+                                                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0.3rem', color: 'var(--text-primary)', fontSize: '0.75rem', width: '100%' }}
+                                            >
+                                                <option value={5}>5%</option>
+                                                <option value={18}>18%</option>
+                                                <option value={28}>28%</option>
+                                            </select>
+                                        </div>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--accent-color)', fontWeight: '800', marginTop: '0.2rem' }}>
+                                            Final Value: ₹{Math.round(editBaseAmount + (editBaseAmount * editGstRate / 100)).toLocaleString('en-IN')}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.2rem' }}>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setIsEditingValue(false)} 
+                                                style={{ flex: 1, background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem', borderRadius: '4px', fontSize: '0.6rem', cursor: 'pointer' }}
+                                            >Cancel</button>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => {
                                                     onUpdateValue(selectedProject.id, { 
                                                         clientFinancials: { 
                                                             ...(selectedProject.clientFinancials || {}), 
-                                                            totalValue: parseMoney(e.target.value) 
+                                                            baseAmount: editBaseAmount,
+                                                            gstRate: editGstRate,
+                                                            totalValue: Math.round(editBaseAmount + (editBaseAmount * editGstRate / 100)) 
                                                         } 
                                                     }); 
-                                                }
-                                                setIsEditingValue(false); 
-                                            }
-                                        }}
-                                        style={{ background: 'var(--bg-primary)', border: '1px solid var(--accent-color)', borderRadius: '4px', padding: '0.2rem', color: 'var(--text-primary)', fontSize: '0.85rem', width: '100%' }}
-                                    />
+                                                    setIsEditingValue(false); 
+                                                }}
+                                                style={{ flex: 1, background: 'var(--accent-color)', border: 'none', color: '#000', padding: '0.25rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '800', cursor: 'pointer' }}
+                                            >Save</button>
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <p style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>₹{(pl.revenue / 100000).toFixed(2)}L</p>
-                                        {(pl.revenue === 0 || userRole === 'SuperAdmin') ? (
-                                            <button 
-                                                onClick={() => setIsEditingValue(true)} 
-                                                title={pl.revenue > 0 ? "Super Admin Override" : "Set Contract Value"}
-                                                style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.7rem' }}
-                                            >✎</button>
-                                        ) : (
-                                            <span title="Locked by Institutional Protocol. Only Super Admin can modify." style={{ fontSize: '0.75rem', opacity: 0.5, cursor: 'help' }}>🔒</span>
-                                        )}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.3rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>Base:</span>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-primary)' }}>₹{selectedProject.clientFinancials?.baseAmount ? selectedProject.clientFinancials.baseAmount.toLocaleString('en-IN') : (selectedProject.clientFinancials?.totalValue ? selectedProject.clientFinancials.totalValue.toLocaleString('en-IN') : '0')}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>GST Rate:</span>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-primary)' }}>{selectedProject.clientFinancials?.gstRate || 18}%</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--border-color)', paddingTop: '0.25rem', marginTop: '0.1rem' }}>
+                                            <span style={{ fontSize: '0.65rem', color: 'var(--accent-color)', fontWeight: '850' }}>Final:</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-primary)' }}>₹{pl.revenue ? pl.revenue.toLocaleString('en-IN') : '0'}</span>
+                                                {(pl.revenue === 0 || userRole === 'SuperAdmin') ? (
+                                                    <button 
+                                                        onClick={() => {
+                                                            setEditBaseAmount(selectedProject.clientFinancials?.baseAmount || selectedProject.clientFinancials?.totalValue || 0);
+                                                            setEditGstRate(selectedProject.clientFinancials?.gstRate || 18);
+                                                            setIsEditingValue(true);
+                                                        }} 
+                                                        title={pl.revenue > 0 ? "Super Admin Override" : "Set Contract Value"}
+                                                        style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.75rem', padding: 0 }}
+                                                    >✎</button>
+                                                ) : (
+                                                    <span title="Locked by Institutional Protocol. Only Super Admin can modify." style={{ fontSize: '0.7rem', opacity: 0.5, cursor: 'help' }}>🔒</span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -2196,11 +2255,41 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onLogPayment(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), paymentScreenshots, formData.get('type'))
+                        const finalAmount = paymentBase + paymentGst
+                        onLogPayment(selectedProject.id, finalAmount, formData.get('ref'), formData.get('date'), paymentScreenshots, formData.get('type'), paymentBase, paymentGst)
                         setPaymentScreenshots([])
                         setIsPaymentModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <input name="amount" type="number" required placeholder="Amount" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600' }}>BASE AMOUNT RECEIVED</label>
+                            <input 
+                                type="number" 
+                                step="any" 
+                                required 
+                                placeholder="Base Amount (INR)" 
+                                value={paymentBase || ''} 
+                                onChange={(e) => setPaymentBase(parseMoney(e.target.value))} 
+                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} 
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600' }}>GST AMOUNT RECEIVED</label>
+                            <input 
+                                type="number" 
+                                step="any" 
+                                required 
+                                placeholder="GST Amount (INR)" 
+                                value={paymentGst || ''} 
+                                onChange={(e) => setPaymentGst(parseMoney(e.target.value))} 
+                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} 
+                            />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(52, 199, 89, 0.1)', border: '1px solid rgba(52, 199, 89, 0.2)', padding: '0.8rem', borderRadius: '8px', marginTop: '0.2rem' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>FINAL AMOUNT RECEIVED (AUTO)</span>
+                            <span style={{ fontSize: '0.95rem', color: 'var(--success)', fontWeight: '800' }}>
+                                ₹{(paymentBase + paymentGst).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
                         <select name="type" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
                             <option value="">Select Type (Optional)</option>
                             <option value="Advance">Advance</option>
@@ -2263,7 +2352,8 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     <form onSubmit={(e) => {
                         e.preventDefault()
                         const formData = new FormData(e.currentTarget)
-                        onLogPayout(selectedProject.id, formData.get('amount'), formData.get('ref'), formData.get('date'), payoutScreenshots, formData.get('vendorId'), formData.get('type'))
+                        const finalAmount = payoutBase + payoutGst
+                        onLogPayout(selectedProject.id, finalAmount, formData.get('ref'), formData.get('date'), payoutScreenshots, formData.get('vendorId'), formData.get('type'), payoutBase, payoutGst)
                         setPayoutScreenshots([])
                         setIsPayoutModalOpen(false)
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -2276,7 +2366,36 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                 <option value="" disabled>⚠️ No partners assigned to this project yet</option>
                             )}
                         </select>
-                        <input name="amount" type="number" required placeholder="Amount" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} />
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600' }}>BASE AMOUNT PAID</label>
+                            <input 
+                                type="number" 
+                                step="any" 
+                                required 
+                                placeholder="Base Amount Paid (INR)" 
+                                value={payoutBase || ''} 
+                                onChange={(e) => setPayoutBase(parseMoney(e.target.value))} 
+                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} 
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem', fontWeight: '600' }}>GST AMOUNT PAID</label>
+                            <input 
+                                type="number" 
+                                step="any" 
+                                required 
+                                placeholder="GST Amount Paid (INR)" 
+                                value={payoutGst || ''} 
+                                onChange={(e) => setPayoutGst(parseMoney(e.target.value))} 
+                                style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }} 
+                            />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 69, 58, 0.1)', border: '1px solid rgba(255, 69, 58, 0.2)', padding: '0.8rem', borderRadius: '8px', marginTop: '0.2rem' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '600' }}>FINAL AMOUNT PAID (AUTO)</span>
+                            <span style={{ fontSize: '0.95rem', color: 'var(--danger)', fontWeight: '800' }}>
+                                ₹{(payoutBase + payoutGst).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </span>
+                        </div>
                         <select name="type" style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.7rem', color: '#fff', fontSize: '0.85rem' }}>
                             <option value="">Select Type (Optional)</option>
                             <option value="Vendor Advance">Vendor Advance</option>
