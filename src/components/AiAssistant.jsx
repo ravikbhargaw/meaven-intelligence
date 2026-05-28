@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
 const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -8,11 +11,11 @@ const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors =
   const scrollRef = useRef(null);
 
   const contextSuggestions = {
-    dashboard: ["Show portfolio health", "What's the EBITDA trend?", "Identify high-risk projects"],
-    projects: ["Check vendor payouts", "Update project milestones", "Financial summary for Project X"],
-    vendors: ["Top performing vendors", "Vendor capacity report", "Onboard new partner"],
-    readiness: ["Audit completion rate", "Site readiness blockers", "Lock project coordinates"],
-    calculator: ["Calculate ROI", "Technical specs help", "Export estimation"]
+    dashboard: ["What's my EBITDA trend?", "Which project is underperforming?", "Portfolio health summary"],
+    projects: ["Which project has the highest outstanding?", "Show me collection status", "Which site is most delayed?"],
+    vendors: ["Who is my top performing vendor?", "Which vendor has pending dues?", "Vendor capacity summary"],
+    readiness: ["Which site has lowest readiness?", "Audit completion summary", "What's blocking progress?"],
+    calculator: ["Help me calculate ROI", "Explain the estimate breakdown", "What margin should I target?"]
   };
 
   const currentSuggestions = contextSuggestions[activeTab] || ["How can I help you today?"];
@@ -20,13 +23,13 @@ const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors =
   useEffect(() => {
     if (messages.length === 0) {
       setMessages([
-        { 
-          role: 'system', 
-          content: `Welcome back, ${userName}. I am Meaven Intelligence. I've synthesized your tactical data (${projects.length} active projects) and I'm ready to assist.` 
+        {
+          role: 'system',
+          content: `Welcome back, ${userName}. I am Meaven Intelligence — powered by Gemini AI. I have access to all your live project and vendor data. Ask me anything about your business.`
         }
       ]);
     }
-  }, [userName, activeTab, projects.length]);
+  }, [userName]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -34,62 +37,99 @@ const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors =
     }
   }, [messages, isTyping]);
 
-  const handleSendMessage = (content) => {
+  // Build a concise but complete data snapshot for the AI context
+  const buildContext = () => {
+    const projectSummaries = projects.map(p => {
+      const totalValue = p.clientFinancials?.totalValue || 0;
+      const received = (p.clientFinancials?.received || []).reduce((s, r) => s + (r.amount || 0), 0);
+      const outstanding = totalValue - received;
+      const totalPayouts = (p.payouts || []).reduce((s, r) => s + (r.amount || 0), 0);
+      const totalExpenses = (p.expenses || []).reduce((s, r) => s + (r.amount || 0), 0);
+      const grossProfit = received - totalPayouts - totalExpenses;
+      const ebitda = totalValue > 0 ? ((grossProfit / totalValue) * 100).toFixed(1) : 0;
+      return `Project: ${p.name} | Status: ${p.status || 'Unknown'} | Contract: ₹${(totalValue/100000).toFixed(2)}L | Collected: ₹${(received/100000).toFixed(2)}L | Outstanding: ₹${(outstanding/100000).toFixed(2)}L | Vendor Payouts: ₹${(totalPayouts/100000).toFixed(2)}L | EBITDA: ${ebitda}% | Readiness: ${p.readiness || 0}%`;
+    }).join('\n');
+
+    const vendorSummaries = vendors.map(v => {
+      const activeContracts = (v.contracts || []).filter(c => c.status === 'Active');
+      const totalOrder = (v.contracts || []).reduce((s, c) => s + (c.orderValue || 0), 0);
+      const totalPaid = (v.contracts || []).reduce((s, c) => (c.payments || []).reduce((ss, p) => ss + (p.amount || 0), ss), 0);
+      return `Vendor: ${v.name} | Score: ${v.score || 'N/A'} | Active Contracts: ${activeContracts.length} | Total Order Value: ₹${(totalOrder/100000).toFixed(2)}L | Total Paid: ₹${(totalPaid/100000).toFixed(2)}L`;
+    }).join('\n');
+
+    return `
+=== MEAVEN INTELLIGENCE — LIVE BUSINESS DATA ===
+Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+Total Projects: ${projects.length}
+Total Vendors/Partners: ${vendors.length}
+
+--- PROJECT DATA ---
+${projectSummaries || 'No projects found.'}
+
+--- VENDOR / PARTNER DATA ---
+${vendorSummaries || 'No vendors found.'}
+=================================================
+    `.trim();
+  };
+
+  const handleSendMessage = async (content) => {
     if (!content.trim()) return;
-    
+
     const userMsg = { role: 'user', content };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      setIsTyping(false);
-      let aiResponse = "";
-      const query = content.toLowerCase();
-      
-      // REAL DATA SYNTHESIS
-      if (query.includes('health') || query.includes('portfolio')) {
-        const totalValue = projects.reduce((s, p) => s + (p.clientFinancials?.totalValue || 0), 0);
-        const collected = projects.reduce((s, p) => s + (p.clientFinancials?.received || []).reduce((sum, r) => sum + r.amount, 0), 0);
-        const avgReadiness = projects.length > 0 ? (projects.reduce((s, p) => s + (p.readiness || 0), 0) / projects.length).toFixed(0) : 0;
-        aiResponse = `PORTFOLIO HEALTH: You have ${projects.length} active sites. Total Contract Value: ₹${(totalValue / 100000).toFixed(2)}L. Collection Rate: ${((collected/totalValue)*100).toFixed(1)}%. Average Site Readiness: ${avgReadiness}%. Action suggested for projects below 40%.`;
-      } 
-      else if (query.includes('vendor') || query.includes('partner')) {
-        const activeVendors = vendors.filter(v => (v.contracts || []).some(c => c.status === 'Active'));
-        aiResponse = `PARTNER AUDIT: ${activeVendors.length} vendors are currently operational. Top capacity is currently held by ${activeVendors[0]?.name || 'unassigned'}. Use the Partner Bench to view individual quality scores.`;
-      }
-      else if (query.includes('status') || query.includes('summary')) {
-          const activeProj = window.lastActiveProject || projects[0];
-          if (activeProj) {
-            const collected = (activeProj.clientFinancials?.received || []).reduce((s, r) => s + r.amount, 0);
-            aiResponse = `Analyzing ${activeProj.name}: Technical readiness at ${activeProj.readiness || 0}%. ₹${(collected / 100000).toFixed(2)}L collected vs ₹${(activeProj.clientFinancials?.totalValue / 100000).toFixed(2)}L total. Status: ${activeProj.status}.`;
-          } else {
-            aiResponse = "No active project data found. Please select a project in the Hub for a technical breakdown.";
+    try {
+      const systemPrompt = `You are Meaven Intelligence, a sharp and concise AI financial assistant for a construction project management business in India. 
+You have access to real-time business data provided below. Answer all questions based strictly on this data.
+Be direct, specific, and use Indian number formats (Lakhs). Keep responses under 120 words unless asked for detail.
+Never make up data. If something isn't in the data, say so clearly.
+
+${buildContext()}`;
+
+      const response = await fetch(GEMINI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: `${systemPrompt}\n\nUser question: ${content}` }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 300,
           }
-      }
-      else {
-        aiResponse = `Analyzing "${content}"... Based on current Tactical Data, I recommend checking the ${selectedTabLabel()} for active loops. I am monitoring ${projects.length} sites for you.`;
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err?.error?.message || 'Gemini API error');
       }
 
-      setMessages(prev => [...prev, { role: 'system', content: aiResponse }]);
-    }, 1200);
-  };
+      const data = await response.json();
+      const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'I could not generate a response. Please try again.';
 
-  const selectedTabLabel = () => {
-    switch(activeTab) {
-      case 'dashboard': return 'Command Center';
-      case 'projects': return 'Financial Hub';
-      case 'vendors': return 'Partner Bench';
-      case 'readiness': return 'Audit Hub';
-      default: return 'Active Workspace';
+      setMessages(prev => [...prev, { role: 'system', content: aiText }]);
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        role: 'system',
+        content: `⚠️ AI Error: ${err.message}. Please check your API key or internet connection.`
+      }]);
+    } finally {
+      setIsTyping(false);
     }
   };
 
   return (
     <>
       <div className="ai-orb-container">
-        <div 
-          className={`ai-orb ${isOpen ? '' : 'ai-orb-active'}`} 
+        <div
+          className={`ai-orb ${isOpen ? '' : 'ai-orb-active'}`}
           onClick={() => setIsOpen(!isOpen)}
           title="Ask Meaven Intelligence"
         >
@@ -105,8 +145,8 @@ const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors =
         </div>
       </div>
 
-      <div className={`ai-panel ${isOpen ? 'open' : ''}`} style={{ 
-        background: 'rgba(15, 15, 15, 0.85)', 
+      <div className={`ai-panel ${isOpen ? 'open' : ''}`} style={{
+        background: 'rgba(15, 15, 15, 0.85)',
         backdropFilter: 'blur(40px) saturate(200%)',
         WebkitBackdropFilter: 'blur(40px) saturate(200%)',
         border: '1px solid rgba(255, 255, 255, 0.15)',
@@ -115,19 +155,23 @@ const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors =
         <div className="ai-panel-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#7b61ff', boxShadow: '0 0 10px #7b61ff' }} />
-            <span style={{ fontWeight: '700', letterSpacing: '0.1em', fontSize: '0.8rem' }}>MEAVEN INTELLIGENCE</span>
+            <div>
+              <span style={{ fontWeight: '700', letterSpacing: '0.1em', fontSize: '0.8rem' }}>MEAVEN INTELLIGENCE</span>
+              <span style={{ fontSize: '0.55rem', color: '#7b61ff', display: 'block', letterSpacing: '0.05em' }}>Powered by Gemini AI</span>
+            </div>
           </div>
           <button onClick={() => setIsOpen(false)} style={{ color: 'var(--text-secondary)', fontSize: '1.2rem' }}>×</button>
         </div>
 
         <div className="ai-panel-content" ref={scrollRef}>
           {messages.map((msg, i) => (
-            <div key={i} className={`ai-message ${msg.role}`}>
+            <div key={i} className={`ai-message ${msg.role}`} style={{ whiteSpace: 'pre-wrap' }}>
               {msg.content}
             </div>
           ))}
           {isTyping && (
-            <div className="ai-message system" style={{ display: 'flex', gap: '4px', padding: '0.8rem' }}>
+            <div className="ai-message system" style={{ display: 'flex', gap: '4px', padding: '0.8rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginRight: '0.4rem' }}>Gemini is thinking</span>
               <span className="typing-dot" />
               <span className="typing-dot" />
               <span className="typing-dot" />
@@ -137,7 +181,7 @@ const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors =
 
         <div className="ai-panel-footer">
           <div style={{ marginBottom: '1rem' }}>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Suggested Actions</p>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Suggested Questions</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {currentSuggestions.map((s, i) => (
                 <div key={i} className="ai-suggestion-chip" onClick={() => handleSendMessage(s)}>
@@ -146,32 +190,36 @@ const AiAssistant = ({ activeTab, clientView, userName, projects = [], vendors =
               ))}
             </div>
           </div>
-          
+
           <div style={{ position: 'relative' }}>
-            <input 
-              type="text" 
-              placeholder="Ask Meaven anything..." 
+            <input
+              type="text"
+              placeholder="Ask anything about your business..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(input)}
-              style={{ 
-                width: '100%', 
-                padding: '1rem 3rem 1rem 1.2rem', 
-                background: 'rgba(255,255,255,0.05)', 
-                border: '1px solid var(--border-color)', 
-                borderRadius: '16px', 
+              onKeyPress={(e) => e.key === 'Enter' && !isTyping && handleSendMessage(input)}
+              disabled={isTyping}
+              style={{
+                width: '100%',
+                padding: '1rem 3rem 1rem 1.2rem',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '16px',
                 color: '#fff',
-                fontSize: '0.9rem'
-              }} 
+                fontSize: '0.9rem',
+                opacity: isTyping ? 0.6 : 1
+              }}
             />
-            <button 
-              onClick={() => handleSendMessage(input)}
-              style={{ 
-                position: 'absolute', 
-                right: '1rem', 
-                top: '50%', 
+            <button
+              onClick={() => !isTyping && handleSendMessage(input)}
+              disabled={isTyping}
+              style={{
+                position: 'absolute',
+                right: '1rem',
+                top: '50%',
                 transform: 'translateY(-50%)',
-                color: 'var(--accent-color)'
+                color: 'var(--accent-color)',
+                opacity: isTyping ? 0.4 : 1
               }}
             >
               →
