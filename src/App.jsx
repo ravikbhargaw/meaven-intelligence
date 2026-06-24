@@ -1535,6 +1535,43 @@ function App() {
   const handleApprovePlaybookUpdate = (proposalId) => {
     setPlaybookProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'approved' } : p))
   }
+
+  // Aggregate all audits from both local/cloud executionAudits and project audit histories (starting from day one)
+  const displayAudits = (() => {
+    const map = new Map();
+    // 1. Add audits from executionAudits (local/db table)
+    (executionAudits || []).forEach(aud => {
+      if (aud && aud.auditId) {
+        map.set(aud.auditId, aud);
+      }
+    });
+
+    // 2. Add audits from all projects' auditHistory (day one till present)
+    (projects || []).forEach(p => {
+      (p.auditHistory || []).forEach(aud => {
+        if (aud && aud.auditId) {
+          const existing = map.get(aud.auditId) || {};
+          map.set(aud.auditId, {
+            ...aud,
+            ...existing,
+            projectInfo: {
+              name: p.name,
+              client: p.client,
+              ...aud.projectInfo,
+              ...existing.projectInfo
+            }
+          });
+        }
+      });
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      const dateA = new Date(a.timestamp || a.projectInfo?.inspectionDate || 0);
+      const dateB = new Date(b.timestamp || b.projectInfo?.inspectionDate || 0);
+      return dateB - dateA;
+    });
+  })();
+
   return (
     <ErrorBoundary>
       <div className="app-wrapper">
@@ -1839,13 +1876,13 @@ function App() {
                                   </button>
                               </div>
 
-                              {executionAudits.length === 0 ? (
+                              {displayAudits.length === 0 ? (
                                   <div style={{ padding: '4rem 2rem', textTransform: 'uppercase', textAlign: 'center', border: '1px dashed var(--border-color)', borderRadius: '12px', background: 'rgba(255,255,255,0.01)', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.1em' }}>
                                       📁 No Technical Audits Lodged Yet. Click Above to Begin.
                                   </div>
                               ) : (
                                   <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                                      {executionAudits.map((aud) => {
+                                      {displayAudits.map((aud) => {
                                           const score = aud.readinessScore || 0;
                                           const scoreColor = score >= 80 ? 'var(--success)' : score >= 50 ? '#ffcc00' : '#ff453a';
                                           
