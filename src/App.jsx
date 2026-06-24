@@ -1835,7 +1835,7 @@ function App() {
                                           fontSize: '0.8rem'
                                       }}
                                   >
-                                      ➕ INITIATE NEW VALIDATION
+                                      ➕ Initialize New Validation
                                   </button>
                               </div>
 
@@ -1844,10 +1844,26 @@ function App() {
                                       📁 No Technical Audits Lodged Yet. Click Above to Begin.
                                   </div>
                               ) : (
-                                  <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                                  <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
                                       {executionAudits.map((aud) => {
                                           const score = aud.readinessScore || 0;
                                           const scoreColor = score >= 80 ? 'var(--success)' : score >= 50 ? '#ffcc00' : '#ff453a';
+                                          
+                                          // Format audit done date
+                                          const dateStr = aud.projectInfo?.inspectionDate || aud.timestamp;
+                                          let formattedDate = 'Unknown Date';
+                                          if (dateStr) {
+                                              const dateObj = new Date(dateStr);
+                                              if (!isNaN(dateObj.getTime())) {
+                                                  const d = String(dateObj.getDate()).padStart(2, '0');
+                                                  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                                  const y = dateObj.getFullYear();
+                                                  formattedDate = `${d}-${m}-${y}`;
+                                              } else {
+                                                  formattedDate = dateStr;
+                                              }
+                                          }
+
                                           return (
                                               <div 
                                                   key={aud.auditId} 
@@ -1856,43 +1872,45 @@ function App() {
                                                   style={{ 
                                                       background: 'var(--bg-accent)', 
                                                       border: '1px solid var(--border-color)', 
-                                                      borderRadius: '12px', 
-                                                      padding: '1.5rem', 
+                                                      borderRadius: '16px', 
+                                                      padding: '1.75rem', 
                                                       cursor: 'pointer',
-                                                      transition: 'all 0.3s ease',
+                                                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                       display: 'flex',
                                                       flexDirection: 'column',
                                                       justifyContent: 'space-between',
-                                                      minHeight: '180px'
+                                                      minHeight: '200px',
+                                                      position: 'relative',
+                                                      overflow: 'hidden'
                                                   }}
                                               >
+                                                  {/* Visual top bar indicator */}
+                                                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, var(--accent-color), #32d74b)' }} />
+                                                  
                                                   <div>
-                                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.8rem' }}>
-                                                          <span style={{ fontSize: '0.75rem', fontWeight: '900', color: 'var(--accent-color)', fontFamily: 'monospace', background: 'rgba(102, 178, 194, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+                                                          <span style={{ fontSize: '0.7rem', fontWeight: '900', color: 'var(--accent-color)', fontFamily: 'monospace', background: 'rgba(102, 178, 194, 0.08)', padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(102, 178, 194, 0.15)' }}>
                                                               {aud.auditId}
                                                           </span>
-                                                          <span style={{ fontSize: '0.75rem', fontWeight: '800', color: scoreColor }}>
+                                                          <span style={{ fontSize: '0.75rem', fontWeight: '800', color: scoreColor, background: `${scoreColor}15`, padding: '0.3rem 0.6rem', borderRadius: '6px', border: `1px solid ${scoreColor}30` }}>
                                                               {score}% Score
                                                           </span>
                                                       </div>
-                                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                                          <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.1rem', fontWeight: '800', color: '#fff' }}>
+                                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                                          <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.25rem', fontWeight: '800', color: '#fff', lineHeight: '1.3' }}>
                                                               {aud.projectInfo?.name || 'Unnamed Project'}
                                                           </h3>
-                                                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                                              Auditor Name: <strong style={{ color: 'var(--accent-color)' }}>{aud.projectInfo?.inspectedBy || 'Lead Auditor'}</strong>
+                                                          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                              Client Name: <strong style={{ color: 'var(--text-primary)' }}>{aud.projectInfo?.client || 'Direct Client'}</strong>
                                                           </p>
-                                                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                                              Client/Contact: <strong style={{ color: 'var(--text-primary)' }}>{aud.projectInfo?.client || 'Direct Client'}</strong>
+                                                          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                              Audit Done Date: <strong style={{ color: 'var(--accent-color)' }}>{formattedDate}</strong>
                                                           </p>
                                                       </div>
                                                   </div>
-                                                  <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
-                                                          {aud.projectInfo?.inspectionDate || aud.timestamp?.split('T')[0] || 'Unknown Date'}
-                                                      </span>
-                                                      <span style={{ fontSize: '0.7rem', color: 'var(--accent-color)', fontWeight: '800' }}>
-                                                          VIEW REPORT →
+                                                  <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-color)', fontWeight: '800', letterSpacing: '0.05em' }}>
+                                                          VIEW REPORT (READ-ONLY) →
                                                       </span>
                                                   </div>
                                               </div>
