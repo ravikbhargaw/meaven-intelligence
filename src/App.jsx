@@ -156,6 +156,12 @@ function App() {
   });
   const [isCreatingAudit, setIsCreatingAudit] = useState(false);
 
+  const [viewingQC, setViewingQC] = useState(null)
+  const [postQCs, setPostQCs] = useState(() => {
+    return JSON.parse(localStorage.getItem('post_qcs')) || [];
+  });
+  const [isCreatingQC, setIsCreatingQC] = useState(false);
+
   useEffect(() => {
     if (activeTab === 'audit') {
         const local = JSON.parse(localStorage.getItem('execution_audits')) || [];
@@ -174,6 +180,32 @@ function App() {
                             }
                         });
                         localStorage.setItem('execution_audits', JSON.stringify(merged));
+                        return merged;
+                    });
+                }
+            });
+        }
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'postQC') {
+        const local = JSON.parse(localStorage.getItem('post_qcs')) || [];
+        setPostQCs(local);
+        
+        // Sync in background if Supabase is connected
+        if (supabase) {
+            supabase.from('qc_reports').select('*').then(({ data, error }) => {
+                if (data && !error) {
+                    const cloudQCs = data.map(r => r.data).filter(Boolean);
+                    setPostQCs(prev => {
+                        const merged = [...prev];
+                        cloudQCs.forEach(cq => {
+                            if (!merged.some(mq => mq.qcId === cq.qcId)) {
+                                merged.push(cq);
+                            }
+                        });
+                        localStorage.setItem('post_qcs', JSON.stringify(merged));
                         return merged;
                     });
                 }
@@ -1099,6 +1131,9 @@ function App() {
             return p;
         }));
     }
+    setPostQCs(existingQCs);
+    setIsCreatingQC(false);
+    setViewingQC(null);
   };
 
   const handleAddVendor = (newVendor) => {
@@ -1572,6 +1607,42 @@ function App() {
     });
   })();
 
+  // Aggregate all QC reports from both local/cloud postQCs and project QC histories (starting from day one)
+  const displayQCs = (() => {
+    const map = new Map();
+    // 1. Add QCs from postQCs (local/db table)
+    (postQCs || []).forEach(qc => {
+      if (qc && qc.qcId) {
+        map.set(qc.qcId, qc);
+      }
+    });
+
+    // 2. Add QCs from all projects' qcHistory (day one till present)
+    (projects || []).forEach(p => {
+      (p.qcHistory || []).forEach(qc => {
+        if (qc && qc.qcId) {
+          const existing = map.get(qc.qcId) || {};
+          map.set(qc.qcId, {
+            ...qc,
+            ...existing,
+            projectInfo: {
+              name: p.name,
+              client: p.client,
+              ...qc.projectInfo,
+              ...existing.projectInfo
+            }
+          });
+        }
+      });
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      const dateA = new Date(a.timestamp || a.projectInfo?.inspectionDate || 0);
+      const dateB = new Date(b.timestamp || b.projectInfo?.inspectionDate || 0);
+      return dateB - dateA;
+    });
+  })();
+
   return (
     <ErrorBoundary>
       <div className="app-wrapper">
@@ -1982,8 +2053,140 @@ function App() {
                   </div>
                 )}
                 {activeTab === 'postQC' && (
-                  <div className="card animate-fade-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', minHeight: '80vh' }}>
-                      <PostInstallationQC projects={projects} onSubmitQC={handleQCReportSubmit} />
+                  <div className="animate-fade-in" style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      {!isCreatingQC && !viewingQC ? (
+                          <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', padding: '2rem', flex: 1 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                                  <div>
+                                      <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900' }}>Post-Install QC Hub</h2>
+                                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                          Quality control and handover inspection reports.
+                                      </p>
+                                  </div>
+                                  <button 
+                                      onClick={() => setIsCreatingQC(true)}
+                                      className="btn btn-primary"
+                                      style={{ 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          gap: '0.5rem', 
+                                          background: 'var(--accent-color)', 
+                                          color: '#000', 
+                                          fontWeight: '800', 
+                                          padding: '0.75rem 1.5rem',
+                                          borderRadius: '8px',
+                                          border: 'none',
+                                          cursor: 'pointer',
+                                          fontSize: '0.8rem'
+                                      }}
+                                  >
+                                      ➕ Initialize New Validation
+                                  </button>
+                              </div>
+
+                              {displayQCs.length === 0 ? (
+                                  <div style={{ padding: '4rem 2rem', textTransform: 'uppercase', textAlign: 'center', border: '1px dashed var(--border-color)', borderRadius: '12px', background: 'rgba(255,255,255,0.01)', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.1em' }}>
+                                      📁 No QC Reports Lodged Yet. Click Above to Begin.
+                                  </div>
+                              ) : (
+                                  <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                                      {displayQCs.map((qc) => {
+                                          const score = qc.scores?.readiness || 0;
+                                          const scoreColor = score >= 80 ? 'var(--success)' : score >= 50 ? '#ffcc00' : '#ff453a';
+                                          
+                                          // Format QC done date
+                                          const dateStr = qc.projectInfo?.inspectionDate || qc.timestamp;
+                                          let formattedDate = 'Unknown Date';
+                                          if (dateStr) {
+                                              const dateObj = new Date(dateStr);
+                                              if (!isNaN(dateObj.getTime())) {
+                                                  const d = String(dateObj.getDate()).padStart(2, '0');
+                                                  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                                  const y = dateObj.getFullYear();
+                                                  formattedDate = `${d}-${m}-${y}`;
+                                              } else {
+                                                  formattedDate = dateStr;
+                                              }
+                                          }
+
+                                          return (
+                                              <div 
+                                                  key={qc.qcId} 
+                                                  onClick={() => setViewingQC(qc)}
+                                                  className="card hover-scale"
+                                                  style={{ 
+                                                      background: 'var(--bg-accent)', 
+                                                      border: '1px solid var(--border-color)', 
+                                                      borderRadius: '16px', 
+                                                      padding: '1.75rem', 
+                                                      cursor: 'pointer',
+                                                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                      display: 'flex',
+                                                      flexDirection: 'column',
+                                                      justifyContent: 'space-between',
+                                                      minHeight: '200px',
+                                                      position: 'relative',
+                                                      overflow: 'hidden'
+                                                  }}
+                                              >
+                                                  {/* Visual top bar indicator */}
+                                                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, var(--accent-color), #50d74b)' }} />
+                                                  
+                                                  <div>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+                                                          <span style={{ fontSize: '0.7rem', fontWeight: '900', color: 'var(--accent-color)', fontFamily: 'monospace', background: 'rgba(102, 178, 194, 0.08)', padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(102, 178, 194, 0.15)' }}>
+                                                              {qc.qcId}
+                                                          </span>
+                                                          <span style={{ fontSize: '0.75rem', fontWeight: '800', color: scoreColor, background: `${scoreColor}15`, padding: '0.3rem 0.6rem', borderRadius: '6px', border: `1px solid ${scoreColor}30` }}>
+                                                              {score}% Score
+                                                          </span>
+                                                      </div>
+                                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                                          <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.25rem', fontWeight: '800', color: '#fff', lineHeight: '1.3' }}>
+                                                              {qc.projectInfo?.name || 'Unnamed Project'}
+                                                          </h3>
+                                                          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                              Client Name: <strong style={{ color: 'var(--text-primary)' }}>{qc.projectInfo?.client || 'Direct Client'}</strong>
+                                                          </p>
+                                                          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                              QC Done Date: <strong style={{ color: 'var(--accent-color)' }}>{formattedDate}</strong>
+                                                          </p>
+                                                      </div>
+                                                  </div>
+                                                  <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-color)', fontWeight: '800', letterSpacing: '0.05em' }}>
+                                                          VIEW REPORT (READ-ONLY) →
+                                                      </span>
+                                                  </div>
+                                              </div>
+                                          );
+                                      })}
+                                  </div>
+                              )}
+                          </div>
+                      ) : (
+                          <div className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', minHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                              <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.1)' }}>
+                                  <h2 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--accent-color)', fontWeight: '800' }}>
+                                      {viewingQC ? `${viewingQC.qcId} | QUALITY CONTROL REPORT` : 'NEW QC VALIDATION'}
+                                  </h2>
+                                  <button 
+                                      onClick={() => { setViewingQC(null); setIsCreatingQC(false); }}
+                                      style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.4rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
+                                  >
+                                      ← BACK TO HUB
+                                  </button>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                  <PostInstallationQC 
+                                    projects={projects} 
+                                    onSubmitQC={handleQCReportSubmit} 
+                                    initialData={viewingQC}
+                                    readOnly={!!viewingQC}
+                                  />
+                              </div>
+                          </div>
+                      )}
                   </div>
                 )}
                 {activeTab === 'executionOS' && (
