@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'pwa-512.png', 'images/*.png'],
+      includeAssets: ['favicon.png', 'pwa-512.png', 'images/*.png'],
       manifest: {
         name: 'Meaven Intelligence',
         short_name: 'Meaven',
