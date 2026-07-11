@@ -2,7 +2,79 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { parseMoney } from '../utils/financialUtils';
 
-const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMethod, setOverheadMethod, projects }) => {
+// Utility helper: Check if attachment is a PDF
+const isPdf = (base64Str) => typeof base64Str === 'string' && base64Str.startsWith('data:application/pdf');
+
+// Utility helper: Open attachment in a new tab/window
+const openAttachmentWindow = (base64Data) => {
+  const newTab = window.open();
+  if (!newTab) return;
+  if (isPdf(base64Data)) {
+    newTab.document.write(`
+      <html>
+        <head><title>Bill / Invoice PDF</title>
+        <style>body{margin:0;background:#0d0d0d;display:flex;align-items:center;justify-content:center;height:100vh;}</style>
+        </head>
+        <body>
+          <embed src="${base64Data}" type="application/pdf" width="100%" height="100%" style="position:fixed;top:0;left:0;width:100%;height:100%;" />
+        </body>
+      </html>`);
+    newTab.document.close();
+  } else {
+    openImageWindow(base64Data);
+    newTab.close();
+  }
+};
+
+// Utility helper: Open image attachment in a new tab/window
+const openImageWindow = (base64Data) => {
+  const newTab = window.open();
+  if (newTab) {
+    newTab.document.write(`
+      <html>
+        <head>
+          <title>Attachment View</title>
+          <style>
+            body { margin: 0; background: #0b0f19; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui, sans-serif; color: #fff; }
+            img { max-width: 90%; max-height: 85vh; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.6); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+            .container { text-align: center; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+            .btn { padding: 8px 24px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+            .btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <img src="${base64Data}" alt="Attachment" />
+            <button class="btn" onclick="window.close()">Close Preview</button>
+          </div>
+        </body>
+      </html>`);
+    newTab.document.close();
+  }
+};
+
+const BusinessExpenseLedger = ({ 
+  user,
+  vendors = [], 
+  projects = [], 
+  setVendors, 
+  setProjects, 
+  onAddVendorPayment, 
+  onAddClientReceipt, 
+  onNavigateVendor, 
+  overheadConfig, 
+  setOverheadConfig, 
+  overheadMethod, 
+  setOverheadMethod 
+}) => {
+  // Check if current user is an Admin
+  const isAdmin = user?.role === 'SuperAdmin' || 
+                  user?.role === 'Admin' || 
+                  user?.email === 'ravi.bhargaw@meaven.in';
+
+  const activeVendors = vendors || [];
+  const activeProjects = projects || [];
+
   // Core States
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,8 +95,8 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
   }, [overheadMethod]);
 
   const activeProjectsCount = useMemo(() => {
-    return (projects || []).filter(p => p.status === 'Active' || !p.status).length;
-  }, [projects]);
+    return activeProjects.filter(p => p.status === 'Active' || !p.status).length;
+  }, [activeProjects]);
 
   const totalOverheadPool = useMemo(() => {
     return Object.values(localOverhead).reduce((sum, val) => sum + Number(val || 0), 0);
@@ -32,16 +104,24 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
 
   // UI Control States
   const [showAddForm, setShowAddForm] = useState(false);
+  const [formCategoryType, setFormCategoryType] = useState('business_expense'); // business_expense, vendor_payment, client_receipt
+  const [formAttachment, setFormAttachment] = useState(null);
+
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     category: 'Operations',
     amount: '',
     paidBy: '',
     notes: '',
-    type: 'Office'
+    type: 'Office',
+    vendorId: '',
+    contractId: '',
+    projectId: '',
+    receiptType: 'Milestone Payment'
   });
 
   // Filter States
+  const [filterTypeSelector, setFilterTypeSelector] = useState('ALL'); // ALL, Debit, Credit
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL');
   const [filterPaidBy, setFilterPaidBy] = useState('ALL');
@@ -116,6 +196,209 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
     }));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormAttachment(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Helper to extract entry date from timestamp or return date
+  const getEntryDate = (id, dateStr) => {
+    if (id && !isNaN(id) && Number(id) > 1000000000000) {
+      try {
+        return new Date(Number(id)).toISOString().split('T')[0];
+      } catch (e) {
+        // ignore
+      }
+    }
+    return dateStr || '';
+  };
+
+  // Helper to split notes and base64 attachment suffix
+  const parseNotes = (notesStr) => {
+    if (!notesStr) return { text: '', attachment: null };
+    const parts = notesStr.split(' ||attachment:');
+    if (parts.length > 1) {
+      return {
+        text: parts[0],
+        attachment: parts[1]
+      };
+    }
+    return { text: notesStr, attachment: null };
+  };
+
+  // Compile Unified Transactions Array
+  const unifiedTransactions = useMemo(() => {
+    const list = [];
+
+    // 1. Corporate Business Expenses
+    expenses.forEach(exp => {
+      const { text, attachment } = parseNotes(exp.notes);
+      list.push({
+        uid: `business_expense_${exp.id}`,
+        id: exp.id,
+        date: exp.date,
+        entryDate: exp.created_at ? exp.created_at.split('T')[0] : getEntryDate(exp.id, exp.date),
+        category: exp.category || 'Operations',
+        type: 'Debit',
+        tag: exp.type || 'Office',
+        amount: Number(exp.amount || 0),
+        paidBy: exp.paidBy || 'Company Account',
+        notes: text,
+        attachment: attachment,
+        vendor: null,
+        project: null,
+        source: 'business_expense',
+        raw: exp
+      });
+    });
+
+    // 2. Vendor Payments
+    activeVendors.forEach(v => {
+      (v.contracts || []).forEach(c => {
+        (c.payments || []).forEach(p => {
+          const screenshot = p.screenshot || p.photo || (Array.isArray(p.photos) && p.photos[0]) || null;
+          list.push({
+            uid: `vendor_payment_${v.id}_${c.id}_${p.id}`,
+            id: p.id,
+            date: p.date,
+            entryDate: getEntryDate(p.id, p.date),
+            category: 'Vendor Payment',
+            type: 'Debit',
+            tag: 'Material/Service',
+            amount: Number(p.amount || 0),
+            paidBy: v.name || 'Vendor',
+            notes: p.ref ? `Ref: ${p.ref} | Contract: ${c.projectName || 'Active Contract'}` : `Contract: ${c.projectName || 'Active Contract'}`,
+            attachment: screenshot,
+            vendor: { id: v.id, name: v.name },
+            project: c.projectId ? { id: c.projectId, name: c.projectName } : null,
+            source: 'vendor_payment',
+            vendorId: v.id,
+            contractId: c.id,
+            raw: p
+          });
+        });
+      });
+    });
+
+    // 3. Client Receipts
+    activeProjects.forEach(proj => {
+      if (proj.clientFinancials && Array.isArray(proj.clientFinancials.received)) {
+        proj.clientFinancials.received.forEach(r => {
+          const screenshot = r.screenshot || r.photo || (Array.isArray(r.photos) && r.photos[0]) || null;
+          list.push({
+            uid: `client_receipt_${proj.id}_${r.id}`,
+            id: r.id,
+            date: r.date,
+            entryDate: getEntryDate(r.id, r.date),
+            category: 'Client Inflow',
+            type: 'Credit',
+            tag: r.type || 'Project Inflow',
+            amount: Number(r.amount || 0),
+            paidBy: proj.client || 'Client',
+            notes: r.ref ? `Ref: ${r.ref} | Project: ${proj.name}` : `Project: ${proj.name}`,
+            attachment: screenshot,
+            vendor: null,
+            project: { id: proj.id, name: proj.name },
+            source: 'client_receipt',
+            projectId: proj.id,
+            raw: r
+          });
+        });
+      }
+    });
+
+    // Sort: Newest transaction date first. Fallback to ID descending.
+    return list.sort((a, b) => {
+      const dateDiff = new Date(b.date) - new Date(a.date);
+      if (dateDiff !== 0) return dateDiff;
+      return b.id - a.id;
+    });
+  }, [expenses, activeVendors, activeProjects]);
+
+  // Derive metrics
+  const stats = useMemo(() => {
+    let totalInflow = 0;
+    let totalOutflow = 0;
+
+    const catMap = {};
+    const tagMap = {};
+    const paidByMap = {};
+
+    unifiedTransactions.forEach(t => {
+      const amt = t.amount;
+      if (t.type === 'Credit') {
+        totalInflow += amt;
+      } else {
+        totalOutflow += amt;
+      }
+
+      catMap[t.category] = (catMap[t.category] || 0) + amt;
+      tagMap[t.tag] = (tagMap[t.tag] || 0) + amt;
+      paidByMap[t.paidBy] = (paidByMap[t.paidBy] || 0) + amt;
+    });
+
+    return {
+      totalInflow,
+      totalOutflow,
+      netCashFlow: totalInflow - totalOutflow,
+      categories: Object.entries(catMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val),
+      tags: Object.entries(tagMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val),
+      paidBy: Object.entries(paidByMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val)
+    };
+  }, [unifiedTransactions]);
+
+  // Derived filter options
+  const uniqueCategories = useMemo(() => {
+    const set = new Set(categories);
+    unifiedTransactions.forEach(t => set.add(t.category));
+    return Array.from(set);
+  }, [unifiedTransactions]);
+
+  const uniqueTags = useMemo(() => {
+    const set = new Set(types);
+    unifiedTransactions.forEach(t => set.add(t.tag));
+    return Array.from(set);
+  }, [unifiedTransactions]);
+
+  const uniquePaidBy = useMemo(() => {
+    const set = new Set();
+    unifiedTransactions.forEach(t => {
+      if (t.paidBy) set.add(t.paidBy.trim());
+    });
+    return Array.from(set);
+  }, [unifiedTransactions]);
+
+  // Filtered list
+  const filteredExpenses = useMemo(() => {
+    return unifiedTransactions.filter(t => {
+      const matchesType = filterTypeSelector === 'ALL' || t.type === filterTypeSelector;
+      const matchesCat = filterCategory === 'ALL' || t.category === filterCategory;
+      const matchesTag = filterType === 'ALL' || t.tag === filterType;
+      const matchesPaidBy = filterPaidBy === 'ALL' || t.paidBy === filterPaidBy;
+      
+      const search = searchQuery.toLowerCase().trim();
+      const matchesSearch = searchQuery === '' || 
+        (t.notes && t.notes.toLowerCase().includes(search)) ||
+        (t.paidBy && t.paidBy.toLowerCase().includes(search)) ||
+        (t.category && t.category.toLowerCase().includes(search)) ||
+        (t.tag && t.tag.toLowerCase().includes(search)) ||
+        (t.vendor && t.vendor.name.toLowerCase().includes(search)) ||
+        (t.project && t.project.name.toLowerCase().includes(search));
+
+      return matchesType && matchesCat && matchesTag && matchesPaidBy && matchesSearch;
+    });
+  }, [unifiedTransactions, filterTypeSelector, filterCategory, filterType, filterPaidBy, searchQuery]);
+
+  // Dropdown lists for the creation form
+  const selectedVendor = activeVendors.find(v => String(v.id) === String(formData.vendorId));
+  const availableContracts = selectedVendor ? (selectedVendor.contracts || []) : [];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const parsedAmount = parseMoney(formData.amount);
@@ -124,35 +407,79 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
       return;
     }
 
-    const newRecord = {
-      id: Date.now(), // Generate numeric bigint-compliant key
-      date: formData.date,
-      category: formData.category,
-      amount: parsedAmount,
-      paidBy: formData.paidBy.trim() || 'Company Account',
-      notes: formData.notes.trim() || '',
-      type: formData.type,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    // 1. Optimistic UI update (instant response)
-    const updatedExpenses = [newRecord, ...expenses];
-    setExpenses(updatedExpenses);
-
-    // 2. Cache locally
-    localStorage.setItem('meaven_business_expenses', JSON.stringify(updatedExpenses));
-
-    // 3. Sync to Supabase
-    try {
-      const { error } = await supabase.from('business_expenses').upsert(newRecord);
-      if (error) {
-        throw error;
+    if (formCategoryType === 'business_expense') {
+      let finalNotes = formData.notes.trim() || 'General Business Expense';
+      if (formAttachment) {
+        finalNotes = `${finalNotes} ||attachment:${formAttachment}`;
       }
-      setErrorMsg(null);
-    } catch (error) {
-      console.error('[Meaven] business_expenses table unreachable. Run Phase 1 SQL migration.', error);
-      setErrorMsg('Write saved locally. Run Supabase SQL migration to sync with cloud database.');
+
+      const newRecord = {
+        id: Date.now(),
+        date: formData.date,
+        category: formData.category,
+        amount: parsedAmount,
+        paidBy: formData.paidBy.trim() || 'Company Account',
+        notes: finalNotes,
+        type: formData.type,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // 1. Optimistic UI update
+      const updatedExpenses = [newRecord, ...expenses];
+      setExpenses(updatedExpenses);
+
+      // 2. Cache locally
+      localStorage.setItem('meaven_business_expenses', JSON.stringify(updatedExpenses));
+
+      // 3. Sync to Supabase
+      try {
+        const { error } = await supabase.from('business_expenses').upsert(newRecord);
+        if (error) throw error;
+        setErrorMsg(null);
+      } catch (error) {
+        console.error('[Meaven] business_expenses table unreachable.', error);
+        setErrorMsg('Write saved locally. Will sync when database is online.');
+      }
+    } 
+    else if (formCategoryType === 'vendor_payment') {
+      if (!onAddVendorPayment) return;
+      const vId = formData.vendorId;
+      const cId = formData.contractId;
+      if (!vId || !cId) {
+        alert('Please select a Vendor and a Contract.');
+        return;
+      }
+
+      const paymentObj = {
+        amount: parsedAmount,
+        date: formData.date,
+        ref: formData.notes.trim() || 'Vendor payment',
+        screenshot: formAttachment,
+      };
+
+      onAddVendorPayment(vId, cId, paymentObj);
+      alert('Vendor Payment recorded successfully!');
+    } 
+    else if (formCategoryType === 'client_receipt') {
+      if (!onAddClientReceipt) return;
+      const projId = formData.projectId;
+      if (!projId) {
+        alert('Please select a Project.');
+        return;
+      }
+
+      onAddClientReceipt(
+        projId, 
+        parsedAmount, 
+        formData.notes.trim() || 'Client Payment Received', 
+        formData.date, 
+        formAttachment ? [formAttachment] : [], 
+        formData.receiptType || 'Milestone Payment', 
+        parsedAmount, 
+        0
+      );
+      alert('Client Receipt recorded successfully!');
     }
 
     // Reset Form
@@ -162,102 +489,220 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
       amount: '',
       paidBy: '',
       notes: '',
-      type: 'Office'
+      type: 'Office',
+      vendorId: '',
+      contractId: '',
+      projectId: '',
+      receiptType: 'Milestone Payment'
     });
+    setFormAttachment(null);
     setShowAddForm(false);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to permanently delete this business expense?')) return;
+  const handleDeleteTransaction = async (t) => {
+    if (!window.confirm(`Are you sure you want to permanently delete this ${t.type.toLowerCase()} transaction?`)) return;
 
-    // 1. Optimistic local delete
-    const updatedExpenses = expenses.filter(exp => exp.id !== id);
-    setExpenses(updatedExpenses);
+    if (t.source === 'business_expense') {
+      // 1. Optimistic UI update
+      const updatedExpenses = expenses.filter(exp => exp.id !== t.id);
+      setExpenses(updatedExpenses);
 
-    // 2. Update cache
-    localStorage.setItem('meaven_business_expenses', JSON.stringify(updatedExpenses));
+      // 2. Cache update
+      localStorage.setItem('meaven_business_expenses', JSON.stringify(updatedExpenses));
 
-    // 3. Delete from Supabase
-    try {
-      const { error } = await supabase.from('business_expenses').delete().eq('id', id);
-      if (error) {
-        throw error;
+      // 3. Delete from Supabase
+      try {
+        const { error } = await supabase.from('business_expenses').delete().eq('id', t.id);
+        if (error) throw error;
+        setErrorMsg(null);
+      } catch (error) {
+        console.error('[Meaven] business_expenses delete failed on remote DB.', error);
+        setErrorMsg('Delete recorded locally. Sync pending database connection.');
       }
-      setErrorMsg(null);
-    } catch (error) {
-      console.error('[Meaven] business_expenses delete failed on remote DB.', error);
-      setErrorMsg('Delete recorded locally. Sync pending database connection.');
+    } 
+    else if (t.source === 'vendor_payment') {
+      if (!setVendors) return;
+      // Filter out vendor payment in vendor contracts state
+      setVendors(prev => prev.map(v => {
+        if (String(v.id) === String(t.vendorId)) {
+          return {
+            ...v,
+            contracts: (v.contracts || []).map(c => {
+              if (String(c.id) === String(t.contractId)) {
+                return {
+                  ...c,
+                  payments: (c.payments || []).filter(pay => String(pay.id) !== String(t.id))
+                };
+              }
+              return c;
+            })
+          };
+        }
+        return v;
+      }));
+
+      // Also filter payout from projects
+      if (setProjects) {
+        setProjects(prev => prev.map(p => {
+          return {
+            ...p,
+            payouts: (p.payouts || []).filter(pay => String(pay.id) !== String(t.id))
+          };
+        }));
+      }
+      alert('Vendor Payment deleted!');
+    } 
+    else if (t.source === 'client_receipt') {
+      if (!setProjects) return;
+      // Filter out receipt in project clientFinancials received state
+      setProjects(prev => prev.map(p => {
+        if (String(p.id) === String(t.projectId)) {
+          const received = (p.clientFinancials?.received || []).filter(r => String(r.id) !== String(t.id));
+          return {
+            ...p,
+            clientFinancials: {
+              ...p.clientFinancials,
+              received
+            }
+          };
+        }
+        return p;
+      }));
+      alert('Client Receipt deleted!');
     }
   };
 
-  // Derive metrics
-  const stats = useMemo(() => {
-    const total = expenses.reduce((sum, e) => sum + parseMoney(e.amount), 0);
-    
-    const catMap = {};
-    const typeMap = {};
-    const paidByMap = {};
+  // Row-level document uploader for missing attachments
+  const handleUploadRowAttachment = async (t, file) => {
+    if (!file) return;
 
-    expenses.forEach(e => {
-      const amt = parseMoney(e.amount);
-      catMap[e.category] = (catMap[e.category] || 0) + amt;
-      typeMap[e.type] = (typeMap[e.type] || 0) + amt;
-      const pb = e.paidBy || 'Company Account';
-      paidByMap[pb] = (paidByMap[pb] || 0) + amt;
-    });
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64Data = reader.result;
 
-    return {
-      total,
-      categories: Object.entries(catMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val),
-      types: Object.entries(typeMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val),
-      paidBy: Object.entries(paidByMap).map(([name, val]) => ({ name, val })).sort((a, b) => b.val - a.val)
+      if (t.source === 'business_expense') {
+        const currentNotes = t.raw.notes || '';
+        const notesWithoutAttachment = currentNotes.split(' ||attachment:')[0];
+        const newNotes = `${notesWithoutAttachment} ||attachment:${base64Data}`;
+
+        const updatedRecord = {
+          ...t.raw,
+          notes: newNotes,
+          updated_at: new Date().toISOString()
+        };
+
+        // UI & LocalStorage Update
+        const updatedExpenses = expenses.map(exp => exp.id === t.id ? updatedRecord : exp);
+        setExpenses(updatedExpenses);
+        localStorage.setItem('meaven_business_expenses', JSON.stringify(updatedExpenses));
+
+        // Supabase Sync
+        try {
+          const { error } = await supabase.from('business_expenses').upsert(updatedRecord);
+          if (error) throw error;
+        } catch (error) {
+          console.error('Failed to update business expense attachment:', error);
+          alert('Saved locally. Will sync when database is online.');
+        }
+      } 
+      else if (t.source === 'vendor_payment') {
+        if (!setVendors) return;
+        setVendors(prev => prev.map(v => {
+          if (String(v.id) === String(t.vendorId)) {
+            return {
+              ...v,
+              contracts: (v.contracts || []).map(c => {
+                if (String(c.id) === String(t.contractId)) {
+                  return {
+                    ...c,
+                    payments: (c.payments || []).map(pay => {
+                      if (String(pay.id) === String(t.id)) {
+                        return {
+                          ...pay,
+                          screenshot: base64Data,
+                          photo: base64Data,
+                          photos: [base64Data]
+                        };
+                      }
+                      return pay;
+                    })
+                  };
+                }
+                return c;
+              })
+            };
+          }
+          return v;
+        }));
+
+        if (setProjects) {
+          setProjects(prev => prev.map(p => {
+            return {
+              ...p,
+              payouts: (p.payouts || []).map(pay => {
+                if (String(pay.id) === String(t.id)) {
+                  return {
+                    ...pay,
+                    screenshot: base64Data,
+                    photo: base64Data,
+                    photos: [base64Data]
+                  };
+                }
+                return pay;
+              })
+            };
+          }));
+        }
+      } 
+      else if (t.source === 'client_receipt') {
+        if (!setProjects) return;
+        setProjects(prev => prev.map(p => {
+          if (String(p.id) === String(t.projectId)) {
+            return {
+              ...p,
+              clientFinancials: {
+                ...p.clientFinancials,
+                received: (p.clientFinancials.received || []).map(r => {
+                  if (String(r.id) === String(t.id)) {
+                    return {
+                      ...r,
+                      screenshot: base64Data,
+                      photo: base64Data,
+                      photos: [base64Data]
+                    };
+                  }
+                  return r;
+                })
+              }
+            };
+          }
+          return p;
+        }));
+      }
+      alert('Document attached successfully!');
     };
-  }, [expenses]);
-
-  // Unique listing of paidBy for filter
-  const uniquePaidBy = useMemo(() => {
-    const list = new Set();
-    expenses.forEach(e => {
-      if (e.paidBy) list.add(e.paidBy.trim());
-    });
-    return Array.from(list);
-  }, [expenses]);
-
-  // Filtered Ledger List
-  const filteredExpenses = useMemo(() => {
-    return expenses.filter(e => {
-      const matchesCat = filterCategory === 'ALL' || e.category === filterCategory;
-      const matchesType = filterType === 'ALL' || e.type === filterType;
-      const matchesPaidBy = filterPaidBy === 'ALL' || e.paidBy === filterPaidBy;
-      
-      const search = searchQuery.toLowerCase().trim();
-      const matchesSearch = searchQuery === '' || 
-        (e.notes && e.notes.toLowerCase().includes(search)) ||
-        (e.paidBy && e.paidBy.toLowerCase().includes(search)) ||
-        (e.category && e.category.toLowerCase().includes(search)) ||
-        (e.type && e.type.toLowerCase().includes(search));
-
-      return matchesCat && matchesType && matchesPaidBy && matchesSearch;
-    });
-  }, [expenses, filterCategory, filterType, filterPaidBy, searchQuery]);
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="animate-fade-in" style={{ padding: '0' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3.5rem', flexWrap: 'wrap', gap: '2rem' }}>
         <div>
-          <h2 style={{ fontSize: 'clamp(1.8rem, 5vw, 3.2rem)', fontWeight: '900', margin: 0, letterSpacing: '-0.04em' }}>Business Expense Ledger</h2>
+          <h2 style={{ fontSize: 'clamp(1.8rem, 5vw, 3.2rem)', fontWeight: '900', margin: 0, letterSpacing: '-0.04em' }}>Business Ledger</h2>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.8rem', letterSpacing: '0.25em', fontSize: '0.7rem', textTransform: 'uppercase' }}>Company-Level Operations Control</p>
         </div>
-        <div>
-          <button 
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 1.6rem', fontSize: '0.85rem' }}
-          >
-            {showAddForm ? '✕ Close Portal' : '➕ Record Business Expense'}
-          </button>
-        </div>
+        {isAdmin && (
+          <div>
+            <button 
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="btn btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.8rem 1.6rem', fontSize: '0.85rem' }}
+            >
+              {showAddForm ? '✕ Close Portal' : '➕ Record Transaction'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 💼 Corporate Overhead Allocation Configurator */}
@@ -284,6 +729,10 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
 
             <form onSubmit={(e) => {
               e.preventDefault();
+              if (!isAdmin) {
+                alert('Only administrators can update overhead rules.');
+                return;
+              }
               setOverheadConfig(localOverhead);
               setOverheadMethod(localMethod);
               alert('Company Overhead Configuration Saved!');
@@ -298,6 +747,7 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
                     <input 
                       type="number"
                       placeholder="₹ 0"
+                      disabled={!isAdmin}
                       value={localOverhead[key] || ''}
                       onChange={(e) => {
                         const val = parseMoney(e.target.value);
@@ -318,6 +768,7 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
                         type="radio" 
                         name="overheadMethod" 
                         value="equal" 
+                        disabled={!isAdmin}
                         checked={localMethod === 'equal'} 
                         onChange={() => setLocalMethod('equal')}
                         style={{ accentColor: 'var(--accent-color)' }}
@@ -329,6 +780,7 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
                         type="radio" 
                         name="overheadMethod" 
                         value="weighted" 
+                        disabled={!isAdmin}
                         checked={localMethod === 'weighted'} 
                         onChange={() => setLocalMethod('weighted')}
                         style={{ accentColor: 'var(--accent-color)' }}
@@ -348,9 +800,11 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
                       }
                     </strong>
                   </div>
-                  <button type="submit" className="btn btn-primary" style={{ padding: '0.65rem 1.5rem', fontSize: '0.8rem' }}>
-                    💾 Save Overhead Rules
-                  </button>
+                  {isAdmin && (
+                    <button type="submit" className="btn btn-primary" style={{ padding: '0.65rem 1.5rem', fontSize: '0.8rem' }}>
+                      💾 Save Overhead Rules
+                    </button>
+                  )}
                 </div>
               </div>
             </form>
@@ -358,7 +812,7 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
         )}
       </div>
 
-      {/* Migration / Offline Warning Alert Banner */}
+      {/* Database Warning Alert Banner */}
       {errorMsg && (
         <div style={{
           background: 'rgba(255, 69, 58, 0.1)',
@@ -382,88 +836,263 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
         </div>
       )}
 
-      {/* Add Expense Drawer/Form */}
-      {showAddForm && (
+      {/* Add Expense Drawer/Form (Admin Only) */}
+      {isAdmin && showAddForm && (
         <div className="card animate-slide-up" style={{ padding: '2rem', background: 'var(--bg-secondary)', marginBottom: '3rem', border: '1px solid var(--border-accent)' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: '800', marginBottom: '1.5rem', letterSpacing: '0.05em', color: 'var(--accent-color)' }}>💳 NEW OPERATION TRANSACTION</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '850', margin: 0, letterSpacing: '0.05em', color: 'var(--accent-color)', textTransform: 'uppercase' }}>
+              💳 Record New transaction
+            </h3>
+            <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-accent)', padding: '0.3rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <button 
+                type="button" 
+                onClick={() => setFormCategoryType('business_expense')} 
+                style={{ background: formCategoryType === 'business_expense' ? 'var(--accent-color)' : 'transparent', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                Corporate Expense
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setFormCategoryType('vendor_payment')} 
+                style={{ background: formCategoryType === 'vendor_payment' ? 'var(--accent-color)' : 'transparent', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                Vendor Payment
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setFormCategoryType('client_receipt')} 
+                style={{ background: formCategoryType === 'client_receipt' ? 'var(--accent-color)' : 'transparent', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                Client Receipt
+              </button>
+            </div>
+          </div>
           
           <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Transaction Date</label>
-              <input 
-                type="date" 
-                name="date"
-                required
-                value={formData.date}
-                onChange={handleInputChange}
-                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
-              />
-            </div>
+            
+            {/* Dynamic input sections */}
+            {formCategoryType === 'business_expense' && (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Transaction Date</label>
+                  <input 
+                    type="date" 
+                    name="date"
+                    required
+                    value={formData.date}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  />
+                </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Expense Category</label>
-              <select 
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
-              >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Expense Category</label>
+                  <select 
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  >
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Expense Type (Detailed Tag)</label>
-              <select 
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
-              >
-                {types.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Expense Type (Detailed Tag)</label>
+                  <select 
+                    name="type"
+                    value={formData.type}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  >
+                    {types.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Amount (INR)</label>
-              <input 
-                type="number" 
-                step="0.01"
-                placeholder="₹ Amount"
-                name="amount"
-                required
-                value={formData.amount}
-                onChange={handleInputChange}
-                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
-              />
-            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Amount (INR)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    placeholder="₹ Amount"
+                    name="amount"
+                    required
+                    value={formData.amount}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  />
+                </div>
 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Paid By / Account</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Ravi, HDFC Account"
+                    name="paidBy"
+                    value={formData.paidBy}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </>
+            )}
+
+            {formCategoryType === 'vendor_payment' && (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Select Vendor</label>
+                  <select 
+                    name="vendorId"
+                    required
+                    value={formData.vendorId}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  >
+                    <option value="">-- Choose Vendor --</option>
+                    {activeVendors.map(v => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Select Vendor Contract</label>
+                  <select 
+                    name="contractId"
+                    required
+                    value={formData.contractId}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  >
+                    <option value="">-- Choose Contract --</option>
+                    {availableContracts.map(c => (
+                      <option key={c.id} value={c.id}>{c.projectName} (Value: ₹{c.orderValue?.toLocaleString()})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Payment Date</label>
+                  <input 
+                    type="date" 
+                    name="date"
+                    required
+                    value={formData.date}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Amount (INR)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    placeholder="₹ Amount"
+                    name="amount"
+                    required
+                    value={formData.amount}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </>
+            )}
+
+            {formCategoryType === 'client_receipt' && (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Select Project</label>
+                  <select 
+                    name="projectId"
+                    required
+                    value={formData.projectId}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  >
+                    <option value="">-- Choose Project --</option>
+                    {activeProjects.map(proj => (
+                      <option key={proj.id} value={proj.id}>{proj.name} ({proj.client || 'No Client'})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Collection Date</label>
+                  <input 
+                    type="date" 
+                    name="date"
+                    required
+                    value={formData.date}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Amount Received (INR)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    placeholder="₹ Amount"
+                    name="amount"
+                    required
+                    value={formData.amount}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Receipt Category/Type</label>
+                  <select 
+                    name="receiptType"
+                    value={formData.receiptType}
+                    onChange={handleInputChange}
+                    style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
+                  >
+                    <option value="Milestone Payment">Milestone Payment</option>
+                    <option value="Advance">Advance Payment</option>
+                    <option value="Retainer">Retainer Fee</option>
+                    <option value="GST Reimbursement">GST Reimbursement</option>
+                    <option value="Other">Other Inflow</option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* Common Notes & Upload Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Paid By / Account</label>
+              <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>
+                {formCategoryType === 'business_expense' ? 'Notes & Details' : 'Payment Reference (UTR/Cheque/Details)'}
+              </label>
               <input 
                 type="text" 
-                placeholder="e.g. Ravi, HDFC Account"
-                name="paidBy"
-                value={formData.paidBy}
-                onChange={handleInputChange}
-                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', gridColumn: '1 / -1' }}>
-              <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>Notes & Transaction Details</label>
-              <input 
-                type="text" 
-                placeholder="Vendor, invoice details, purpose of expenditure..."
+                placeholder={formCategoryType === 'business_expense' ? 'Vendor, invoice details, purpose...' : 'Enter payment reference or UTR details...'}
                 name="notes"
                 value={formData.notes}
                 onChange={handleInputChange}
                 style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
               />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>
+                Attach Document / Screenshot
+              </label>
+              <input 
+                type="file" 
+                accept="image/*,application/pdf"
+                onChange={handleFileChange}
+                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.65rem', borderRadius: '8px', color: '#fff', fontSize: '0.8rem' }}
+              />
+              {formAttachment && (
+                <span style={{ fontSize: '0.65rem', color: 'var(--success)' }}>✓ Document loaded in memory</span>
+              )}
             </div>
 
             <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
@@ -472,7 +1101,7 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
                 className="btn btn-primary"
                 style={{ padding: '0.8rem 2rem', fontSize: '0.85rem' }}
               >
-                💾 Securely Record Expense
+                💾 Securely Record Transaction
               </button>
             </div>
           </form>
@@ -482,32 +1111,44 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
       {/* Corporate Financial HUD */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
         gap: '1.5rem', 
         marginBottom: '4rem' 
       }}>
-        <div className="card cinematic-hover" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+        {/* Total Inflow */}
+        <div className="card cinematic-hover" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', borderLeft: '4px solid var(--success)' }}>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.15em' }}>TOTAL CORPORATE INFLOW</div>
+          <div style={{ fontSize: '2.2rem', fontWeight: '900', color: 'var(--success)' }}>
+            ₹{stats.totalInflow.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>From all client payments and inflows</div>
+        </div>
+
+        {/* Total Outflow */}
+        <div className="card cinematic-hover" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', borderLeft: '4px solid var(--danger)' }}>
           <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.15em' }}>TOTAL CORPORATE OUTFLOW</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--danger)' }}>
-            ₹{stats.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div style={{ fontSize: '2.2rem', fontWeight: '900', color: 'var(--danger)' }}>
+            ₹{stats.totalOutflow.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Across all custom-logged business items</div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>From general expenses and vendor payouts</div>
         </div>
 
-        <div className="card cinematic-hover" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.15em' }}>PRIMARY CATEGORY OUTFLOW</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '850', color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            {stats.categories[0] ? `${stats.categories[0].name} (₹${Math.round(stats.categories[0].val).toLocaleString('en-IN')})` : 'No Transactions'}
+        {/* Net Cash Position */}
+        <div className="card cinematic-hover" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', borderLeft: `4px solid ${stats.netCashFlow >= 0 ? 'var(--accent-color)' : 'var(--danger)'}` }}>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.15em' }}>NET CASH POSITION</div>
+          <div style={{ fontSize: '2.2rem', fontWeight: '900', color: stats.netCashFlow >= 0 ? 'var(--accent-color)' : 'var(--danger)' }}>
+            ₹{stats.netCashFlow.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Highest cost operational category</div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Overall ledger net cash flow status</div>
         </div>
 
+        {/* Transaction Count */}
         <div className="card cinematic-hover" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.15em' }}>LEDGER TRANSACTION LOOPS</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--accent-color)' }}>
-            {filteredExpenses.length} <span style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--text-secondary)' }}>shown / {expenses.length} total</span>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.15em' }}>LEDGER LOOPS COUNT</div>
+          <div style={{ fontSize: '2.2rem', fontWeight: '900', color: 'var(--text-primary)' }}>
+            {filteredExpenses.length} <span style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--text-secondary)' }}>shown / {unifiedTransactions.length} total</span>
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Active ledger record counts</div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Active filters count</div>
         </div>
       </div>
 
@@ -521,7 +1162,8 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>No logged data available</p>
             ) : (
               stats.categories.map(cat => {
-                const percent = stats.total > 0 ? Math.round((cat.val / stats.total) * 100) : 0;
+                const totalCombined = stats.totalInflow + stats.totalOutflow;
+                const percent = totalCombined > 0 ? Math.round((cat.val / totalCombined) * 100) : 0;
                 return (
                   <div key={cat.name} className="cinematic-hover">
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.85rem' }}>
@@ -534,7 +1176,7 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
                       <div style={{ 
                         height: '100%', 
                         width: `${percent}%`, 
-                        background: 'var(--accent-color)',
+                        background: cat.name.includes('Inflow') ? 'var(--success)' : 'var(--accent-color)',
                         borderRadius: '3px'
                       }}></div>
                     </div>
@@ -549,11 +1191,12 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
         <div className="card" style={{ padding: '2rem', background: 'var(--bg-secondary)' }}>
           <h4 style={{ marginBottom: '2rem', fontSize: '0.8rem', letterSpacing: '0.15em', color: 'var(--accent-color)', fontWeight: '850' }}>🏷️ EXPENSE SHARE BY DETAILED TAG (TYPE)</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {stats.types.length === 0 ? (
+            {stats.tags.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>No logged data available</p>
             ) : (
-              stats.types.map(t => {
-                const percent = stats.total > 0 ? Math.round((t.val / stats.total) * 100) : 0;
+              stats.tags.map(t => {
+                const totalCombined = stats.totalInflow + stats.totalOutflow;
+                const percent = totalCombined > 0 ? Math.round((t.val / totalCombined) * 100) : 0;
                 return (
                   <div key={t.name} className="cinematic-hover">
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.85rem' }}>
@@ -585,7 +1228,8 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>No logged data available</p>
             ) : (
               stats.paidBy.map(pb => {
-                const percent = stats.total > 0 ? Math.round((pb.val / stats.total) * 100) : 0;
+                const totalCombined = stats.totalInflow + stats.totalOutflow;
+                const percent = totalCombined > 0 ? Math.round((pb.val / totalCombined) * 100) : 0;
                 return (
                   <div key={pb.name} className="cinematic-hover">
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', fontSize: '0.85rem' }}>
@@ -617,7 +1261,7 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
           <div style={{ flex: '1 1 250px' }}>
             <input 
               type="text" 
-              placeholder="🔍 Search notes, accounts, types..."
+              placeholder="🔍 Search notes, accounts, types, projects, vendors..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ width: '100%', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.65rem 1rem', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}
@@ -627,6 +1271,19 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800' }}>TYPE:</span>
+              <select 
+                value={filterTypeSelector} 
+                onChange={(e) => setFilterTypeSelector(e.target.value)}
+                style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.5rem 0.8rem', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}
+              >
+                <option value="ALL">All Types</option>
+                <option value="Debit">Debit (Outflow)</option>
+                <option value="Credit">Credit (Inflow)</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '800' }}>CATEGORY:</span>
               <select 
                 value={filterCategory} 
@@ -634,7 +1291,7 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
                 style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.5rem 0.8rem', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}
               >
                 <option value="ALL">All Categories</option>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
 
@@ -646,7 +1303,7 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
                 style={{ background: 'var(--bg-accent)', border: '1px solid var(--border-color)', padding: '0.5rem 0.8rem', borderRadius: '6px', color: '#fff', fontSize: '0.75rem' }}
               >
                 <option value="ALL">All Tags</option>
-                {types.map(t => <option key={t} value={t}>{t}</option>)}
+                {uniqueTags.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
 
@@ -672,56 +1329,139 @@ const BusinessExpenseLedger = ({ overheadConfig, setOverheadConfig, overheadMeth
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Date</th>
+                <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Dates</th>
                 <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Category</th>
                 <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Tag (Type)</th>
                 <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Disbursement (Paid By)</th>
                 <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Notes / Details</th>
+                <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center' }}>Type</th>
                 <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'right' }}>Amount</th>
-                <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center' }}>Actions</th>
+                <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center' }}>Document</th>
+                {isAdmin && (
+                  <th style={{ padding: '1.2rem 1.5rem', fontWeight: '800', fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center' }}>Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {filteredExpenses.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    No matching business expenses logged.
+                  <td colSpan={isAdmin ? 9 : 8} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    No matching ledger transactions logged.
                   </td>
                 </tr>
               ) : (
-                filteredExpenses.map((exp) => (
-                  <tr key={exp.id} style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-primary)' }} className="cinematic-hover">
-                    <td style={{ padding: '1.2rem 1.5rem', fontWeight: '600' }}>
-                      {new Date(exp.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                filteredExpenses.map((t) => (
+                  <tr key={t.uid} style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-primary)' }} className="cinematic-hover">
+                    <td style={{ padding: '1.2rem 1.5rem' }}>
+                      <div style={{ fontWeight: '600' }}>
+                        {new Date(t.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                        Entered: {t.entryDate ? new Date(t.entryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                      </div>
                     </td>
                     <td style={{ padding: '1.2rem 1.5rem' }}>
                       <span style={{ padding: '0.3rem 0.6rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '750', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
-                        {exp.category}
+                        {t.category}
                       </span>
                     </td>
                     <td style={{ padding: '1.2rem 1.5rem' }}>
                       <span style={{ padding: '0.3rem 0.6rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '750', background: 'rgba(102,178,194,0.06)', border: '1px solid var(--border-accent)', color: 'var(--accent-color)' }}>
-                        {exp.type}
+                        {t.tag}
                       </span>
                     </td>
                     <td style={{ padding: '1.2rem 1.5rem', color: 'var(--text-secondary)' }}>
-                      {exp.paidBy || 'Company Account'}
+                      {t.vendor ? (
+                        <a 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (onNavigateVendor) onNavigateVendor(t.vendor.id);
+                          }}
+                          style={{ color: 'var(--accent-color)', fontWeight: '700', textDecoration: 'underline' }}
+                        >
+                          🤝 {t.vendor.name}
+                        </a>
+                      ) : (
+                        t.paidBy || 'Company Account'
+                      )}
                     </td>
-                    <td style={{ padding: '1.2rem 1.5rem', color: 'var(--text-secondary)', maxWidth: '300px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                      {exp.notes || '—'}
-                    </td>
-                    <td style={{ padding: '1.2rem 1.5rem', fontWeight: '800', textAlign: 'right', color: 'var(--danger)' }}>
-                      ₹{parseMoney(exp.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <td style={{ padding: '1.2rem 1.5rem', color: 'var(--text-secondary)', maxWidth: '280px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={t.notes}>
+                      {t.notes || '—'}
                     </td>
                     <td style={{ padding: '1.2rem 1.5rem', textAlign: 'center' }}>
-                      <button 
-                        onClick={() => handleDelete(exp.id)}
-                        style={{ color: 'var(--danger)', fontSize: '0.75rem', fontWeight: 'bold', border: '1px solid rgba(255, 69, 58, 0.2)', padding: '0.3rem 0.6rem', borderRadius: '6px', background: 'rgba(255, 69, 58, 0.05)', transition: 'var(--transition)' }}
-                        className="btn-outline"
-                      >
-                        🗑️ Delete
-                      </button>
+                      <span style={{ 
+                        fontWeight: '800', 
+                        color: t.type === 'Credit' ? 'var(--success)' : 'var(--danger)',
+                        fontSize: '0.75rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.2rem'
+                      }}>
+                        {t.type === 'Credit' ? '➕ Credit' : '➖ Debit'}
+                      </span>
                     </td>
+                    <td style={{ padding: '1.2rem 1.5rem', fontWeight: '800', textAlign: 'right', color: t.type === 'Credit' ? 'var(--success)' : 'var(--danger)' }}>
+                      {t.type === 'Credit' ? '+' : '-'} ₹{t.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td style={{ padding: '1.2rem 1.5rem', textAlign: 'center' }}>
+                      {t.attachment ? (
+                        <button 
+                          type="button"
+                          onClick={() => openAttachmentWindow(t.attachment)}
+                          style={{ 
+                            background: isPdf(t.attachment) ? 'rgba(255,149,0,0.1)' : 'rgba(102,178,194,0.1)', 
+                            border: '1px solid ' + (isPdf(t.attachment) ? 'rgba(255,149,0,0.6)' : 'var(--accent-color)'), 
+                            borderRadius: '4px', 
+                            color: isPdf(t.attachment) ? '#ff9500' : 'var(--accent-color)', 
+                            padding: '0.3rem 0.6rem', 
+                            fontSize: '0.7rem', 
+                            cursor: 'pointer', 
+                            fontWeight: '800',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {isPdf(t.attachment) ? '📄 PDF' : 'Evidence 📎'}
+                        </button>
+                      ) : (
+                        isAdmin ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem' }}>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>⚠️ No Doc</span>
+                            <label style={{ 
+                              background: 'rgba(255,255,255,0.05)', 
+                              border: '1px dashed var(--border-color)', 
+                              borderRadius: '4px', 
+                              padding: '0.2rem 0.4rem', 
+                              fontSize: '0.65rem', 
+                              cursor: 'pointer', 
+                              color: 'var(--text-secondary)',
+                              transition: 'all 0.2s'
+                            }}>
+                              📎 Upload
+                              <input 
+                                type="file" 
+                                accept="image/*,application/pdf"
+                                onChange={(e) => handleUploadRowAttachment(t, e.target.files[0])}
+                                style={{ display: 'none' }}
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>No Doc</span>
+                        )
+                      )}
+                    </td>
+                    {isAdmin && (
+                      <td style={{ padding: '1.2rem 1.5rem', textAlign: 'center' }}>
+                        <button 
+                          onClick={() => handleDeleteTransaction(t)}
+                          style={{ color: 'var(--danger)', fontSize: '0.75rem', fontWeight: 'bold', border: '1px solid rgba(255, 69, 58, 0.2)', padding: '0.3rem 0.6rem', borderRadius: '6px', background: 'rgba(255, 69, 58, 0.05)', transition: 'var(--transition)' }}
+                          className="btn-outline"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

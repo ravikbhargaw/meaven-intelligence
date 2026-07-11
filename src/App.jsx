@@ -2201,11 +2201,18 @@ function App() {
                 {activeTab === 'reports' && ( <IntelligenceReports projects={projects} vendors={vendors} portfolios={portfolios} /> )}
                 {activeTab === 'ledger' && ( 
                   <BusinessExpenseLedger 
+                    user={user}
+                    vendors={vendors}
+                    projects={projects}
+                    setVendors={setVendors}
+                    setProjects={setProjects}
+                    onAddVendorPayment={handleAddVendorPayment}
+                    onAddClientReceipt={handleLogPayment}
+                    onNavigateVendor={(vendorId) => { setSelectedVendorId(vendorId); setActiveTab('vendors'); }}
                     overheadConfig={overheadConfig} 
                     setOverheadConfig={setOverheadConfig} 
                     overheadMethod={overheadMethod} 
                     setOverheadMethod={setOverheadMethod} 
-                    projects={projects}
                   /> 
                 )}
                 {activeTab === 'admin' && ( 
