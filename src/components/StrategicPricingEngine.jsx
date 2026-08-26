@@ -12,24 +12,35 @@ const PRICING_DB = {
             i_section: { code: 'I-Section Divider', rate: 1000, len: 2500 }
         },
         stile_door: {
-            vertical: { code: 'SD36-VP11', rate: 1624, len: 2500 },
-            bottom: { code: 'SD36-HZ12B', rate: 1119, len: 1800 },
-            cap: { code: 'SD36-RH13B', rate: 220, len: 1800 }
+            vertical: { code: 'SD36-VP11', rate: 2045, len: 2500 },
+            bottom: { code: 'SD36-HZ12B', rate: 1409, len: 1800 },
+            cap: { code: 'SD36-RH13B', rate: 277, len: 1800 }
         }
     },
     hardware: {
         stile_door_essentials: [
             { name: 'Assembly Brackets', rate: 165, qty: 4 },
             { name: 'SS Hinges 4" Black', rate: 166, qty: 4 },
-            { name: 'Saddle Plate Black', rate: 672, qty: 1 },
-            { name: 'Gasket Set (Fixed)', rate: 1200, qty: 1 },
             { name: 'Pelmet Arm Closer Black', rate: 1445, qty: 1 }
         ],
+        stile_door_gaskets: [
+            { name: '10mm Glazing Rubber Black', baseQty: 10, unit: 'Mtrs', rate: 22 },
+            { name: 'Door Frame Rubber Gaskit Black', baseQty: 8, unit: 'Mtrs', rate: 25 },
+            { name: 'Door Frame Rubber Casing Black', baseQty: 8, unit: 'Mtrs', rate: 22 },
+            { name: 'Door (Stile) PPE 45&35 8MM Rubber Black', baseQty: 14, unit: 'Mtrs', rate: 28 },
+            { name: 'Siliconised Weather Strip 6.8×6 Black', baseQty: 5, unit: 'Mtrs', rate: 22 }
+        ],
         handles: {
-            mortise: { name: 'Mortise Set (MH01+Lock+Cylinder)', rate: 1595 },
-            pull_2d: { name: '2D Pull Set (Handle+Deadlock+Cyl+Cap)', rate: 2303 },
-            h_handle: { name: 'H-Handle Black (Alucraft)', rate: 878 }
+            d_handle: { name: 'D Handle', rate: 810 },
+            double_d_handle: { name: 'Double D Handle', rate: 810 },
+            mortise_no_lock: { name: 'Mortise (without Lock)', rate: 810 },
+            mortise_with_lock: { name: 'Mortise With Lock', rate: 810 }
         },
+        lock_package: [
+            { name: '30mm Dead Lock Body Black', rate: 405, qty: 1, unit: 'pc' },
+            { name: '60mm OSK Cylinder Black', rate: 462, qty: 1, unit: 'pc' },
+            { name: 'Dead Lock Body Cap Black', rate: 158, qty: 1, unit: 'pc' }
+        ],
         floor_spring_kit: [
             { name: 'Floor Spring Machine (Ozone)', rate: 2603.60 },
             { name: 'Top Patch', rate: 1006.02 },
@@ -52,7 +63,7 @@ const PRICING_DB = {
         floor_spring: 1200,
         frameless: 2500
     },
-    vascal: { rate: 1735, code: 'GPS 45DF 04' },
+    vascal: { rate: 1978, code: 'GPS 45DF-04B' },
     gst: 0.18
 }
 
@@ -63,7 +74,8 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
         height: 2400,
         glassType: '10mm Toughened',
         systemType: 'partition',
-        handleType: 'mortise',
+        handleType: 'd_handle',
+        addLock: false,
         totalProjectArea: 100,
         numDoors: 1,
         corners90: 0,
@@ -149,12 +161,12 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
 
             if (config.systemType === 'stile_door' || config.systemType === 'floor_spring') {
                 const n = config.numDoors || 0
-                const vascalQty = n === 0 ? 0 : (n === 1 ? 3 : Math.ceil(n * 2.5))
+                const vascalQty = Math.ceil(2.5 * n)
                 
                 if (config.systemType === 'stile_door') {
-                    const vertBars = Math.ceil((heightVal * 2 * n) / PRICING_DB.profiles.stile_door.vertical.len)
-                    const horizBottomBars = Math.ceil((widthVal * n) / PRICING_DB.profiles.stile_door.bottom.len)
-                    const horizCapBars = Math.ceil((widthVal * n) / PRICING_DB.profiles.stile_door.cap.len)
+                    const vertBars = 2 * n
+                    const horizBottomBars = 1 * n
+                    const horizCapBars = 1 * n
                     totalBarsOrdered = vertBars + horizBottomBars + horizCapBars
 
                     bom.push({ item: 'SD-VP11 Vertical', qty: vertBars, unit: 'bars', rate: PRICING_DB.profiles.stile_door.vertical.rate, total: vertBars * PRICING_DB.profiles.stile_door.vertical.rate })
@@ -164,8 +176,21 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
                     PRICING_DB.hardware.stile_door_essentials.forEach(h => {
                         bom.push({ item: h.name, qty: h.qty * n, unit: 'pcs', rate: h.rate, total: h.rate * h.qty * n })
                     })
-                    const handle = PRICING_DB.hardware.handles[config.handleType]
+
+                    PRICING_DB.hardware.stile_door_gaskets.forEach(g => {
+                        const qty = g.baseQty * n
+                        bom.push({ item: g.name, qty: qty, unit: g.unit, rate: g.rate, total: qty * g.rate })
+                    })
+
+                    const handle = PRICING_DB.hardware.handles[config.handleType] || PRICING_DB.hardware.handles.d_handle
                     bom.push({ item: handle.name, qty: n, unit: 'set', rate: handle.rate, total: handle.rate * n })
+
+                    if (config.handleType !== 'mortise_with_lock' && config.addLock) {
+                        PRICING_DB.hardware.lock_package.forEach(l => {
+                            bom.push({ item: l.name, qty: l.qty * n, unit: l.unit, rate: l.rate, total: l.rate * l.qty * n })
+                        })
+                    }
+
                     bom.push({ item: 'Stile Door Labor', qty: n, unit: 'units', rate: PRICING_DB.labor.stile_door, total: PRICING_DB.labor.stile_door * n })
                 } else {
                     PRICING_DB.hardware.floor_spring_kit.forEach(h => {
@@ -173,7 +198,7 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
                     })
                     bom.push({ item: 'Floor Spring Labor', qty: n, unit: 'units', rate: PRICING_DB.labor.floor_spring, total: PRICING_DB.labor.floor_spring * n })
                 }
-                bom.push({ item: `Vascal Opt. (N=${n})`, qty: vascalQty, unit: 'units', rate: PRICING_DB.vascal.rate, total: PRICING_DB.vascal.rate * vascalQty })
+                bom.push({ item: 'Door Frame (GPS 45DF-04B)', qty: vascalQty, unit: 'bars', rate: PRICING_DB.vascal.rate, total: PRICING_DB.vascal.rate * vascalQty })
             }
 
             landingCost = bom.reduce((acc, curr) => acc + curr.total, 0)
@@ -266,14 +291,35 @@ Margin: ${(calculation.margin * 100).toFixed(0)}% ${config.isManualMargin ? '(MA
                                 </select>
                             </div>
                             {config.systemType === 'stile_door' && (
-                                <div>
-                                    <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>HANDLE TYPE</label>
-                                    <select value={config.handleType} onChange={(e) => setConfig({...config, handleType: e.target.value})} style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.8rem' }}>
-                                        <option value="mortise" style={{ background: 'var(--bg-primary)' }}>Mortise Set</option>
-                                        <option value="pull_2d" style={{ background: 'var(--bg-primary)' }}>2D Pull Set</option>
-                                        <option value="h_handle" style={{ background: 'var(--bg-primary)' }}>H-Handle Black</option>
-                                    </select>
-                                </div>
+                                <>
+                                    <div>
+                                        <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>HANDLE TYPE</label>
+                                        <select value={config.handleType} onChange={(e) => setConfig({...config, handleType: e.target.value})} style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-accent)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.8rem' }}>
+                                            <option value="d_handle" style={{ background: 'var(--bg-primary)' }}>D Handle (₹810/set)</option>
+                                            <option value="double_d_handle" style={{ background: 'var(--bg-primary)' }}>Double D Handle (₹810/set)</option>
+                                            <option value="mortise_no_lock" style={{ background: 'var(--bg-primary)' }}>Mortise (without Lock) (₹810/set)</option>
+                                            <option value="mortise_with_lock" style={{ background: 'var(--bg-primary)' }}>Mortise With Lock (₹810/set)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        {config.handleType === 'mortise_with_lock' ? (
+                                            <div style={{ padding: '0.5rem 0.8rem', background: 'rgba(50, 215, 75, 0.1)', borderRadius: '6px', border: '1px solid rgba(50, 215, 75, 0.3)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.8rem' }}>🔒</span>
+                                                <span style={{ fontSize: '0.65rem', color: 'var(--success)', fontWeight: '700' }}>Lock package included in Mortise With Lock</span>
+                                            </div>
+                                        ) : (
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={!!config.addLock} 
+                                                    onChange={(e) => setConfig({...config, addLock: e.target.checked})} 
+                                                    style={{ width: '16px', height: '16px', accentColor: 'var(--accent-color)' }}
+                                                />
+                                                <span>ADD LOCK PACKAGE (+₹1,025/door)</span>
+                                            </label>
+                                        )}
+                                    </div>
+                                </>
                             )}
                             {(config.systemType === 'stile_door' || config.systemType === 'floor_spring') && (
                                 <div>

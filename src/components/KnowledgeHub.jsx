@@ -59,7 +59,7 @@ const GUIDE_SECTIONS = [
     title: 'Strategic Pricing Engine',
     content: [
       'High-precision quote generation and vendor procurement audit tool.',
-      '• **BOM Integrity** — Enforces absolute material requirements (e.g., SD-36 Stile Doors must include specific horizontal caps, saddle plates, and gasket sets).',
+      '• **BOM Integrity** — Enforces absolute material requirements (e.g., SD-36 Stile Doors include horizontal caps, door frame profiles, specialized rubber gasket sets, handles, and lock packages).',
       '• **Bin-Packing Logic** — Auto-calculates profile requirements from fixed bar lengths (2500mm / 1800mm) with wastage accounted for.',
       '• **Vendor Audit Console ("Hand-Twister")** — Reverse-engineers vendor quotes against raw floor costs. Flags markups above 20%.',
       '• **Negotiation Playbook** — Auto-generates talking points based on wastage discrepancies and BOM padding detected in the vendor quote.',
