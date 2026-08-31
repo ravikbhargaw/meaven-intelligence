@@ -124,11 +124,13 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
         } else {
             const widthM = widthVal / 1000
             const heightM = heightVal / 1000
-            const areaSqft = (widthM * heightM) * 10.764
+            const singleSqft = (widthM * heightM) * 10.764
+            const glassMultiplier = (config.systemType === 'stile_door' || config.systemType === 'floor_spring') ? (config.numDoors || 1) : 1
+            const totalGlassSqft = singleSqft * glassMultiplier
             
             const glassRate = PRICING_DB.glass[config.glassType].rate
-            const glassCost = areaSqft * glassRate
-            bom.push({ item: `Glass: ${config.glassType}`, qty: areaSqft.toFixed(2), unit: 'sqft', rate: glassRate, total: glassCost })
+            const glassCost = totalGlassSqft * glassRate
+            bom.push({ item: `Glass: ${config.glassType}`, qty: totalGlassSqft.toFixed(2), unit: 'sqft', rate: glassRate, total: glassCost })
             landingCost += glassCost
 
             if (config.systemType === 'partition') {
