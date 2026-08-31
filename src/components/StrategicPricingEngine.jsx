@@ -124,9 +124,9 @@ const StrategicPricingEngine = ({ projects = [], onAddNote }) => {
         } else {
             const widthM = widthVal / 1000
             const heightM = heightVal / 1000
-            const singleSqft = (widthM * heightM) * 10.764
+            const areaSqft = (widthM * heightM) * 10.764
             const glassMultiplier = (config.systemType === 'stile_door' || config.systemType === 'floor_spring') ? (config.numDoors || 1) : 1
-            const totalGlassSqft = singleSqft * glassMultiplier
+            const totalGlassSqft = areaSqft * glassMultiplier
             
             const glassRate = PRICING_DB.glass[config.glassType].rate
             const glassCost = totalGlassSqft * glassRate
