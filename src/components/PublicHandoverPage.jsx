@@ -269,7 +269,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
 
         // Trigger PDF generation in background & server email dispatch
         setTimeout(() => {
-            generateAndEmailPdf(updatedHandover, projectState);
+            generateHandoverPdf(updatedHandover, projectState);
         }, 500);
 
         // Next Step
@@ -307,7 +307,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
         setStep('completed');
     };
 
-    const generateAndEmailPdf = async (handover, project) => {
+    const generateHandoverPdf = async (handover, project) => {
         try {
             setIsGeneratingPdf(true);
             const templateEl = document.getElementById('handover-pdf-template');
@@ -318,26 +318,11 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
                 const pdfBase64 = pdf.output('datauristring');
 
-                // Update handover with pdfBase64
+                // Update handover with pdfBase64 for local viewing/downloading
                 const finalHandover = { ...handover, pdfBase64 };
                 setHandoverState(finalHandover);
                 if (onUpdateHandoverStatus) {
                     onUpdateHandoverStatus(project.id, finalHandover);
-                }
-
-                // Send Email via local server API if email provided
-                if (handover.recipientEmail) {
-                    fetch('http://localhost:3001/api/send-handover', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            to: handover.recipientEmail,
-                            recipientName: handover.recipientName,
-                            projectName: project.name,
-                            projectId: project.id,
-                            pdfBase64: pdfBase64
-                        })
-                    }).catch(console.error);
                 }
             }
         } catch (e) {
