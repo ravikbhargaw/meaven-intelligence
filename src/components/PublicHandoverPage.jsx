@@ -133,9 +133,12 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
     const [improvementText, setImprovementText] = useState('');
     const [allowTestimonial, setAllowTestimonial] = useState(true);
 
+    const isInitializedRef = useRef(false);
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
     useEffect(() => {
+        if (isInitializedRef.current) return;
+
         // 1. URL Payload Priority: If URL payload is present and NOT voided, it is 100% authoritative!
         const urlPayloadObj = parseUrlPayload();
         if (urlPayloadObj && urlPayloadObj.handover && urlPayloadObj.handover.status !== 'VOIDED' && urlPayloadObj.handover.active !== false) {
@@ -158,6 +161,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 setStep('completed');
             }
             setIsLoading(false);
+            isInitializedRef.current = true;
             return;
         }
 
@@ -175,6 +179,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 setStep('completed');
             }
             setIsLoading(false);
+            isInitializedRef.current = true;
             return;
         }
 
@@ -194,6 +199,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 setStep('completed');
             }
             setIsLoading(false);
+            isInitializedRef.current = true;
             return;
         }
 
@@ -233,6 +239,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                             setStep('completed');
                         }
                         setIsLoading(false);
+                        isInitializedRef.current = true;
                         return;
                     }
                 }
@@ -262,6 +269,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                                     setStep('completed');
                                 }
                                 setIsLoading(false);
+                                isInitializedRef.current = true;
                                 return;
                             }
                         }
@@ -302,6 +310,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                         if (checkIsSubmitted(data.handover)) {
                             setStep('completed');
                         }
+                        isInitializedRef.current = true;
                     }
                 })
                 .catch(err => {
@@ -311,7 +320,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                     setIsLoading(false);
                 });
         }
-    }, [token, targetHandover, targetProject]);
+    }, [token]);
 
     // Canvas drawing handlers
     useEffect(() => {
