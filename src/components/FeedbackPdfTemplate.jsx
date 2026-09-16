@@ -12,9 +12,12 @@ const FeedbackPdfTemplate = ({ handover, project }) => {
 
     return (
         <div id="feedback-pdf-template" style={{
-            position: 'absolute',
-            left: '-9999px',
-            top: '-9999px',
+            position: 'fixed',
+            left: '0px',
+            top: '0px',
+            zIndex: -9999,
+            opacity: 0.01,
+            pointerEvents: 'none',
             width: '800px',
             background: '#ffffff',
             color: '#111827',

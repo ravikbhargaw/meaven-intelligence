@@ -114,11 +114,14 @@ const ProjectHandoverAdmin = ({ project, onSaveHandover, onClose }) => {
         
         // Persist to local server API for instant Incognito and cross-tab availability
         try {
-            fetch('http://localhost:3001/api/handovers', {
+            const apiUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                ? 'http://localhost:3001/api/handovers'
+                : '/api/handovers';
+            fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, project, handover: newHandover })
-            }).catch(e => console.warn('Local handover API post error:', e));
+            }).catch(e => console.warn('Handover API post error:', e));
         } catch (e) {}
 
         onSaveHandover(newHandover);

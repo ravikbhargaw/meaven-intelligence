@@ -537,10 +537,13 @@ function App() {
 
   useEffect(() => {
     if (projects && projects.length > 0) {
+        const apiUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+            ? 'http://localhost:3001/api/handovers'
+            : '/api/handovers';
         projects.forEach(p => {
             (p.handovers || []).forEach(h => {
                 if (h && h.token) {
-                    fetch('http://localhost:3001/api/handovers', {
+                    fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ token: h.token, project: p, handover: h })

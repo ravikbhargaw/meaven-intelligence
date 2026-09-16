@@ -79,7 +79,37 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
 
         if (token) {
             setIsLoading(true);
-            fetch(`http://localhost:3001/api/handovers/${token}`)
+            try {
+                const storedProjects = JSON.parse(localStorage.getItem('projects') || localStorage.getItem('meaven_projects') || '[]');
+                for (const p of storedProjects) {
+                    const h = (p.handovers || []).find(ho => ho.token === token);
+                    if (h) {
+                        setProjectState(p);
+                        setHandoverState(h);
+                        setSignerName(h.recipientName || '');
+                        setSignerDesignation(h.recipientDesignation || '');
+                        setSignerCompany(h.recipientCompany || '');
+                        setRecipientRemarks(h.recipientRemarks || '');
+                        setRecipientPendingText(h.recipientPendingText || '');
+                        const snagsCount = [...(h.selectedSnags || []), ...(h.customObservations || [])].length;
+                        setHandoverDecision(h.handoverDecision || (snagsCount > 0 ? 'COMPLETED_WITH_SNAGS' : 'COMPLETED'));
+
+                        if (h.status === 'COMPLETED' || h.status === 'DEFERRED') {
+                            setStep('completed');
+                        }
+                        setIsLoading(false);
+                        return;
+                    }
+                }
+            } catch (lsErr) {
+                console.warn('LocalStorage check error:', lsErr);
+            }
+
+            const apiUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                ? `http://localhost:3001/api/handovers/${token}`
+                : `/api/handovers/${token}`;
+
+            fetch(apiUrl)
                 .then(res => {
                     if (!res.ok) throw new Error('Not found');
                     return res.json();
@@ -102,7 +132,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                     }
                 })
                 .catch(err => {
-                    console.warn("Local server handover fetch error:", err);
+                    console.warn("Handover fetch error:", err);
                 })
                 .finally(() => {
                     setIsLoading(false);
@@ -125,31 +155,38 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
 
     const getCanvasPos = (e) => {
         const canvas = canvasRef.current;
+        if (!canvas) return { x: 0, y: 0 };
         const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY;
+        const scaleX = canvas.width / (rect.width || 1);
+        const scaleY = canvas.height / (rect.height || 1);
         return {
-            x: clientX - rect.left,
-            y: clientY - rect.top
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
         };
     };
 
     const startDrawing = (e) => {
         setIsDrawing(true);
         const pos = getCanvasPos(e);
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
+        const ctx = canvasRef.current?.getContext('2d');
+        if (ctx) {
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
     };
 
     const draw = (e) => {
         if (!isDrawing) return;
-        e.preventDefault();
+        if (e.cancelable) e.preventDefault();
         const pos = getCanvasPos(e);
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-        setHasSignature(true);
+        const ctx = canvasRef.current?.getContext('2d');
+        if (ctx) {
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            setHasSignature(true);
+        }
     };
 
     const stopDrawing = () => {
@@ -212,26 +249,33 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
 
     const handleCompleteHandover = async () => {
         if (!workInspected || !completedWorkHandedOver) {
-            alert('Please confirm that the works have been inspected and handed over.');
+            alert('Please check boxes 1 and 2 in the Handover Verification Checklist.');
             return;
         }
 
         if (!signerName.trim()) {
-            alert('Please confirm your full name.');
+            alert('Please enter your full name in the Signer Full Name field.');
             return;
         }
 
         if (!hasSignature) {
-            alert('Please provide your digital signature in the drawing box.');
+            alert('Please draw your signature in the signature box.');
             return;
         }
 
         if (!confirmAccuracy) {
-            alert('Please check the final accuracy confirmation box.');
+            alert('Please check the confirmation box verifying that the information provided is accurate.');
             return;
         }
 
-        const signatureDataUrl = canvasRef.current.toDataURL('image/png');
+        let signatureDataUrl = '';
+        try {
+            if (canvasRef.current) {
+                signatureDataUrl = canvasRef.current.toDataURL('image/png');
+            }
+        } catch (canvasErr) {
+            console.warn('Canvas data URL extraction warning:', canvasErr);
+        }
 
         const signaturePayload = {
             signatureDataUrl,
@@ -260,22 +304,47 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
             completedAt: new Date().toISOString()
         };
 
-        setHandoverState(updatedHandover);
+        try {
+            setHandoverState(updatedHandover);
 
-        // Update project state in parent
-        if (onUpdateHandoverStatus) {
-            onUpdateHandoverStatus(projectState.id, updatedHandover);
-        }
+            if (onUpdateHandoverStatus && projectState?.id) {
+                onUpdateHandoverStatus(projectState.id, updatedHandover);
+            }
 
-        // Trigger PDF generation in background & server email dispatch
-        setTimeout(() => {
-            generateHandoverPdf(updatedHandover, projectState);
-        }, 500);
+            // Also persist directly into localStorage so changes are instant and offline-resilient
+            try {
+                const storedProjects = JSON.parse(localStorage.getItem('projects') || localStorage.getItem('meaven_projects') || '[]');
+                const updatedProjs = storedProjects.map(p => {
+                    if (String(p.id) === String(projectState.id)) {
+                        const updatedHandovers = (p.handovers || []).map(h => h.id === updatedHandover.id ? updatedHandover : h);
+                        return { ...p, handovers: updatedHandovers };
+                    }
+                    return p;
+                });
+                localStorage.setItem('projects', JSON.stringify(updatedProjs));
+                localStorage.setItem('meaven_projects', JSON.stringify(updatedProjs));
+            } catch (lsErr) {
+                console.warn('LocalStorage save error:', lsErr);
+            }
 
-        // Next Step
-        if (updatedHandover.feedbackEnabled) {
-            setStep('feedback');
-        } else {
+            // Trigger PDF generation in background
+            setTimeout(() => {
+                try {
+                    generateHandoverPdf(updatedHandover, projectState);
+                } catch (pdfErr) {
+                    console.warn('Background PDF auto-generation error:', pdfErr);
+                }
+            }, 300);
+
+            // Immediately switch step to feedback or completed
+            if (updatedHandover.feedbackEnabled) {
+                setStep('feedback');
+            } else {
+                setStep('completed');
+            }
+        } catch (err) {
+            console.error('Error during handover completion process:', err);
+            // Fallback step transition if any unexpected error occurs
             setStep('completed');
         }
     };
