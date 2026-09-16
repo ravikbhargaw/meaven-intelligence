@@ -59,6 +59,28 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
     useEffect(() => {
+        // Direct local storage token lock check
+        try {
+            if (token) {
+                const savedHandover = localStorage.getItem(`meaven_submitted_handover_${token}`);
+                if (savedHandover) {
+                    const parsed = JSON.parse(savedHandover);
+                    if (parsed && parsed.handover && parsed.project) {
+                        setProjectState(parsed.project);
+                        setHandoverState(parsed.handover);
+                        setSignerName(parsed.handover.recipientName || '');
+                        setSignerDesignation(parsed.handover.recipientDesignation || '');
+                        setSignerCompany(parsed.handover.recipientCompany || '');
+                        setRecipientRemarks(parsed.handover.recipientRemarks || '');
+                        setRecipientPendingText(parsed.handover.recipientPendingText || '');
+                        setStep('completed');
+                        setIsLoading(false);
+                        return;
+                    }
+                }
+            }
+        } catch (e) {}
+
         if (targetHandover && targetProject) {
             setHandoverState(targetHandover);
             setProjectState(targetProject);
@@ -229,6 +251,22 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
         );
     }
 
+    // Check if link is VOIDED / DEACTIVATED by admin
+    if (handoverState.status === 'VOIDED' || handoverState.active === false) {
+        return (
+            <div style={{ minHeight: '100vh', background: '#F8FAFC', color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
+                <div style={{ maxWidth: '440px', background: '#FFFFFF', padding: '2.5rem 1.8rem', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                    <div style={{ fontSize: '3.2rem', marginBottom: '0.8rem' }}>🚫</div>
+                    <h2 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#DC2626', margin: '0 0 0.5rem 0' }}>HANDOVER LINK DEACTIVATED</h2>
+                    <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: '1.5' }}>
+                        This handover authorization link has been deactivated or voided by Meaven Project Management.<br /><br />
+                        If a new link was issued for this project, please request or open the latest link provided by your Meaven administrator.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     // Link Expiry Check (7 Days)
     const isExpired = handoverState.expiresAt && new Date(handoverState.expiresAt) < new Date();
     if (isExpired && handoverState.status !== 'COMPLETED' && handoverState.status !== 'DEFERRED') {
@@ -323,6 +361,12 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 });
                 localStorage.setItem('projects', JSON.stringify(updatedProjs));
                 localStorage.setItem('meaven_projects', JSON.stringify(updatedProjs));
+                if (token) {
+                    localStorage.setItem(`meaven_submitted_handover_${token}`, JSON.stringify({
+                        handover: updatedHandover,
+                        project: projectState
+                    }));
+                }
             } catch (lsErr) {
                 console.warn('LocalStorage save error:', lsErr);
             }

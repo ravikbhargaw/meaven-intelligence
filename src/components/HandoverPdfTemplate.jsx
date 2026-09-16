@@ -174,7 +174,7 @@ const HandoverPdfTemplate = ({ handover, project }) => {
                                 </div>
                             )}
                             <div style={{ fontSize: '11px', color: '#334155' }}>
-                                <strong style={{ color: '#64748B' }}>Execution Date:</strong> {handover.completedAt ? new Date(handover.completedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                <strong style={{ color: '#64748B' }}>Signoff Date:</strong> {handover.completedAt ? new Date(handover.completedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                             </div>
                         </div>
                     </div>

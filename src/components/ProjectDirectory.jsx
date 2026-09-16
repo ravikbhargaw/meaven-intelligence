@@ -734,11 +734,30 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
         try {
             const templateEl = document.getElementById('handover-pdf-template');
             if (templateEl) {
-                const canvas = await html2canvas(templateEl, { scale: 2, useCORS: true });
+                const canvas = await html2canvas(templateEl, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    onclone: (clonedDoc) => {
+                        const el = clonedDoc.getElementById('handover-pdf-template');
+                        if (el) {
+                            el.style.position = 'relative';
+                            el.style.left = '0';
+                            el.style.top = '0';
+                            el.style.zIndex = '99999';
+                            el.style.opacity = '1';
+                            el.style.visibility = 'visible';
+                            el.style.display = 'block';
+                        }
+                    }
+                });
                 const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
                 pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-                pdf.save(`${selectedProject.name}_v${handover.version || 1}_Handover_Certificate.pdf`);
+                const fileName = `${(selectedProject?.name || 'Project').replace(/[^a-zA-Z0-9_-]/g, '_')}_v${handover.version || 1}_Handover_Certificate.pdf`;
+                pdf.save(fileName);
             }
         } catch (e) {
             console.error('Download PDF error:', e);
@@ -752,11 +771,30 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
         try {
             const templateEl = document.getElementById('feedback-pdf-template');
             if (templateEl) {
-                const canvas = await html2canvas(templateEl, { scale: 2, useCORS: true });
+                const canvas = await html2canvas(templateEl, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    onclone: (clonedDoc) => {
+                        const el = clonedDoc.getElementById('feedback-pdf-template');
+                        if (el) {
+                            el.style.position = 'relative';
+                            el.style.left = '0';
+                            el.style.top = '0';
+                            el.style.zIndex = '99999';
+                            el.style.opacity = '1';
+                            el.style.visibility = 'visible';
+                            el.style.display = 'block';
+                        }
+                    }
+                });
                 const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
                 pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-                pdf.save(`${selectedProject.name}_Customer_Feedback_Report.pdf`);
+                const fileName = `${(selectedProject?.name || 'Project').replace(/[^a-zA-Z0-9_-]/g, '_')}_Customer_Feedback_Report.pdf`;
+                pdf.save(fileName);
             }
         } catch (e) {
             console.error('Download Feedback PDF error:', e);
