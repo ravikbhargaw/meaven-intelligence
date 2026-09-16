@@ -136,9 +136,34 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
     useEffect(() => {
-        // Direct local storage token lock check
+        // 1. URL Payload Priority: If URL payload is present and NOT voided, it is 100% authoritative!
+        const urlPayloadObj = parseUrlPayload();
+        if (urlPayloadObj && urlPayloadObj.handover && urlPayloadObj.handover.status !== 'VOIDED' && urlPayloadObj.handover.active !== false) {
+            const savedLockObj = getSavedTokenLock(token || urlPayloadObj.handover.token);
+            const activeH = (savedLockObj && checkIsSubmitted(savedLockObj.handover)) ? savedLockObj.handover : urlPayloadObj.handover;
+            const activeP = (savedLockObj && checkIsSubmitted(savedLockObj.handover)) ? savedLockObj.project : urlPayloadObj.project;
+            
+            setProjectState(activeP);
+            setHandoverState(activeH);
+            setSignerName(activeH.recipientName || '');
+            setSignerDesignation(activeH.recipientDesignation || '');
+            setSignerCompany(activeH.recipientCompany || '');
+            setRecipientRemarks(activeH.recipientRemarks || '');
+            setRecipientPendingText(activeH.recipientPendingText || '');
+            
+            const snagsCount = [...(activeH.selectedSnags || []), ...(activeH.customObservations || [])].length;
+            setHandoverDecision(activeH.handoverDecision || (snagsCount > 0 ? 'COMPLETED_WITH_SNAGS' : 'COMPLETED'));
+
+            if (checkIsSubmitted(activeH)) {
+                setStep('completed');
+            }
+            setIsLoading(false);
+            return;
+        }
+
+        // 2. Direct local storage token lock check (only if non-voided)
         const savedLockObj = getSavedTokenLock(token);
-        if (savedLockObj && savedLockObj.handover && savedLockObj.project) {
+        if (savedLockObj && savedLockObj.handover && savedLockObj.project && savedLockObj.handover.status !== 'VOIDED' && savedLockObj.handover.active !== false) {
             setProjectState(savedLockObj.project);
             setHandoverState(savedLockObj.handover);
             setSignerName(savedLockObj.handover.recipientName || '');
@@ -153,7 +178,8 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
             return;
         }
 
-        if (targetHandover && targetProject) {
+        // 3. Fallback to targetHandover if resolved from projects prop
+        if (targetHandover && targetProject && targetHandover.status !== 'VOIDED' && targetHandover.active !== false) {
             setHandoverState(targetHandover);
             setProjectState(targetProject);
             setSignerName(targetHandover.recipientName || '');
@@ -174,11 +200,24 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
         if (token) {
             setIsLoading(true);
 
-            // 1. Try LocalStorage projects
+            // Helper for strict matching: match active non-voided token first
+            const findMatchingHandover = (handovers, searchTk) => {
+                if (!handovers || !searchTk) return null;
+                const activeMatch = handovers.find(ho => ho.token && ho.token === searchTk && ho.status !== 'VOIDED' && ho.active !== false);
+                if (activeMatch) return activeMatch;
+                const anyTokenMatch = handovers.find(ho => ho.token && ho.token === searchTk);
+                if (anyTokenMatch) return anyTokenMatch;
+                if (searchTk.startsWith('HO-')) {
+                    return handovers.find(ho => String(ho.id) === String(searchTk));
+                }
+                return null;
+            };
+
+            // 4. Try LocalStorage projects
             try {
                 const storedProjects = JSON.parse(localStorage.getItem('projects') || localStorage.getItem('meaven_projects') || '[]');
                 for (const p of storedProjects) {
-                    const h = (p.handovers || []).find(ho => (ho.token && ho.token === token) || String(ho.id) === String(token));
+                    const h = findMatchingHandover(p.handovers, token);
                     if (h) {
                         setProjectState(p);
                         setHandoverState(h);
@@ -201,13 +240,13 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 console.warn('LocalStorage check error:', lsErr);
             }
 
-            // 2. Try Supabase Cloud Database fallback
+            // 5. Try Supabase Cloud Database fallback
             if (supabase) {
                 supabase.from('projects').select('*').then(({ data: cloudProjects, error }) => {
                     if (!error && cloudProjects && cloudProjects.length > 0) {
                         for (const cp of cloudProjects) {
                             const pData = cp.data || cp;
-                            const h = (pData.handovers || []).find(ho => (ho.token && ho.token === token) || String(ho.id) === String(token));
+                            const h = findMatchingHandover(pData.handovers, token);
                             if (h) {
                                 setProjectState(pData);
                                 setHandoverState(h);
@@ -227,7 +266,6 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                             }
                         }
                     }
-                    // 3. Fallback to API call if local server API exists
                     fetchApiFallback();
                 }).catch(() => {
                     fetchApiFallback();
@@ -348,7 +386,21 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
         );
     }
 
-    if (!handoverState || !projectState) {
+    // Safety Fallback Rescue: If handoverState is marked VOIDED, but URL payload carries an active handover, rescue state immediately!
+    const currentPayloadObj = parseUrlPayload();
+    const effectiveState = (
+        (handoverState?.status === 'VOIDED' || handoverState?.active === false) &&
+        currentPayloadObj?.handover &&
+        currentPayloadObj.handover.status !== 'VOIDED' &&
+        currentPayloadObj.handover.active !== false
+    ) ? currentPayloadObj.handover : handoverState;
+
+    const effectiveProjState = (
+        (handoverState?.status === 'VOIDED' || handoverState?.active === false) &&
+        currentPayloadObj?.project
+    ) ? currentPayloadObj.project : projectState;
+
+    if (!effectiveState || !effectiveProjState) {
         return (
             <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
                 <div style={{ maxWidth: '400px' }}>
@@ -363,7 +415,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
     }
 
     // Check if link is VOIDED / DEACTIVATED by admin
-    if (handoverState.status === 'VOIDED' || handoverState.active === false) {
+    if (effectiveState.status === 'VOIDED' || effectiveState.active === false) {
         return (
             <div style={{ minHeight: '100vh', background: '#F8FAFC', color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
                 <div style={{ maxWidth: '440px', background: '#FFFFFF', padding: '2.5rem 1.8rem', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
