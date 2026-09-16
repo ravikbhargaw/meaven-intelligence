@@ -907,7 +907,11 @@ function App() {
     const handleUpdateHandoverStatus = (projectId, updatedHandover) => {
         const targetProj = (projects || []).find(p => String(p.id) === String(projectId));
         if (targetProj) {
-            const updatedHandovers = (targetProj.handovers || []).map(h => h.id === updatedHandover.id ? updatedHandover : h);
+            const updatedHandovers = (targetProj.handovers || []).map(h => 
+                (h.token && h.token === updatedHandover.token) || String(h.id) === String(updatedHandover.id)
+                    ? updatedHandover 
+                    : h
+            );
             handleUpdateProject(projectId, { handovers: updatedHandovers });
         }
     };

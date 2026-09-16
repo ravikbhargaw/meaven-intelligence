@@ -5,12 +5,31 @@ import HandoverPdfTemplate from './HandoverPdfTemplate';
 import FeedbackPdfTemplate from './FeedbackPdfTemplate';
 
 const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) => {
+    const checkIsSubmitted = (h) => {
+        if (!h) return false;
+        if (h.status === 'COMPLETED' || h.status === 'DEFERRED') return true;
+        if (h.completedAt) return true;
+        return false;
+    };
+
+    const getSavedTokenLock = (tk) => {
+        if (!tk) return null;
+        try {
+            const raw = localStorage.getItem(`meaven_submitted_handover_${tk}`);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.handover) return parsed;
+            }
+        } catch (e) {}
+        return null;
+    };
+
     // Locate handover by token across projects
     let targetProject = null;
     let targetHandover = null;
 
     for (const p of projects) {
-        const h = (p.handovers || []).find(ho => ho.token === token);
+        const h = (p.handovers || []).find(ho => (ho.token && ho.token === token) || String(ho.id) === String(token));
         if (h) {
             targetProject = p;
             targetHandover = h;
@@ -18,10 +37,14 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
         }
     }
 
-    const [handoverState, setHandoverState] = useState(targetHandover);
-    const [projectState, setProjectState] = useState(targetProject);
-    const [isLoading, setIsLoading] = useState(!targetHandover);
-    const [step, setStep] = useState('review'); // 'review' | 'feedback' | 'completed'
+    const savedLock = getSavedTokenLock(token);
+    const effectiveHandover = savedLock?.handover || targetHandover;
+    const effectiveProject = savedLock?.project || targetProject;
+
+    const [handoverState, setHandoverState] = useState(effectiveHandover);
+    const [projectState, setProjectState] = useState(effectiveProject);
+    const [isLoading, setIsLoading] = useState(!effectiveHandover);
+    const [step, setStep] = useState(checkIsSubmitted(effectiveHandover) ? 'completed' : 'review'); // 'review' | 'feedback' | 'completed'
 
     // Handover Decision & Written Remarks
     const [handoverDecision, setHandoverDecision] = useState('COMPLETED_WITH_SNAGS');
@@ -60,26 +83,21 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
 
     useEffect(() => {
         // Direct local storage token lock check
-        try {
-            if (token) {
-                const savedHandover = localStorage.getItem(`meaven_submitted_handover_${token}`);
-                if (savedHandover) {
-                    const parsed = JSON.parse(savedHandover);
-                    if (parsed && parsed.handover && parsed.project) {
-                        setProjectState(parsed.project);
-                        setHandoverState(parsed.handover);
-                        setSignerName(parsed.handover.recipientName || '');
-                        setSignerDesignation(parsed.handover.recipientDesignation || '');
-                        setSignerCompany(parsed.handover.recipientCompany || '');
-                        setRecipientRemarks(parsed.handover.recipientRemarks || '');
-                        setRecipientPendingText(parsed.handover.recipientPendingText || '');
-                        setStep('completed');
-                        setIsLoading(false);
-                        return;
-                    }
-                }
+        const savedLockObj = getSavedTokenLock(token);
+        if (savedLockObj && savedLockObj.handover && savedLockObj.project) {
+            setProjectState(savedLockObj.project);
+            setHandoverState(savedLockObj.handover);
+            setSignerName(savedLockObj.handover.recipientName || '');
+            setSignerDesignation(savedLockObj.handover.recipientDesignation || '');
+            setSignerCompany(savedLockObj.handover.recipientCompany || '');
+            setRecipientRemarks(savedLockObj.handover.recipientRemarks || '');
+            setRecipientPendingText(savedLockObj.handover.recipientPendingText || '');
+            if (checkIsSubmitted(savedLockObj.handover)) {
+                setStep('completed');
             }
-        } catch (e) {}
+            setIsLoading(false);
+            return;
+        }
 
         if (targetHandover && targetProject) {
             setHandoverState(targetHandover);
@@ -92,7 +110,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
             const snagsCount = [...(targetHandover.selectedSnags || []), ...(targetHandover.customObservations || [])].length;
             setHandoverDecision(targetHandover.handoverDecision || (snagsCount > 0 ? 'COMPLETED_WITH_SNAGS' : 'COMPLETED'));
 
-            if (targetHandover.status === 'COMPLETED' || targetHandover.status === 'DEFERRED') {
+            if (checkIsSubmitted(targetHandover)) {
                 setStep('completed');
             }
             setIsLoading(false);
@@ -104,7 +122,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
             try {
                 const storedProjects = JSON.parse(localStorage.getItem('projects') || localStorage.getItem('meaven_projects') || '[]');
                 for (const p of storedProjects) {
-                    const h = (p.handovers || []).find(ho => ho.token === token);
+                    const h = (p.handovers || []).find(ho => (ho.token && ho.token === token) || String(ho.id) === String(token));
                     if (h) {
                         setProjectState(p);
                         setHandoverState(h);
@@ -116,7 +134,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                         const snagsCount = [...(h.selectedSnags || []), ...(h.customObservations || [])].length;
                         setHandoverDecision(h.handoverDecision || (snagsCount > 0 ? 'COMPLETED_WITH_SNAGS' : 'COMPLETED'));
 
-                        if (h.status === 'COMPLETED' || h.status === 'DEFERRED') {
+                        if (checkIsSubmitted(h)) {
                             setStep('completed');
                         }
                         setIsLoading(false);
@@ -148,7 +166,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                         const snagsCount = [...(data.handover.selectedSnags || []), ...(data.handover.customObservations || [])].length;
                         setHandoverDecision(data.handover.handoverDecision || (snagsCount > 0 ? 'COMPLETED_WITH_SNAGS' : 'COMPLETED'));
 
-                        if (data.handover.status === 'COMPLETED' || data.handover.status === 'DEFERRED') {
+                        if (checkIsSubmitted(data.handover)) {
                             setStep('completed');
                         }
                     }
@@ -531,7 +549,7 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 </header>
 
                 {/* STEP 1: REVIEW & HANDOVER FORM */}
-                {step === 'review' && (
+                {step === 'review' && !checkIsSubmitted(handoverState) && (
                     <div className="animate-fade-in" style={{ padding: '0.5rem 0' }}>
                         {/* PROJECT SUMMARY CARD */}
                         <div style={{ background: '#FFFFFF', padding: '1.4rem', borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px -2px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
