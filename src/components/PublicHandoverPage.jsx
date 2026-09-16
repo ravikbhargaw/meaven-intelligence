@@ -16,10 +16,21 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
     const getSavedTokenLock = (tk) => {
         if (!tk) return null;
         try {
-            const raw = localStorage.getItem(`meaven_submitted_handover_${tk}`);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (parsed && parsed.handover) return parsed;
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+                const sessRaw = sessionStorage.getItem(`meaven_submitted_handover_${tk}`);
+                if (sessRaw) {
+                    const parsed = JSON.parse(sessRaw);
+                    if (parsed && parsed.handover) return parsed;
+                }
+            }
+        } catch (e) {}
+        try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+                const raw = localStorage.getItem(`meaven_submitted_handover_${tk}`);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && parsed.handover) return parsed;
+                }
             }
         } catch (e) {}
         return null;
@@ -70,8 +81,19 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
     }
 
     const savedLock = getSavedTokenLock(token);
-    const effectiveHandover = savedLock?.handover || targetHandover;
-    const effectiveProject = savedLock?.project || targetProject;
+    let effectiveHandover = targetHandover;
+    let effectiveProject = targetProject;
+
+    if (checkIsSubmitted(savedLock?.handover)) {
+        effectiveHandover = savedLock.handover;
+        effectiveProject = savedLock.project;
+    } else if (checkIsSubmitted(targetHandover)) {
+        effectiveHandover = targetHandover;
+        effectiveProject = targetProject;
+    } else if (savedLock?.handover) {
+        effectiveHandover = savedLock.handover;
+        effectiveProject = savedLock.project;
+    }
 
     const [handoverState, setHandoverState] = useState(effectiveHandover);
     const [projectState, setProjectState] = useState(effectiveProject);
@@ -434,11 +456,44 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
         try {
             setHandoverState(updatedHandover);
 
+            const tkKey = token || updatedHandover.token || updatedHandover.id;
+
+            // 1. Permanently update browser address bar URL with Base64 payload carrying COMPLETED status
+            try {
+                const payloadObj = {
+                    h: updatedHandover,
+                    p: {
+                        id: String(projectState?.id),
+                        name: projectState?.name,
+                        clientName: projectState?.clientName || 'N/A',
+                        address: projectState?.address || 'N/A',
+                        scope: projectState?.scope || projectState?.description || 'Execution & Installation Works'
+                    }
+                };
+                const completedB64 = btoa(encodeURIComponent(JSON.stringify(payloadObj)));
+                if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+                    const newUrl = `${window.location.pathname}?view=handover&token=${tkKey}&d=${completedB64}`;
+                    window.history.replaceState(null, '', newUrl);
+                }
+            } catch (b64Err) {
+                console.warn('URL replaceState error:', b64Err);
+            }
+
+            // 2. Persist submitted lock into both sessionStorage and localStorage
+            if (tkKey) {
+                const lockObjStr = JSON.stringify({
+                    handover: updatedHandover,
+                    project: projectState
+                });
+                try { sessionStorage.setItem(`meaven_submitted_handover_${tkKey}`, lockObjStr); } catch (e) {}
+                try { localStorage.setItem(`meaven_submitted_handover_${tkKey}`, lockObjStr); } catch (e) {}
+            }
+
             if (onUpdateHandoverStatus && projectState?.id) {
                 onUpdateHandoverStatus(projectState.id, updatedHandover);
             }
 
-            // Also persist directly into localStorage so changes are instant and offline-resilient
+            // 3. Persist directly into localStorage project lists
             try {
                 const storedProjects = JSON.parse(localStorage.getItem('projects') || localStorage.getItem('meaven_projects') || '[]');
                 const updatedProjs = storedProjects.map(p => {
@@ -454,30 +509,24 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 });
                 localStorage.setItem('projects', JSON.stringify(updatedProjs));
                 localStorage.setItem('meaven_projects', JSON.stringify(updatedProjs));
-                if (token) {
-                    localStorage.setItem(`meaven_submitted_handover_${token}`, JSON.stringify({
-                        handover: updatedHandover,
-                        project: projectState
-                    }));
-                }
-
-                // Sync to Supabase cloud DB so admin gets real-time completed status
-                if (supabase && projectState?.id) {
-                    supabase.from('projects').select('*').eq('id', String(projectState.id)).maybeSingle().then(({ data: cloudProj }) => {
-                        if (cloudProj) {
-                            const pData = cloudProj.data || cloudProj;
-                            const updatedHandovers = (pData.handovers || []).map(h => 
-                                (h.token && h.token === updatedHandover.token) || String(h.id) === String(updatedHandover.id)
-                                    ? updatedHandover 
-                                    : h
-                            );
-                            const updatedP = { ...pData, handovers: updatedHandovers };
-                            supabase.from('projects').upsert({ id: String(projectState.id), name: projectState.name, data: updatedP }).then(() => {}).catch(() => {});
-                        }
-                    }).catch(() => {});
-                }
             } catch (lsErr) {
                 console.warn('LocalStorage save error:', lsErr);
+            }
+
+            // 4. Sync to Supabase cloud DB so admin gets real-time completed status
+            if (supabase && projectState?.id) {
+                supabase.from('projects').select('*').eq('id', String(projectState.id)).maybeSingle().then(({ data: cloudProj }) => {
+                    if (cloudProj) {
+                        const pData = cloudProj.data || cloudProj;
+                        const updatedHandovers = (pData.handovers || []).map(h => 
+                            (h.token && h.token === updatedHandover.token) || String(h.id) === String(updatedHandover.id)
+                                ? updatedHandover 
+                                : h
+                        );
+                        const updatedP = { ...pData, handovers: updatedHandovers };
+                        supabase.from('projects').upsert({ id: String(projectState.id), name: projectState.name, data: updatedP }).then(() => {}).catch(() => {});
+                    }
+                }).catch(() => {});
             }
 
             // Trigger PDF generation in background
@@ -522,7 +571,76 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
 
         setHandoverState(updatedHandover);
 
-        if (onUpdateHandoverStatus) {
+        const tkKey = token || updatedHandover.token || updatedHandover.id;
+
+        // 1. Permanently update browser address bar URL with Base64 payload carrying feedback data
+        try {
+            const payloadObj = {
+                h: updatedHandover,
+                p: {
+                    id: String(projectState?.id),
+                    name: projectState?.name,
+                    clientName: projectState?.clientName || 'N/A',
+                    address: projectState?.address || 'N/A',
+                    scope: projectState?.scope || projectState?.description || 'Execution & Installation Works'
+                }
+            };
+            const completedB64 = btoa(encodeURIComponent(JSON.stringify(payloadObj)));
+            if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+                const newUrl = `${window.location.pathname}?view=handover&token=${tkKey}&d=${completedB64}`;
+                window.history.replaceState(null, '', newUrl);
+            }
+        } catch (b64Err) {
+            console.warn('URL replaceState error in feedback:', b64Err);
+        }
+
+        // 2. Persist lock into sessionStorage and localStorage
+        if (tkKey) {
+            const lockObjStr = JSON.stringify({
+                handover: updatedHandover,
+                project: projectState
+            });
+            try { sessionStorage.setItem(`meaven_submitted_handover_${tkKey}`, lockObjStr); } catch (e) {}
+            try { localStorage.setItem(`meaven_submitted_handover_${tkKey}`, lockObjStr); } catch (e) {}
+        }
+
+        // 3. Persist directly into localStorage project lists
+        try {
+            const storedProjects = JSON.parse(localStorage.getItem('projects') || localStorage.getItem('meaven_projects') || '[]');
+            const updatedProjs = storedProjects.map(p => {
+                if (String(p.id) === String(projectState.id)) {
+                    const updatedHandovers = (p.handovers || []).map(h => 
+                        (h.token && h.token === updatedHandover.token) || String(h.id) === String(updatedHandover.id)
+                            ? updatedHandover 
+                            : h
+                    );
+                    return { ...p, handovers: updatedHandovers };
+                }
+                return p;
+            });
+            localStorage.setItem('projects', JSON.stringify(updatedProjs));
+            localStorage.setItem('meaven_projects', JSON.stringify(updatedProjs));
+        } catch (lsErr) {
+            console.warn('LocalStorage save error in feedback:', lsErr);
+        }
+
+        // 4. Sync to Supabase Cloud DB
+        if (supabase && projectState?.id) {
+            supabase.from('projects').select('*').eq('id', String(projectState.id)).maybeSingle().then(({ data: cloudProj }) => {
+                if (cloudProj) {
+                    const pData = cloudProj.data || cloudProj;
+                    const updatedHandovers = (pData.handovers || []).map(h => 
+                        (h.token && h.token === updatedHandover.token) || String(h.id) === String(updatedHandover.id)
+                            ? updatedHandover 
+                            : h
+                    );
+                    const updatedP = { ...pData, handovers: updatedHandovers };
+                    supabase.from('projects').upsert({ id: String(projectState.id), name: projectState.name, data: updatedP }).then(() => {}).catch(() => {});
+                }
+            }).catch(() => {});
+        }
+
+        if (onUpdateHandoverStatus && projectState?.id) {
             onUpdateHandoverStatus(projectState.id, updatedHandover);
         }
 
