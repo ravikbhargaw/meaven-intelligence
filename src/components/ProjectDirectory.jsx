@@ -2116,8 +2116,23 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                         );
                     }
 
+                    const payloadObj = {
+                        h: activeHandover,
+                        p: {
+                            id: String(selectedProject.id),
+                            name: selectedProject.name,
+                            clientName: selectedProject.clientName || 'N/A',
+                            address: selectedProject.address || 'N/A',
+                            scope: selectedProject.scope || selectedProject.description || 'Execution & Installation Works'
+                        }
+                    };
+                    let b64Data = '';
+                    try { b64Data = btoa(encodeURIComponent(JSON.stringify(payloadObj))); } catch (e) {}
+
                     const base = (window.location.origin + window.location.pathname).replace(/\/$/, '');
-                    const magicLink = `${base}?view=handover&token=${activeHandover.token}`;
+                    const magicLink = b64Data 
+                        ? `${base}?view=handover&token=${activeHandover.token}&d=${b64Data}`
+                        : `${base}?view=handover&token=${activeHandover.token}`;
                     const isCompleted = activeHandover.status === 'COMPLETED';
                     const isVoided = activeHandover.status === 'VOIDED';
 

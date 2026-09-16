@@ -17,8 +17,8 @@ const ProjectHandoverAdmin = ({ project, onSaveHandover, onClose }) => {
     const [recipientEmail, setRecipientEmail] = useState(project.pocEmail || '');
     const [internalRemarks, setInternalRemarks] = useState('');
 
-    const [feedbackEnabled, setFeedbackEnabled] = useState(false);
-    const [googleReviewEnabled, setGoogleReviewEnabled] = useState(false);
+    const [feedbackEnabled, setFeedbackEnabled] = useState(true);
+    const [googleReviewEnabled, setGoogleReviewEnabled] = useState(true);
     const [googleReviewUrl, setGoogleReviewUrl] = useState('https://g.page/r/meaven-review');
 
     // Snag Selection
@@ -107,8 +107,26 @@ const ProjectHandoverAdmin = ({ project, onSaveHandover, onClose }) => {
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         };
 
+        const payloadObj = {
+            h: newHandover,
+            p: {
+                id: String(project.id),
+                name: project.name,
+                clientName: clientName.trim() || project.clientName || 'N/A',
+                address: siteAddress.trim() || project.address || 'N/A',
+                scope: project.scope || project.description || 'Execution & Installation Works'
+            }
+        };
+
+        let b64Data = '';
+        try {
+            b64Data = btoa(encodeURIComponent(JSON.stringify(payloadObj)));
+        } catch (e) {}
+
         const base = (window.location.origin + window.location.pathname).replace(/\/$/, '');
-        const link = `${base}?view=handover&token=${token}`;
+        const link = b64Data 
+            ? `${base}?view=handover&token=${token}&d=${b64Data}`
+            : `${base}?view=handover&token=${token}`;
 
         setGeneratedLink(link);
         

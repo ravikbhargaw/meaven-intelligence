@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import HandoverPdfTemplate from './HandoverPdfTemplate';
 import FeedbackPdfTemplate from './FeedbackPdfTemplate';
+import { supabase } from '../supabaseClient';
 
 const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) => {
     const checkIsSubmitted = (h) => {
@@ -24,16 +25,47 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
         return null;
     };
 
+    const parseUrlPayload = () => {
+        try {
+            if (typeof window === 'undefined') return null;
+            const params = new URLSearchParams(window.location.search);
+            const d = params.get('d');
+            if (d) {
+                const decodedStr = decodeURIComponent(atob(d));
+                const parsed = JSON.parse(decodedStr);
+                if (parsed && parsed.h && parsed.p) {
+                    return {
+                        handover: parsed.h,
+                        project: parsed.p
+                    };
+                }
+            }
+        } catch (e) {
+            console.warn('URL payload parse warning:', e);
+        }
+        return null;
+    };
+
     // Locate handover by token across projects
     let targetProject = null;
     let targetHandover = null;
 
-    for (const p of projects) {
-        const h = (p.handovers || []).find(ho => (ho.token && ho.token === token) || String(ho.id) === String(token));
-        if (h) {
-            targetProject = p;
-            targetHandover = h;
-            break;
+    // 1. Try URL payload first for instant zero-server decoding
+    const urlPayload = parseUrlPayload();
+    if (urlPayload) {
+        targetProject = urlPayload.project;
+        targetHandover = urlPayload.handover;
+    }
+
+    // 2. Try projects prop if not resolved from URL payload
+    if (!targetHandover) {
+        for (const p of projects) {
+            const h = (p.handovers || []).find(ho => (ho.token && ho.token === token) || String(ho.id) === String(token));
+            if (h) {
+                targetProject = p;
+                targetHandover = h;
+                break;
+            }
         }
     }
 
@@ -119,6 +151,8 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
 
         if (token) {
             setIsLoading(true);
+
+            // 1. Try LocalStorage projects
             try {
                 const storedProjects = JSON.parse(localStorage.getItem('projects') || localStorage.getItem('meaven_projects') || '[]');
                 for (const p of storedProjects) {
@@ -145,6 +179,45 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 console.warn('LocalStorage check error:', lsErr);
             }
 
+            // 2. Try Supabase Cloud Database fallback
+            if (supabase) {
+                supabase.from('projects').select('*').then(({ data: cloudProjects, error }) => {
+                    if (!error && cloudProjects && cloudProjects.length > 0) {
+                        for (const cp of cloudProjects) {
+                            const pData = cp.data || cp;
+                            const h = (pData.handovers || []).find(ho => (ho.token && ho.token === token) || String(ho.id) === String(token));
+                            if (h) {
+                                setProjectState(pData);
+                                setHandoverState(h);
+                                setSignerName(h.recipientName || '');
+                                setSignerDesignation(h.recipientDesignation || '');
+                                setSignerCompany(h.recipientCompany || '');
+                                setRecipientRemarks(h.recipientRemarks || '');
+                                setRecipientPendingText(h.recipientPendingText || '');
+                                const snagsCount = [...(h.selectedSnags || []), ...(h.customObservations || [])].length;
+                                setHandoverDecision(h.handoverDecision || (snagsCount > 0 ? 'COMPLETED_WITH_SNAGS' : 'COMPLETED'));
+
+                                if (checkIsSubmitted(h)) {
+                                    setStep('completed');
+                                }
+                                setIsLoading(false);
+                                return;
+                            }
+                        }
+                    }
+                    // 3. Fallback to API call if local server API exists
+                    fetchApiFallback();
+                }).catch(() => {
+                    fetchApiFallback();
+                });
+            } else {
+                fetchApiFallback();
+            }
+        } else {
+            setIsLoading(false);
+        }
+
+        function fetchApiFallback() {
             const apiUrl = typeof window !== 'undefined' && window.location.hostname === 'localhost'
                 ? `http://localhost:3001/api/handovers/${token}`
                 : `/api/handovers/${token}`;
@@ -177,8 +250,6 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 .finally(() => {
                     setIsLoading(false);
                 });
-        } else {
-            setIsLoading(false);
         }
     }, [token, targetHandover, targetProject]);
 
@@ -372,7 +443,11 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                 const storedProjects = JSON.parse(localStorage.getItem('projects') || localStorage.getItem('meaven_projects') || '[]');
                 const updatedProjs = storedProjects.map(p => {
                     if (String(p.id) === String(projectState.id)) {
-                        const updatedHandovers = (p.handovers || []).map(h => h.id === updatedHandover.id ? updatedHandover : h);
+                        const updatedHandovers = (p.handovers || []).map(h => 
+                            (h.token && h.token === updatedHandover.token) || String(h.id) === String(updatedHandover.id)
+                                ? updatedHandover 
+                                : h
+                        );
                         return { ...p, handovers: updatedHandovers };
                     }
                     return p;
@@ -384,6 +459,22 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                         handover: updatedHandover,
                         project: projectState
                     }));
+                }
+
+                // Sync to Supabase cloud DB so admin gets real-time completed status
+                if (supabase && projectState?.id) {
+                    supabase.from('projects').select('*').eq('id', String(projectState.id)).maybeSingle().then(({ data: cloudProj }) => {
+                        if (cloudProj) {
+                            const pData = cloudProj.data || cloudProj;
+                            const updatedHandovers = (pData.handovers || []).map(h => 
+                                (h.token && h.token === updatedHandover.token) || String(h.id) === String(updatedHandover.id)
+                                    ? updatedHandover 
+                                    : h
+                            );
+                            const updatedP = { ...pData, handovers: updatedHandovers };
+                            supabase.from('projects').upsert({ id: String(projectState.id), name: projectState.name, data: updatedP }).then(() => {}).catch(() => {});
+                        }
+                    }).catch(() => {});
                 }
             } catch (lsErr) {
                 console.warn('LocalStorage save error:', lsErr);
