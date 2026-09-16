@@ -20,6 +20,12 @@ import {
   calculateSnagImpact,
   calculateTimelineReliability
 } from '../utils/executionIntelligence'
+import ProjectHandoverAdmin from './ProjectHandoverAdmin'
+import HandoverPdfTemplate from './HandoverPdfTemplate'
+import FeedbackPdfTemplate from './FeedbackPdfTemplate'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
+
 
 // MOVE OUTSIDE to prevent re-mounting on every state change (which causes focus loss)
 const ModalOverlay = ({ children }) => (
@@ -679,6 +685,85 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSubTab, setActiveSubTab] = useState('overview') 
+  const [isInitiatingHandover, setIsInitiatingHandover] = useState(false)
+  const [currentHandoverForPdf, setCurrentHandoverForPdf] = useState(null)
+
+  const handleSaveHandover = (newHandover) => {
+    if (!selectedProject) return;
+    const existingHandovers = selectedProject.handovers || [];
+    const updatedHandovers = [newHandover, ...existingHandovers.filter(h => h.id !== newHandover.id)];
+    onUpdateValue(selectedProject.id, { 
+        handovers: updatedHandovers,
+        lastActivityAt: new Date().toISOString()
+    });
+    setIsInitiatingHandover(false);
+  };
+
+  const handleRegenerateLink = (handover) => {
+    if (!selectedProject) return;
+    const newToken = 'ho_sec_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const updatedHandover = {
+        ...handover,
+        token: newToken,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        sentAt: new Date().toISOString()
+    };
+    handleSaveHandover(updatedHandover);
+    alert('Link regenerated successfully! The old link has been invalidated.');
+  };
+
+  const handleVoidAndIssueNew = (handover) => {
+    if (!selectedProject) return;
+    if (!window.confirm('Are you sure you want to void this signed handover and issue a new draft version? The signed PDF will remain archived in history.')) return;
+    
+    const voidedHandover = {
+        ...handover,
+        status: 'VOIDED',
+        voidedAt: new Date().toISOString()
+    };
+    const existingHandovers = selectedProject.handovers || [];
+    const updatedHandovers = existingHandovers.map(h => h.id === handover.id ? voidedHandover : h);
+    
+    onUpdateValue(selectedProject.id, { handovers: updatedHandovers });
+    setIsInitiatingHandover(true);
+  };
+
+  const handleDownloadHandoverPdf = async (handover) => {
+    setCurrentHandoverForPdf(handover);
+    setTimeout(async () => {
+        try {
+            const templateEl = document.getElementById('handover-pdf-template');
+            if (templateEl) {
+                const canvas = await html2canvas(templateEl, { scale: 2, useCORS: true });
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+                pdf.save(`${selectedProject.name}_v${handover.version || 1}_Handover_Certificate.pdf`);
+            }
+        } catch (e) {
+            console.error('Download PDF error:', e);
+        }
+    }, 300);
+  };
+
+  const handleDownloadFeedbackPdf = async (handover) => {
+    setCurrentHandoverForPdf(handover);
+    setTimeout(async () => {
+        try {
+            const templateEl = document.getElementById('feedback-pdf-template');
+            if (templateEl) {
+                const canvas = await html2canvas(templateEl, { scale: 2, useCORS: true });
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+                pdf.save(`${selectedProject.name}_Customer_Feedback_Report.pdf`);
+            }
+        } catch (e) {
+            console.error('Download Feedback PDF error:', e);
+        }
+    }, 300);
+  };
+
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false)
@@ -917,9 +1002,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'execution' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'execution' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                 >Readiness & Snags</button>
                 <button 
+                    onClick={() => setActiveSubTab('handover')}
+                    style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: 'none', background: activeSubTab === 'handover' ? 'var(--accent-color)' : 'none', color: activeSubTab === 'handover' ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                >📜 Handover & Closure</button>
+                <button 
                     onClick={() => { window.location.hash = '#calculator'; window.dispatchEvent(new CustomEvent('navigate', { detail: 'calculator' })); }}
                     style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid var(--accent-color)', background: 'none', color: 'var(--accent-color)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                 >🧮 TECH CALC</button>
+
             </div>
         </div>
 
@@ -1946,6 +2036,187 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                     </div>
                 </div>
             </div>
+        ) : activeSubTab === 'handover' ? (
+            <div className="animate-fade-in">
+                {/* Hidden PDF Templates */}
+                <HandoverPdfTemplate handover={currentHandoverForPdf} project={selectedProject} />
+                <FeedbackPdfTemplate handover={currentHandoverForPdf} project={selectedProject} />
+
+                {/* TOP CONTROL BAR */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '900' }}>Project Handover & Closure Engine</h3>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            Manage digital project closure, recipient links, signatures, and closure archive.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => setIsInitiatingHandover(true)}
+                        className="btn btn-primary"
+                        style={{ padding: '0.6rem 1.2rem', fontSize: '0.8rem', fontWeight: '800' }}
+                    >
+                        ➕ INITIATE NEW HANDOVER
+                    </button>
+                </div>
+
+                {/* ACTIVE / LATEST HANDOVER CARD */}
+                {(() => {
+                    const handovers = selectedProject.handovers || [];
+                    const activeHandover = handovers.find(h => h.status !== 'VOIDED') || handovers[0];
+                    if (!activeHandover) {
+                        return (
+                            <div className="card" style={{ background: 'var(--bg-secondary)', padding: '2rem', textAlign: 'center', borderRadius: '12px', border: '1px dashed var(--border-color)', marginBottom: '2rem' }}>
+                                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📜</div>
+                                <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '1rem', fontWeight: '800' }}>No Active Handover Initialized</h4>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1.2rem' }}>
+                                    Initiate a digital handover to generate a secure recipient link and capture closure signatures.
+                                </p>
+                                <button onClick={() => setIsInitiatingHandover(true)} className="btn btn-primary" style={{ fontSize: '0.8rem' }}>
+                                    ➕ Create Handover Link
+                                </button>
+                            </div>
+                        );
+                    }
+
+                    const base = (window.location.origin + window.location.pathname).replace(/\/$/, '');
+                    const magicLink = `${base}?view=handover&token=${activeHandover.token}`;
+                    const isCompleted = activeHandover.status === 'COMPLETED';
+                    const isVoided = activeHandover.status === 'VOIDED';
+
+                    return (
+                        <div className="card" style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '2rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.2rem' }}>
+                                <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.4rem' }}>
+                                        <span style={{
+                                            padding: '0.2rem 0.8rem',
+                                            borderRadius: '20px',
+                                            fontSize: '0.65rem',
+                                            fontWeight: '900',
+                                            background: isCompleted ? 'rgba(50,215,75,0.15)' : (isVoided ? 'rgba(255,69,58,0.15)' : 'rgba(102,178,194,0.15)'),
+                                            color: isCompleted ? 'var(--success)' : (isVoided ? 'var(--danger)' : 'var(--accent-color)'),
+                                            border: '1px solid ' + (isCompleted ? 'rgba(50,215,75,0.3)' : (isVoided ? 'rgba(255,69,58,0.3)' : 'rgba(102,178,194,0.3)'))
+                                        }}>
+                                            STATUS: {activeHandover.status} (v{activeHandover.version || 1}.0)
+                                        </span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ID: {activeHandover.id}</span>
+                                    </div>
+                                    <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800' }}>
+                                        Recipient: {activeHandover.recipientName} ({activeHandover.recipientType})
+                                    </h4>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                        Phone: {activeHandover.recipientPhone || 'N/A'} | Email: {activeHandover.recipientEmail || 'N/A'}
+                                    </div>
+                                </div>
+
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Created On</div>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: '800' }}>{new Date(activeHandover.createdAt).toLocaleDateString('en-IN')}</div>
+                                </div>
+                            </div>
+
+                            {/* TOGGLES & STATUS STRIP */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.8rem', background: 'var(--bg-accent)', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '1.2rem', fontSize: '0.75rem' }}>
+                                <div><span style={{ color: 'var(--text-secondary)' }}>Feedback Mode:</span> <strong>{activeHandover.feedbackEnabled ? '⭐ ON' : 'OFF'}</strong></div>
+                                <div><span style={{ color: 'var(--text-secondary)' }}>Google Review:</span> <strong>{activeHandover.googleReviewEnabled ? '🌐 ON' : 'OFF'}</strong></div>
+                                <div><span style={{ color: 'var(--text-secondary)' }}>Rating Captured:</span> <strong>{activeHandover.feedbackData ? `${activeHandover.feedbackData.overallScore} / 5 Stars` : 'N/A'}</strong></div>
+                            </div>
+
+                            {/* ACTIONS STRIP */}
+                            <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+                                {isCompleted ? (
+                                    <>
+                                        <button onClick={() => handleDownloadHandoverPdf(activeHandover)} className="btn btn-primary" style={{ fontSize: '0.75rem' }}>
+                                            📄 Download Handover Certificate PDF
+                                        </button>
+                                        {activeHandover.feedbackData && (
+                                            <button onClick={() => handleDownloadFeedbackPdf(activeHandover)} className="btn btn-outline" style={{ fontSize: '0.75rem' }}>
+                                                ⭐ Download Feedback Report PDF
+                                            </button>
+                                        )}
+                                        <button onClick={() => handleVoidAndIssueNew(activeHandover)} className="btn btn-outline" style={{ fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'rgba(255,69,58,0.4)' }}>
+                                            🔴 Void & Issue New Version
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => { navigator.clipboard.writeText(magicLink); alert('Link copied to clipboard!'); }} className="btn btn-outline" style={{ fontSize: '0.75rem' }}>
+                                            📋 Copy Secure Link
+                                        </button>
+                                        <button onClick={() => {
+                                            const text = `Hi ${activeHandover.recipientName}!\n\nThe handover process for project *${selectedProject.name}* is ready.\n\nPlease complete here:\n${magicLink}`;
+                                            window.open(`https://wa.me/${(activeHandover.recipientPhone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
+                                        }} className="btn btn-primary" style={{ fontSize: '0.75rem', background: '#25D366', borderColor: '#25D366', color: '#000' }}>
+                                            📱 Send via WhatsApp
+                                        </button>
+                                        <button onClick={() => handleRegenerateLink(activeHandover)} className="btn btn-outline" style={{ fontSize: '0.75rem' }}>
+                                            ⏳ Regenerate Link (7 Days)
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
+
+                {/* CLOSURE HISTORY ARCHIVE */}
+                <div className="card" style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                    <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: '800', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.6rem' }}>
+                        📜 Project Closure History Archive
+                    </h4>
+
+                    {(selectedProject.handovers || []).length === 0 ? (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                            No closure history logged for this project yet.
+                        </div>
+                    ) : (
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+                            <thead>
+                                <tr style={{ background: 'var(--bg-accent)', color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                                    <th style={{ padding: '0.6rem', textAlign: 'left' }}>Ver</th>
+                                    <th style={{ padding: '0.6rem', textAlign: 'left' }}>Date</th>
+                                    <th style={{ padding: '0.6rem', textAlign: 'left' }}>Signer Name</th>
+                                    <th style={{ padding: '0.6rem', textAlign: 'left' }}>Role</th>
+                                    <th style={{ padding: '0.6rem', textAlign: 'center' }}>Status</th>
+                                    <th style={{ padding: '0.6rem', textAlign: 'center' }}>Rating</th>
+                                    <th style={{ padding: '0.6rem', textAlign: 'right' }}>Document Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(selectedProject.handovers || []).map((ho, i) => (
+                                    <tr key={ho.id || i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <td style={{ padding: '0.6rem', fontWeight: '800' }}>v{ho.version || 1}.0</td>
+                                        <td style={{ padding: '0.6rem' }}>{new Date(ho.createdAt).toLocaleDateString('en-IN')}</td>
+                                        <td style={{ padding: '0.6rem', fontWeight: '700' }}>{ho.recipientName}</td>
+                                        <td style={{ padding: '0.6rem' }}>{ho.recipientType}</td>
+                                        <td style={{ padding: '0.6rem', textAlign: 'center' }}>
+                                            <span style={{
+                                                padding: '0.1rem 0.5rem',
+                                                borderRadius: '10px',
+                                                fontSize: '0.6rem',
+                                                fontWeight: '800',
+                                                background: ho.status === 'COMPLETED' ? 'rgba(50,215,75,0.15)' : (ho.status === 'VOIDED' ? 'rgba(255,69,58,0.15)' : 'rgba(102,178,194,0.15)'),
+                                                color: ho.status === 'COMPLETED' ? 'var(--success)' : (ho.status === 'VOIDED' ? 'var(--danger)' : 'var(--accent-color)')
+                                            }}>
+                                                {ho.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '0.6rem', textAlign: 'center' }}>
+                                            {ho.feedbackData ? `⭐ ${ho.feedbackData.overallScore}/5` : '-'}
+                                        </td>
+                                        <td style={{ padding: '0.6rem', textAlign: 'right' }}>
+                                            <button onClick={() => handleDownloadHandoverPdf(ho)} className="btn btn-outline" style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem' }}>
+                                                📄 Download PDF
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+
+            </div>
         ) : (
             <ProjectExecutionTab
                 selectedProject={selectedProject}
@@ -1956,8 +2227,17 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
             />
         )}
 
+
         {/* MODALS */}
+        {isInitiatingHandover && (
+            <ProjectHandoverAdmin 
+                project={selectedProject}
+                onSaveHandover={handleSaveHandover}
+                onClose={() => setIsInitiatingHandover(false)}
+            />
+        )}
         {isAssignModalOpen && (
+
             <ModalOverlay>
                 <div className="card animate-fade-in" style={{ width: 'clamp(300px, 95%, 450px)', padding: 'clamp(1.5rem, 5vw, 2.5rem)', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>

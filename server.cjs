@@ -44,6 +44,65 @@ app.post('/api/send-report', async (req, res) => {
   }
 });
 
+app.post('/api/send-handover', async (req, res) => {
+  const { to, recipientName, projectName, projectId, pdfBase64 } = req.body;
+
+  const mailOptions = {
+    from: `"Meaven Intelligence Hub" <${process.env.ZOHO_EMAIL}>`,
+    to: to,
+    cc: process.env.ZOHO_EMAIL || 'ravi.bhargaw@meaven.in',
+    subject: `[HANDOVER COMPLETE] Project Closure Certificate - ${projectName} (${projectId})`,
+    text: `Hi ${recipientName},\n\nThe project handover process for ${projectName} (${projectId}) has been successfully completed.\n\nPlease find your official Project Handover Certificate attached to this email.\n\nBest regards,\nMeaven Intelligence Hub`,
+    attachments: [
+      {
+        filename: `${projectName}_Handover_Certificate.pdf`,
+        content: pdfBase64.split('base64,')[1],
+        encoding: 'base64',
+      },
+    ],
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ success: true, message: 'Handover email sent successfully' });
+  } catch (error) {
+    console.error('SMTP Handover Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to send handover email', error: error.message });
+  }
+});
+
+
+// In-memory local handover store for cross-tab and incognito support
+const handoverStore = new Map();
+
+app.post('/api/handovers', (req, res) => {
+  const { token, project, handover } = req.body;
+  if (!token) return res.status(400).json({ error: 'Token is required' });
+  handoverStore.set(token, { project, handover, updatedAt: new Date().toISOString() });
+  console.log(`[Handover Server] Saved handover token: ${token} for project ${project?.name}`);
+  return res.json({ success: true, token });
+});
+
+app.get('/api/handovers/:token', (req, res) => {
+  const { token } = req.params;
+  const item = handoverStore.get(token);
+  if (!item) {
+    return res.status(404).json({ error: 'Handover not found' });
+  }
+  return res.json(item);
+});
+
+app.post('/api/handovers/:token/complete', (req, res) => {
+  const { token } = req.params;
+  const { updatedHandover } = req.body;
+  const item = handoverStore.get(token);
+  if (item) {
+    item.handover = updatedHandover;
+    handoverStore.set(token, item);
+  }
+  return res.json({ success: true });
+});
+
 const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Email server running on http://localhost:${PORT}`);

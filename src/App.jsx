@@ -28,6 +28,8 @@ import ExecutionPartnerSystem from './components/ExecutionPartnerSystem'
 import FounderControlTower from './components/FounderControlTower'
 import ExecutionAnalyticsDashboard from './components/ExecutionAnalyticsDashboard'
 import KnowledgeHub from './components/KnowledgeHub'
+import PublicHandoverPage from './components/PublicHandoverPage'
+
 
 // --- SAFETY VAULT: ERROR BOUNDARY ---
 class ErrorBoundary extends React.Component {
@@ -121,16 +123,18 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('view') === 'register') return 'register';
     if (params.get('view') === 'partner') return 'partner';
+    if (params.get('view') === 'handover') return 'handover-public';
     const cached = localStorage.getItem('hub_active_tab');
-    if (cached === 'partner' || cached === 'register') return 'dashboard';
+    if (cached === 'partner' || cached === 'register' || cached === 'handover-public') return 'dashboard';
     return cached || 'dashboard';
   })
   
   useEffect(() => {
-    if (activeTab !== 'partner' && activeTab !== 'register') {
+    if (activeTab !== 'partner' && activeTab !== 'register' && activeTab !== 'handover-public') {
         localStorage.setItem('hub_active_tab', activeTab);
     }
   }, [activeTab]);
+
 
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false)
   const [isNewPortfolioModalOpen, setIsNewPortfolioModalOpen] = useState(false)
@@ -334,9 +338,113 @@ function App() {
   }
 
   // --- CLOUD SYNC ENGINE ---
+  const mergeProjectsData = (cloudProjects, localProjects) => {
+    if (!cloudProjects || cloudProjects.length === 0) return localProjects || [];
+    if (!localProjects || localProjects.length === 0) return cloudProjects || [];
+
+    const mergedMap = new Map();
+
+    cloudProjects.forEach(cp => {
+        if (cp && cp.id) {
+            mergedMap.set(String(cp.id), { ...cp });
+        }
+    });
+
+    localProjects.forEach(lp => {
+        if (!lp || !lp.id) return;
+        const key = String(lp.id);
+        const existing = mergedMap.get(key);
+        if (!existing) {
+            mergedMap.set(key, lp);
+        } else {
+            const cloudFin = existing.clientFinancials || { totalValue: 0, requests: [], received: [] };
+            const localFin = lp.clientFinancials || { totalValue: 0, requests: [], received: [] };
+
+            const mergedReceived = [...(cloudFin.received || [])];
+            (localFin.received || []).forEach(lr => {
+                if (!mergedReceived.some(cr => String(cr.id) === String(lr.id) || (cr.ref && cr.ref === lr.ref && cr.amount === lr.amount && cr.date === lr.date))) {
+                    mergedReceived.push(lr);
+                }
+            });
+
+            const mergedPayouts = [...(existing.payouts || [])];
+            (lp.payouts || []).forEach(lpout => {
+                if (!mergedPayouts.some(cpout => String(cpout.id) === String(lpout.id) || (cpout.ref && cpout.ref === lpout.ref && cpout.amount === lpout.amount && cpout.date === lpout.date))) {
+                    mergedPayouts.push(lpout);
+                }
+            });
+
+            const mergedExpenses = [...(existing.expenses || [])];
+            (lp.expenses || []).forEach(lexp => {
+                if (!mergedExpenses.some(cexp => String(cexp.id) === String(lexp.id) || (cexp.description === lexp.description && cexp.amount === lexp.amount && cexp.date === lexp.date))) {
+                    mergedExpenses.push(lexp);
+                }
+            });
+
+            const mergedHistory = [...(existing.history || [])];
+            (lp.history || []).forEach(lh => {
+                if (!mergedHistory.some(ch => String(ch.id) === String(lh.id))) {
+                    mergedHistory.push(lh);
+                }
+            });
+
+            const mergedAuditHistory = [...(existing.auditHistory || [])];
+            (lp.auditHistory || []).forEach(la => {
+                if (!mergedAuditHistory.some(ca => ca.auditId === la.auditId)) {
+                    mergedAuditHistory.push(la);
+                }
+            });
+
+            mergedMap.set(key, {
+                ...existing,
+                ...lp,
+                clientFinancials: {
+                    ...cloudFin,
+                    ...localFin,
+                    received: mergedReceived
+                },
+                payouts: mergedPayouts,
+                expenses: mergedExpenses,
+                history: mergedHistory,
+                auditHistory: mergedAuditHistory,
+                lastActivityAt: (new Date(lp.lastActivityAt || 0) > new Date(existing.lastActivityAt || 0)) ? lp.lastActivityAt : existing.lastActivityAt
+            });
+        }
+    });
+
+    return Array.from(mergedMap.values());
+  };
+
+  const persistProject = async (updatedProject) => {
+    if (!updatedProject || !updatedProject.id) return;
+    try {
+        const currentLocal = JSON.parse(localStorage.getItem('projects')) || [];
+        const updatedLocal = currentLocal.map(p => String(p.id) === String(updatedProject.id) ? updatedProject : p);
+        if (!updatedLocal.some(p => String(p.id) === String(updatedProject.id))) {
+            updatedLocal.push(updatedProject);
+        }
+        localStorage.setItem('projects', JSON.stringify(updatedLocal));
+    } catch (err) {
+        console.warn("Storage warning saving project locally:", err);
+    }
+
+    try {
+        const { error } = await supabase.from('projects').upsert({
+            id: String(updatedProject.id),
+            name: updatedProject.name,
+            data: updatedProject
+        });
+        if (error) {
+            console.error("[Meaven Supabase] Project direct upsert error:", error);
+        }
+    } catch (e) {
+        console.error("[Meaven Supabase] Project direct upsert exception:", e);
+    }
+  };
+
   useEffect(() => {
     async function loadTacticalData() {
-        if (!user && activeTab !== 'partner') {
+        if (!user && activeTab !== 'partner' && activeTab !== 'register' && activeTab !== 'handover-public') {
             setIsSyncing(false)
             return
         }
@@ -348,15 +456,20 @@ function App() {
             const { data: cloudPortfolios } = await supabase.from('portfolios').select('*')
             const { data: cloudReadiness } = await supabase.from('readiness_data').select('*')
 
-            // Migration Check: If cloud is empty, push local data
+            const localProjects = JSON.parse(localStorage.getItem('projects')) || []
             if (!cloudProjects || cloudProjects.length === 0) {
-                const localProjects = JSON.parse(localStorage.getItem('projects')) || []
                 if (localProjects.length > 0) {
-                    await Promise.all(localProjects.map(p => supabase.from('projects').upsert({ id: String(p.id), name: p.name, data: p })))
+                    await Promise.all(localProjects.map(p => supabase.from('projects').upsert({ id: String(p.id), name: p.name, data: p }).catch(console.error)))
                     setProjects(localProjects)
                 }
             } else {
-                setProjects(cloudProjects.map(p => p.data).filter(Boolean))
+                const cloudList = cloudProjects.map(p => p.data).filter(Boolean)
+                const mergedProjects = mergeProjectsData(cloudList, localProjects)
+                setProjects(mergedProjects)
+                try {
+                    localStorage.setItem('projects', JSON.stringify(mergedProjects))
+                } catch (err) {}
+                mergedProjects.forEach(p => supabase.from('projects').upsert({ id: String(p.id), name: p.name, data: p }).catch(console.error))
             }
 
             if (!cloudVendors || cloudVendors.length === 0) {
@@ -420,7 +533,23 @@ function App() {
         .subscribe()
 
     return () => supabase.removeChannel(vendorSubscription)
-  }, [user])
+  }, [user, activeTab])
+
+  useEffect(() => {
+    if (projects && projects.length > 0) {
+        projects.forEach(p => {
+            (p.handovers || []).forEach(h => {
+                if (h && h.token) {
+                    fetch('http://localhost:3001/api/handovers', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: h.token, project: p, handover: h })
+                    }).catch(() => {});
+                }
+            });
+        });
+    }
+  }, [projects]);
 
   // --- AUTO-PERSISTENCE (LOCAL + CLOUD) ---
   useEffect(() => { 
@@ -768,7 +897,31 @@ function App() {
     )
   }
 
+  if (activeTab === 'handover-public') {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    const handleUpdateHandoverStatus = (projectId, updatedHandover) => {
+        const targetProj = (projects || []).find(p => String(p.id) === String(projectId));
+        if (targetProj) {
+            const updatedHandovers = (targetProj.handovers || []).map(h => h.id === updatedHandover.id ? updatedHandover : h);
+            handleUpdateProject(projectId, { handovers: updatedHandovers });
+        }
+    };
+
+    return (
+        <div className="dashboard-app-root">
+            <PublicHandoverPage 
+                token={token} 
+                projects={projects} 
+                onUpdateHandoverStatus={handleUpdateHandoverStatus} 
+            />
+        </div>
+    );
+  }
+
   if (!user) return (
+
     <div className="dashboard-app-root">
       <AccessGateway onLogin={login} onClientLogin={handleClientLogin} onVerifyMasterKey={verifyMasterKey} />
       <AiAssistant activeTab="dashboard" clientView={true} userName="Guest" />
@@ -816,8 +969,9 @@ function App() {
 
   const handleLogPayment = (projectId, amount, ref, date, photos, type, baseAmount, gstAmount) => {
     try {
+        let updatedProj = null
         setProjects(prev => (prev || []).map(p => {
-            if (p && Number(p.id) === Number(projectId)) {
+            if (p && String(p.id) === String(projectId)) {
                 const financials = p.clientFinancials || { totalValue: 0, requests: [], received: [] }
                 const parsedAmount = parseMoney(amount) || 0
                 const parsedBase = parseMoney(baseAmount) || parsedAmount
@@ -833,7 +987,7 @@ function App() {
                     photos: Array.isArray(photos) ? photos : (photos ? [photos] : []),
                     type: type || ''
                 }
-                return { 
+                updatedProj = { 
                     ...p, 
                     clientFinancials: { ...financials, received: [...(financials.received || []), newPayment] },
                     lastActivityAt: new Date().toISOString(),
@@ -846,9 +1000,13 @@ function App() {
                         isClientVisible: false
                     }]
                 }
+                return updatedProj
             }
             return p
         }))
+        if (updatedProj) {
+            persistProject(updatedProj)
+        }
     } catch (err) {
         console.error("Error inside handleLogPayment:", err)
     }
@@ -859,10 +1017,11 @@ function App() {
         const parsedAmount = parseMoney(amount) || 0
         const parsedBase = parseMoney(baseAmount) || parsedAmount
         const parsedGst = parseMoney(gstAmount) || 0
+        let updatedProj = null
 
         // 1. Update Project Ledger
         setProjects(prev => (prev || []).map(p => {
-            if (p && Number(p.id) === Number(projectId)) {
+            if (p && String(p.id) === String(projectId)) {
                 const newPayout = { 
                     id: Date.now(), 
                     amount: parsedAmount, 
@@ -875,7 +1034,7 @@ function App() {
                     vendorId: vendorId || '',
                     type: type || ''
                 }
-                return { 
+                updatedProj = { 
                     ...p, 
                     payouts: [...(p.payouts || []), newPayout],
                     lastActivityAt: new Date().toISOString(),
@@ -888,20 +1047,24 @@ function App() {
                         isClientVisible: false
                     }]
                 }
+                return updatedProj
             }
             return p
         }))
+        if (updatedProj) {
+            persistProject(updatedProj)
+        }
 
         // 2. Synchronize to Vendor Bench (Specific Contract)
         if (vendorId) {
             setVendors(prev => (prev || []).map(v => {
                 if (v && String(v.id) === String(vendorId)) {
-                    const projectObj = (projects || []).find(proj => proj && Number(proj.id) === Number(projectId))
+                    const projectObj = (projects || []).find(proj => proj && String(proj.id) === String(projectId))
                     const projectName = projectObj ? projectObj.name : ''
                     return {
                         ...v,
                         contracts: (v.contracts || []).map(c => {
-                            if (c && c.projectName === projectName) {
+                            if (c && (c.projectName || '').toLowerCase().trim() === (projectName || '').toLowerCase().trim()) {
                                 return {
                                     ...c,
                                     payments: [
@@ -934,11 +1097,12 @@ function App() {
 
   const handleProjectAddExpense = (projectId, expense) => {
     try {
+        let updatedProj = null
         setProjects(prev => (prev || []).map(p => {
-            if (p && Number(p.id) === Number(projectId)) {
+            if (p && String(p.id) === String(projectId)) {
                 const parsedAmount = parseMoney(expense.amount) || 0
                 const updatedExpenses = [...(p.expenses || []), { ...expense, amount: parsedAmount, id: Date.now() }]
-                return {
+                updatedProj = {
                     ...p,
                     expenses: updatedExpenses,
                     lastActivityAt: new Date().toISOString(),
@@ -951,20 +1115,34 @@ function App() {
                         isClientVisible: false
                     }]
                 }
+                return updatedProj
             }
             return p
         }))
+        if (updatedProj) {
+            persistProject(updatedProj)
+        }
     } catch (err) {
         console.error("Error inside handleProjectAddExpense:", err)
     }
   }
 
   const handleUpdateProjectMilestones = (projectId, milestones) => {
-    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, milestones: { ...p.milestones, ...milestones } } : p))
+    setProjects(prev => prev.map(p => String(p.id) === String(projectId) ? { ...p, milestones: { ...p.milestones, ...milestones } } : p))
   }
 
   const handleUpdateProject = (projectId, updates) => {
-    setProjects(prev => (prev || []).map(p => Number(p.id) === Number(projectId) ? { ...p, ...updates } : p))
+    let updatedProj = null
+    setProjects(prev => (prev || []).map(p => {
+        if (String(p.id) === String(projectId)) {
+            updatedProj = { ...p, ...updates }
+            return updatedProj
+        }
+        return p
+    }))
+    if (updatedProj) {
+        persistProject(updatedProj)
+    }
   }
 
   const handleProjectAddNote = (projectId, note) => {
@@ -1183,7 +1361,7 @@ function App() {
             const contract = (vendor.contracts || []).find(c => String(c.id) === String(contractId))
             if (contract) {
                 const projectName = contract.projectName
-                const project = (projects || []).find(p => p.name === projectName)
+                const project = (projects || []).find(p => (p.name || '').toLowerCase().trim() === (projectName || '').toLowerCase().trim())
                 if (project) {
                     const parsedAmount = Number(payment.amount) || 0
                     const newPayout = {
@@ -1199,9 +1377,10 @@ function App() {
                         type: 'Material/Service'
                     }
 
+                    let updatedProj = null
                     setProjects(prev => (prev || []).map(p => {
-                        if (p.name === projectName) {
-                            return {
+                        if ((p.name || '').toLowerCase().trim() === (projectName || '').toLowerCase().trim()) {
+                            updatedProj = {
                                 ...p,
                                 payouts: [...(p.payouts || []), newPayout],
                                 lastActivityAt: new Date().toISOString(),
@@ -1217,9 +1396,13 @@ function App() {
                                     }
                                 ]
                             }
+                            return updatedProj
                         }
                         return p
                     }))
+                    if (updatedProj) {
+                        persistProject(updatedProj)
+                    }
                 }
             }
         }
