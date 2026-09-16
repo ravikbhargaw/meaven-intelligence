@@ -523,9 +523,12 @@ const ProjectHandoverAdmin = ({ project, onSaveHandover, onClose }) => {
                                     {copySuccess ? '✓ Copied!' : '📋 Copy Link'}
                                 </button>
                             </div>
-                            <div style={{ display: 'flex', gap: '0.8rem' }}>
+                            <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
                                 <button onClick={handleSendWhatsApp} className="btn btn-primary" style={{ flex: 1, background: '#25D366', borderColor: '#25D366', color: '#000', fontWeight: '900' }}>
                                     📱 Send via WhatsApp
+                                </button>
+                                <button onClick={() => setGeneratedLink('')} className="btn btn-outline" style={{ flex: 1, color: 'var(--danger)', borderColor: 'rgba(255,69,58,0.4)' }}>
+                                    🔄 Discard & Generate New
                                 </button>
                                 <button onClick={onClose} className="btn btn-outline" style={{ flex: 1 }}>
                                     Done & Close

@@ -719,12 +719,67 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
     const voidedHandover = {
         ...handover,
         status: 'VOIDED',
+        active: false,
         voidedAt: new Date().toISOString()
     };
     const existingHandovers = selectedProject.handovers || [];
     const updatedHandovers = existingHandovers.map(h => h.id === handover.id ? voidedHandover : h);
     
     onUpdateValue(selectedProject.id, { handovers: updatedHandovers });
+    setIsInitiatingHandover(true);
+  };
+
+  const handleDeleteHandover = (handover) => {
+    if (!selectedProject) return;
+    if (!window.confirm(`Are you sure you want to delete and deactivate handover link (${handover.id})? Recipient will no longer be able to open or submit this link.`)) return;
+
+    const voidedHandover = {
+        ...handover,
+        status: 'VOIDED',
+        active: false,
+        voidedAt: new Date().toISOString()
+    };
+    const existingHandovers = selectedProject.handovers || [];
+    const updatedHandovers = existingHandovers.map(h => h.id === handover.id ? voidedHandover : h);
+    
+    onUpdateValue(selectedProject.id, { handovers: updatedHandovers });
+
+    if (supabase && selectedProject.id) {
+        supabase.from('projects').select('*').eq('id', String(selectedProject.id)).maybeSingle().then(({ data: cloudProj }) => {
+            if (cloudProj) {
+                const pData = cloudProj.data || cloudProj;
+                const cloudUpdatedHandovers = (pData.handovers || []).map(h => h.id === handover.id ? voidedHandover : h);
+                supabase.from('projects').upsert({ id: String(selectedProject.id), name: selectedProject.name, data: { ...pData, handovers: cloudUpdatedHandovers } }).then(() => {}).catch(() => {});
+            }
+        }).catch(() => {});
+    }
+  };
+
+  const handleDeleteAndCreateNew = (handover) => {
+    if (!selectedProject) return;
+    if (!window.confirm(`Deactivate existing link (${handover.id}) and immediately create a new handover link?`)) return;
+
+    const voidedHandover = {
+        ...handover,
+        status: 'VOIDED',
+        active: false,
+        voidedAt: new Date().toISOString()
+    };
+    const existingHandovers = selectedProject.handovers || [];
+    const updatedHandovers = existingHandovers.map(h => h.id === handover.id ? voidedHandover : h);
+    
+    onUpdateValue(selectedProject.id, { handovers: updatedHandovers });
+
+    if (supabase && selectedProject.id) {
+        supabase.from('projects').select('*').eq('id', String(selectedProject.id)).maybeSingle().then(({ data: cloudProj }) => {
+            if (cloudProj) {
+                const pData = cloudProj.data || cloudProj;
+                const cloudUpdatedHandovers = (pData.handovers || []).map(h => h.id === handover.id ? voidedHandover : h);
+                supabase.from('projects').upsert({ id: String(selectedProject.id), name: selectedProject.name, data: { ...pData, handovers: cloudUpdatedHandovers } }).then(() => {}).catch(() => {});
+            }
+        }).catch(() => {});
+    }
+
     setIsInitiatingHandover(true);
   };
 
@@ -2187,8 +2242,11 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                                 ⭐ Download Feedback Report PDF
                                             </button>
                                         )}
-                                        <button onClick={() => handleVoidAndIssueNew(activeHandover)} className="btn btn-outline" style={{ fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'rgba(255,69,58,0.4)' }}>
-                                            🔴 Void & Issue New Version
+                                        <button onClick={() => handleDeleteAndCreateNew(activeHandover)} className="btn btn-outline" style={{ fontSize: '0.75rem', color: 'var(--accent-color)', borderColor: 'var(--accent-color)' }}>
+                                            🔄 Delete & Create New Link
+                                        </button>
+                                        <button onClick={() => handleDeleteHandover(activeHandover)} className="btn btn-outline" style={{ fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'rgba(255,69,58,0.4)' }}>
+                                            🔴 Void / Deactivate Link
                                         </button>
                                     </>
                                 ) : (
@@ -2204,6 +2262,12 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                         </button>
                                         <button onClick={() => handleRegenerateLink(activeHandover)} className="btn btn-outline" style={{ fontSize: '0.75rem' }}>
                                             ⏳ Regenerate Link (7 Days)
+                                        </button>
+                                        <button onClick={() => handleDeleteAndCreateNew(activeHandover)} className="btn btn-outline" style={{ fontSize: '0.75rem', color: 'var(--accent-color)', borderColor: 'var(--accent-color)' }}>
+                                            🔄 Delete & Create New Link
+                                        </button>
+                                        <button onClick={() => handleDeleteHandover(activeHandover)} className="btn btn-outline" style={{ fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'rgba(255,69,58,0.4)' }}>
+                                            🗑️ Delete Link
                                         </button>
                                     </>
                                 )}
@@ -2257,10 +2321,15 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
                                         <td style={{ padding: '0.6rem', textAlign: 'center' }}>
                                             {ho.feedbackData ? `⭐ ${ho.feedbackData.overallScore}/5` : '-'}
                                         </td>
-                                        <td style={{ padding: '0.6rem', textAlign: 'right' }}>
+                                        <td style={{ padding: '0.6rem', textAlign: 'right', display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
                                             <button onClick={() => handleDownloadHandoverPdf(ho)} className="btn btn-outline" style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem' }}>
                                                 📄 Download PDF
                                             </button>
+                                            {ho.status !== 'VOIDED' && (
+                                                <button onClick={() => handleDeleteHandover(ho)} className="btn btn-outline" style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem', color: 'var(--danger)', borderColor: 'rgba(255,69,58,0.4)' }}>
+                                                    🗑️ Void
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
