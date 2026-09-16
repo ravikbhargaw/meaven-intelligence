@@ -381,16 +381,34 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
             setIsGeneratingPdf(true);
             const templateEl = document.getElementById('handover-pdf-template');
             if (templateEl) {
-                const canvas = await html2canvas(templateEl, { scale: 2, useCORS: true });
+                const canvas = await html2canvas(templateEl, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    onclone: (clonedDoc) => {
+                        const el = clonedDoc.getElementById('handover-pdf-template');
+                        if (el) {
+                            el.style.position = 'relative';
+                            el.style.left = '0';
+                            el.style.top = '0';
+                            el.style.zIndex = '99999';
+                            el.style.opacity = '1';
+                            el.style.visibility = 'visible';
+                            el.style.display = 'block';
+                        }
+                    }
+                });
                 const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
                 pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
                 const pdfBase64 = pdf.output('datauristring');
 
                 // Update handover with pdfBase64 for local viewing/downloading
                 const finalHandover = { ...handover, pdfBase64 };
                 setHandoverState(finalHandover);
-                if (onUpdateHandoverStatus) {
+                if (onUpdateHandoverStatus && project?.id) {
                     onUpdateHandoverStatus(project.id, finalHandover);
                 }
             }
@@ -406,14 +424,34 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
             setIsGeneratingPdf(true);
             const templateEl = document.getElementById('handover-pdf-template');
             if (templateEl) {
-                const canvas = await html2canvas(templateEl, { scale: 2, useCORS: true });
+                const canvas = await html2canvas(templateEl, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    onclone: (clonedDoc) => {
+                        const el = clonedDoc.getElementById('handover-pdf-template');
+                        if (el) {
+                            el.style.position = 'relative';
+                            el.style.left = '0';
+                            el.style.top = '0';
+                            el.style.zIndex = '99999';
+                            el.style.opacity = '1';
+                            el.style.visibility = 'visible';
+                            el.style.display = 'block';
+                        }
+                    }
+                });
                 const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
                 pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-                pdf.save(`${projectState.name}_Project_Handover_Certificate.pdf`);
+                const fileName = `${(projectState?.name || 'Project').replace(/[^a-zA-Z0-9_-]/g, '_')}_Handover_Certificate.pdf`;
+                pdf.save(fileName);
             }
         } catch (e) {
             console.error('Download PDF Error:', e);
+            alert('PDF generation error. Please try again.');
         } finally {
             setIsGeneratingPdf(false);
         }

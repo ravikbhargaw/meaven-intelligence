@@ -20,8 +20,8 @@ const FeedbackPdfTemplate = ({ handover, project }) => {
             pointerEvents: 'none',
             width: '800px',
             background: '#ffffff',
-            color: '#111827',
-            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            color: '#0F172A',
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
             fontSize: '12px',
             lineHeight: '1.5',
             boxSizing: 'border-box'
@@ -29,7 +29,7 @@ const FeedbackPdfTemplate = ({ handover, project }) => {
             <div className="pdf-page" style={{
                 width: '800px',
                 minHeight: '1122px',
-                padding: '40px 50px',
+                padding: '0',
                 boxSizing: 'border-box',
                 position: 'relative',
                 display: 'flex',
@@ -37,28 +37,41 @@ const FeedbackPdfTemplate = ({ handover, project }) => {
                 justifyContent: 'space-between',
                 background: '#ffffff'
             }}>
-                <div>
+                {/* BRAND TOP STRIP */}
+                <div style={{ height: '6px', background: 'linear-gradient(90deg, #16A34A 0%, #059669 100%)', width: '100%' }} />
+
+                <div style={{ padding: '36px 44px' }}>
                     {/* HEADER */}
                     <div style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        borderBottom: '2px solid #32D74B',
-                        paddingBottom: '16px',
-                        marginBottom: '24px'
+                        borderBottom: '2px solid #E2E8F0',
+                        paddingBottom: '18px',
+                        marginBottom: '20px'
                     }}>
                         <div>
-                            <img src="/images/For Email - Logo.png" alt="Meaven Logo" style={{ height: '40px', objectFit: 'contain' }} />
-                            <div style={{ fontSize: '9px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '4px', fontWeight: '700' }}>
-                                Meaven Intelligence Hub • Customer Experience Intelligence
+                            <img 
+                                src="/images/For Email - Logo.png" 
+                                alt="Meaven Logo" 
+                                style={{ height: '46px', width: 'auto', objectFit: 'contain' }}
+                                crossOrigin="anonymous"
+                                onError={(e) => { e.target.onerror = null; e.target.src = '/images/logo.png'; }}
+                            />
+                            <div style={{ fontSize: '8.5px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '1.5px', marginTop: '4px', fontWeight: '800' }}>
+                                MEAVEN INTELLIGENCE HUB • CUSTOMER EXPERIENCE INTELLIGENCE
                             </div>
                         </div>
+
                         <div style={{ textAlign: 'right' }}>
-                            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#16A34A', letterSpacing: '0.5px' }}>
-                                CUSTOMER FEEDBACK REPORT
-                            </h1>
-                            <div style={{ fontSize: '11px', color: '#374151', fontWeight: '700', marginTop: '2px' }}>
-                                Ref ID: {handover.id || 'HO-2026-001'}-FB
+                            <div style={{ fontSize: '18px', fontWeight: '900', color: '#0F172A', letterSpacing: '-0.3px', lineHeight: '1.2' }}>
+                                CUSTOMER FEEDBACK
+                            </div>
+                            <div style={{ fontSize: '13px', fontWeight: '800', color: '#16A34A', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                PERFORMANCE REPORT
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#64748B', fontWeight: '700', marginTop: '4px' }}>
+                                REF ID: <strong>{handover.id || 'HO-2026-001'}-FB</strong>
                             </div>
                         </div>
                     </div>
@@ -68,40 +81,40 @@ const FeedbackPdfTemplate = ({ handover, project }) => {
                         display: 'grid',
                         gridTemplateColumns: '1fr 1fr',
                         gap: '16px',
-                        background: '#F9FAFB',
+                        background: '#F8FAFC',
                         padding: '16px',
-                        borderRadius: '8px',
-                        border: '1px solid #E5E7EB',
-                        marginBottom: '24px'
+                        borderRadius: '10px',
+                        border: '1px solid #E2E8F0',
+                        marginBottom: '20px'
                     }}>
                         <div>
-                            <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#6B7280', fontWeight: '800', marginBottom: '4px' }}>
-                                Project Name
+                            <div style={{ fontSize: '9px', textTransform: 'uppercase', color: '#64748B', fontWeight: '800', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                                Project Details
                             </div>
-                            <div style={{ fontSize: '14px', fontWeight: '800', color: '#111827' }}>
+                            <div style={{ fontSize: '14px', fontWeight: '900', color: '#0F172A' }}>
                                 {project.name}
                             </div>
-                            <div style={{ fontSize: '11px', color: '#4B5563', marginTop: '2px' }}>
-                                Project ID: {project.id}
+                            <div style={{ fontSize: '11px', color: '#334155', marginTop: '3px' }}>
+                                <strong style={{ color: '#64748B' }}>Project ID:</strong> {project.id}
                             </div>
                         </div>
                         <div>
-                            <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#6B7280', fontWeight: '800', marginBottom: '4px' }}>
-                                Customer / Signer
+                            <div style={{ fontSize: '9px', textTransform: 'uppercase', color: '#64748B', fontWeight: '800', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                                Customer / Respondent
                             </div>
-                            <div style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>
+                            <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A' }}>
                                 {handover.recipientName}
                             </div>
-                            <div style={{ fontSize: '11px', color: '#4B5563', marginTop: '2px' }}>
-                                Date: {fb.submittedAt ? new Date(fb.submittedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            <div style={{ fontSize: '11px', color: '#334155', marginTop: '3px' }}>
+                                <strong style={{ color: '#64748B' }}>Submitted:</strong> {fb.submittedAt ? new Date(fb.submittedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                             </div>
                         </div>
                     </div>
 
                     {/* PERFORMANCE RATINGS GRID */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px', borderBottom: '1px solid #E5E7EB', paddingBottom: '6px' }}>
-                            Performance & Satisfaction Ratings
+                    <div style={{ marginBottom: '20px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '900', color: '#16A34A', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.05em', borderBottom: '1px solid #E2E8F0', paddingBottom: '4px' }}>
+                            Performance & Satisfaction Metrics
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -115,58 +128,58 @@ const FeedbackPdfTemplate = ({ handover, project }) => {
                     {/* RECOMMENDATION STATUS */}
                     <div style={{
                         background: fb.wouldRecommend === 'Yes' ? '#ECFDF5' : '#FFFBEB',
-                        border: '1px solid ' + (fb.wouldRecommend === 'Yes' ? '#A7F3D0' : '#FDE68A'),
+                        border: '1.5px solid ' + (fb.wouldRecommend === 'Yes' ? '#10B981' : '#F59E0B'),
                         padding: '14px 18px',
-                        borderRadius: '8px',
-                        marginBottom: '24px',
+                        borderRadius: '10px',
+                        marginBottom: '20px',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center'
                     }}>
                         <div>
-                            <div style={{ fontSize: '10px', textTransform: 'uppercase', color: fb.wouldRecommend === 'Yes' ? '#047857' : '#B45309', fontWeight: '800' }}>
-                                Customer Recommendation Outcome
+                            <div style={{ fontSize: '9px', textTransform: 'uppercase', color: fb.wouldRecommend === 'Yes' ? '#047857' : '#B45309', fontWeight: '800', letterSpacing: '0.05em' }}>
+                                Customer Net Recommendation Outcome
                             </div>
                             <div style={{ fontSize: '14px', fontWeight: '900', color: fb.wouldRecommend === 'Yes' ? '#065F46' : '#92400E', marginTop: '2px' }}>
-                                Would Recommend Meaven: {fb.wouldRecommend || 'Yes'}
+                                Would Recommend Meaven: <strong>{fb.wouldRecommend || 'Yes'}</strong>
                             </div>
                         </div>
-                        <div style={{ fontSize: '20px' }}>
+                        <div style={{ fontSize: '22px' }}>
                             {fb.wouldRecommend === 'Yes' ? '🤝' : '👍'}
                         </div>
                     </div>
 
                     {/* QUALITATIVE RESPONSES */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: '800', color: '#111827', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px', borderBottom: '1px solid #E5E7EB', paddingBottom: '6px' }}>
-                            Qualitative Feedback & Comments
+                    <div style={{ marginBottom: '20px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '900', color: '#16A34A', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.05em', borderBottom: '1px solid #E2E8F0', paddingBottom: '4px' }}>
+                            Qualitative Feedback & Customer Notes
                         </div>
 
                         {fb.likedMostText && (
-                            <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '12px', marginBottom: '12px' }}>
-                                <div style={{ fontSize: '10px', fontWeight: '800', color: '#4B5563', textTransform: 'uppercase', marginBottom: '4px' }}>
+                            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
+                                <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', marginBottom: '3px' }}>
                                     What did you like most about working with Meaven?
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#111827', fontStyle: 'italic' }}>
+                                <div style={{ fontSize: '11px', color: '#0F172A', fontStyle: 'italic', lineHeight: '1.4' }}>
                                     "{fb.likedMostText}"
                                 </div>
                             </div>
                         )}
 
                         {fb.improvementText && (
-                            <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '12px', marginBottom: '12px' }}>
-                                <div style={{ fontSize: '10px', fontWeight: '800', color: '#4B5563', textTransform: 'uppercase', marginBottom: '4px' }}>
+                            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
+                                <div style={{ fontSize: '9px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', marginBottom: '3px' }}>
                                     What could we have done better?
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#111827', fontStyle: 'italic' }}>
+                                <div style={{ fontSize: '11px', color: '#0F172A', fontStyle: 'italic', lineHeight: '1.4' }}>
                                     "{fb.improvementText}"
                                 </div>
                             </div>
                         )}
 
                         <div style={{
-                            fontSize: '11px',
-                            color: fb.allowTestimonial ? '#047857' : '#6B7280',
+                            fontSize: '10.5px',
+                            color: fb.allowTestimonial ? '#047857' : '#64748B',
                             fontWeight: '700',
                             display: 'flex',
                             alignItems: 'center',
@@ -174,23 +187,23 @@ const FeedbackPdfTemplate = ({ handover, project }) => {
                             marginTop: '8px'
                         }}>
                             <span>{fb.allowTestimonial ? '✓' : '•'}</span>
-                            <span>{fb.allowTestimonial ? 'Authorized Meaven to use this feedback as a customer testimonial.' : 'Testimonial permission not granted.'}</span>
+                            <span>{fb.allowTestimonial ? 'Authorized Meaven to publish this feedback as an official customer testimonial.' : 'Testimonial publication permission not granted.'}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* FOOTER */}
                 <div style={{
-                    borderTop: '1px solid #E5E7EB',
-                    paddingTop: '12px',
+                    borderTop: '1px solid #E2E8F0',
+                    padding: '12px 44px 16px 44px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    fontSize: '9px',
-                    color: '#9CA3AF'
+                    fontSize: '8.5px',
+                    color: '#64748B'
                 }}>
                     <div>
-                        Stored against Project: {project.name} ({project.id})
+                        Stored against Project: <strong>{project.name}</strong> ({project.id})
                     </div>
                     <div>
                         Meaven Experience Intelligence • Page 1 of 1
@@ -202,11 +215,11 @@ const FeedbackPdfTemplate = ({ handover, project }) => {
 };
 
 const RatingCard = ({ label, score, stars }) => (
-    <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', padding: '12px', borderRadius: '6px' }}>
-        <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#6B7280', fontWeight: '800' }}>{label}</div>
+    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '12px', borderRadius: '8px' }}>
+        <div style={{ fontSize: '9px', textTransform: 'uppercase', color: '#64748B', fontWeight: '800' }}>{label}</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-            <div style={{ color: '#F59E0B', fontSize: '14px', letterSpacing: '2px' }}>{stars}</div>
-            <div style={{ fontSize: '12px', fontWeight: '900', color: '#111827' }}>{score || 5} / 5</div>
+            <div style={{ color: '#F59E0B', fontSize: '15px', letterSpacing: '2px' }}>{stars}</div>
+            <div style={{ fontSize: '12px', fontWeight: '900', color: '#0F172A' }}>{score || 5} / 5</div>
         </div>
     </div>
 );
