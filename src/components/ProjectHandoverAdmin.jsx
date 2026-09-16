@@ -19,7 +19,7 @@ const ProjectHandoverAdmin = ({ project, onSaveHandover, onClose }) => {
 
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
     const [googleReviewEnabled, setGoogleReviewEnabled] = useState(true);
-    const [googleReviewUrl, setGoogleReviewUrl] = useState('https://g.page/r/meaven-review');
+    const [googleReviewUrl, setGoogleReviewUrl] = useState('https://g.page/r/CUOCqVTPISA3EBM/review');
 
     // Snag Selection
     const projectSnags = project.snags || [];
@@ -387,7 +387,7 @@ const ProjectHandoverAdmin = ({ project, onSaveHandover, onClose }) => {
                                         type="text" 
                                         value={googleReviewUrl} 
                                         onChange={(e) => setGoogleReviewUrl(e.target.value)} 
-                                        placeholder="https://g.page/r/meaven-review"
+                                        placeholder="https://g.page/r/CUOCqVTPISA3EBM/review"
                                         style={{ flex: 1, padding: '0.6rem', borderRadius: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--accent-color)', fontSize: '0.75rem' }}
                                     />
                                     <button 

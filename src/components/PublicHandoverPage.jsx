@@ -1164,7 +1164,13 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                                         Share your honest review with our community on Google Maps.
                                     </p>
                                     <button 
-                                        onClick={() => window.open(handoverState.googleReviewUrl || 'https://g.page/r/meaven-review', '_blank')} 
+                                        onClick={() => {
+                                            const hardcodedReviewUrl = 'https://g.page/r/CUOCqVTPISA3EBM/review';
+                                            const targetReviewUrl = (handoverState.googleReviewUrl && !handoverState.googleReviewUrl.includes('meaven-review'))
+                                                ? handoverState.googleReviewUrl
+                                                : hardcodedReviewUrl;
+                                            window.open(targetReviewUrl, '_blank');
+                                        }} 
                                         style={{ width: '100%', padding: '0.9rem', borderRadius: '8px', background: '#FFB800', border: 'none', color: '#000000', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(255,184,0,0.3)' }}
                                     >
                                         ⭐ LEAVE A GOOGLE REVIEW
