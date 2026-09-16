@@ -146,7 +146,7 @@ const HandoverPdfTemplate = ({ handover, project }) => {
                                 <strong style={{ color: '#64748B' }}>Project ID:</strong> {project.id}
                             </div>
                             <div style={{ fontSize: '11px', color: '#334155', marginBottom: '3px' }}>
-                                <strong style={{ color: '#64748B' }}>Site Address:</strong> {project.address || 'N/A'}
+                                <strong style={{ color: '#64748B' }}>Site Address:</strong> {handover.siteAddress || project.address || project.siteAddress || 'N/A'}
                             </div>
                             <div style={{ fontSize: '11px', color: '#334155' }}>
                                 <strong style={{ color: '#64748B' }}>Scope Summary:</strong> {project.scope || project.description || 'Execution & Installation Works'}
@@ -158,7 +158,7 @@ const HandoverPdfTemplate = ({ handover, project }) => {
                                 Handover Signatory Details
                             </div>
                             <div style={{ fontSize: '12px', fontWeight: '800', color: '#0F172A', marginBottom: '3px' }}>
-                                <strong style={{ color: '#64748B' }}>Client Name:</strong> {project.clientName || 'N/A'}
+                                <strong style={{ color: '#64748B' }}>Client Name:</strong> {handover.clientName || project.clientName || 'N/A'}
                             </div>
                             <div style={{ fontSize: '11px', color: '#334155', marginBottom: '3px' }}>
                                 <strong style={{ color: '#64748B' }}>Recipient:</strong> {signature.signerName || handover.recipientName} ({handover.recipientType || 'Authorized Representative'})

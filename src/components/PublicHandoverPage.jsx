@@ -827,8 +827,8 @@ const PublicHandoverPage = ({ token, projects = [], onUpdateHandoverStatus }) =>
                             <h2 style={{ margin: '0.3rem 0 0.8rem 0', fontSize: '1.3rem', fontWeight: '900', color: '#0F172A' }}>{projectState.name}</h2>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', fontSize: '0.8rem', color: '#334155' }}>
                                 <div><span style={{ color: '#64748B' }}>Project ID:</span> <strong>{projectState.id}</strong></div>
-                                <div><span style={{ color: '#64748B' }}>Client Name:</span> <strong>{projectState.clientName || 'N/A'}</strong></div>
-                                <div style={{ gridColumn: 'span 2' }}><span style={{ color: '#64748B' }}>Site Address:</span> <strong>{projectState.address || 'N/A'}</strong></div>
+                                <div><span style={{ color: '#64748B' }}>Client Name:</span> <strong>{handoverState.clientName || projectState.clientName || 'N/A'}</strong></div>
+                                <div style={{ gridColumn: 'span 2' }}><span style={{ color: '#64748B' }}>Site Address:</span> <strong>{handoverState.siteAddress || projectState.address || projectState.siteAddress || 'N/A'}</strong></div>
                                 <div style={{ gridColumn: 'span 2' }}><span style={{ color: '#64748B' }}>Scope of Work:</span> <strong>{projectState.scope || projectState.description || 'Installation & Execution Works'}</strong></div>
                             </div>
                         </div>

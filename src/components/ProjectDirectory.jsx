@@ -692,10 +692,14 @@ const ProjectDirectory = ({ projects = [], vendors = [], portfolios = [], active
     if (!selectedProject) return;
     const existingHandovers = selectedProject.handovers || [];
     const updatedHandovers = [newHandover, ...existingHandovers.filter(h => h.id !== newHandover.id)];
-    onUpdateValue(selectedProject.id, { 
+    const updatePayload = { 
         handovers: updatedHandovers,
         lastActivityAt: new Date().toISOString()
-    });
+    };
+    if (newHandover.clientName) updatePayload.clientName = newHandover.clientName;
+    if (newHandover.siteAddress) updatePayload.address = newHandover.siteAddress;
+    
+    onUpdateValue(selectedProject.id, updatePayload);
     setIsInitiatingHandover(false);
   };
 
